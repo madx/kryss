@@ -352,6 +352,14 @@ The mouse keeps working as before.
 - The key handling is a pure function in `src/client/shortcuts.ts` that takes the mode, the kind of focused target, the pending prefix and the key, and returns an action.
   The DOM layer only applies the action.
 - The positional add, the cursor movement and clamping, and the view cycling are pure functions in `src/client/logic/`, with the same immutable and `null` conventions as 5.7.
+- The empty task of a positional add is never put in the document.
+  The pure logic only computes where it goes (`insertTarget`) and commits it once it has text (`commitInsert`), and the view layer renders the empty row at that position.
+  A re-render while it is open (external change) drops it.
+- The editor reports how it ended (Enter, Escape, blur, or settled by a re-render) so that the app can chain, return to the origin row or keep the focus where the user clicked.
+  A blur that drops an empty new task does not move the focus.
+- The cursor is the DOM focus.
+  The app remembers the last cursor index, and a re-render that loses the focus puts it back on that index, clamped to the visible range.
+- Creating a list through the UI selects it only in a single-list view, in the "All" view the view is kept.
 
 ## 6. Tests
 

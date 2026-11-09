@@ -1,0 +1,78 @@
+// The cursor is the focused row or list header (PRD 5.9). This module maps between DOM focus and the stop sequence of the pure logic.
+import { clampIndex, indexOfStop, parseStoredIndex, stops, type Stop } from "../logic/cursor";
+import { visibleRange } from "../logic/views";
+import type { TaskPath } from "../logic";
+import type { Store } from "../store";
+
+export const CURSOR_KEY = "todoapp.cursor";
+
+export const rowSelector = (p: TaskPath) =>
+  `.task-row[data-list="${p.list}"][data-task="${p.task}"]` + (p.child === undefined ? ":not([data-child])" : `[data-child="${p.child}"]`);
+
+export const stopSelector = (s: Stop) => (s.kind === "header" ? `.list-header[data-list="${s.list}"]` : rowSelector(s.path));
+
+/** The stop an element stands for: a list header, or a task row (also when its checkbox has the focus). */
+export function stopOf(target: EventTarget | null): Stop | null {
+  if (!(target instanceof HTMLElement)) return null;
+  if (target.classList.contains("list-header") && target.dataset.list !== undefined) return { kind: "header", list: Number(target.dataset.list) };
+  const row = target.classList.contains("task-row") ? target : target.classList.contains("task-check") ? target.closest<HTMLElement>(".task-row") : null;
+  if (!row || row.classList.contains("task-new") || row.dataset.list === undefined) return null;
+  const child = row.dataset.child;
+  return { kind: "task", path: { list: Number(row.dataset.list), task: Number(row.dataset.task), child: child === undefined ? undefined : Number(child) } };
+}
+
+export function createCursor(main: HTMLElement, store: Store, storage?: Storage) {
+  let last = -1;
+
+  const visibleStops = (): Stop[] => {
+    const { doc, selected } = store.getState();
+    return doc ? stops(doc, visibleRange(selected, doc.lists.length)) : [];
+  };
+  const safe = <T>(fn: () => T): T | undefined => {
+    try {
+      return fn();
+    } catch {
+      return undefined; // storage can be unavailable
+    }
+  };
+
+  const cursor = {
+    /** The stop under the focus, or null. */
+    current: (): Stop | null => (main.contains(document.activeElement) ? stopOf(document.activeElement) : null),
+    /** Index of the focused stop, or -1. */
+    index(): number {
+      const cur = cursor.current();
+      return cur ? indexOfStop(visibleStops(), cur) : -1;
+    },
+    /** Last known cursor index (kept when the focus moves to a control or the DOM is rebuilt). */
+    last: () => last,
+    count: () => visibleStops().length,
+    /** Focuses the stop at `index`, clamped to the visible range. */
+    focusIndex(index: number): void {
+      const all = visibleStops();
+      const i = clampIndex(all.length, index);
+      if (i >= 0) main.querySelector<HTMLElement>(stopSelector(all[i]!))?.focus();
+    },
+    focusStop(stop: Stop): void {
+      main.querySelector<HTMLElement>(stopSelector(stop))?.focus();
+    },
+    /** True when the focus is on a stop, so a re-render that drops it must restore it. */
+    hasFocus: (): boolean => cursor.current() !== null,
+    /** Puts the cursor back on the stored index (once, on load). */
+    restore(): void {
+      const stored = parseStoredIndex(safe(() => storage?.getItem(CURSOR_KEY) ?? null) ?? null);
+      if (stored !== null) cursor.focusIndex(stored);
+    },
+  };
+
+  main.addEventListener("focusin", (e) => {
+    if (!stopOf(e.target)) return;
+    const i = cursor.index();
+    if (i < 0) return;
+    last = i;
+    safe(() => storage?.setItem(CURSOR_KEY, String(i)));
+  });
+  return cursor;
+}
+
+export type Cursor = ReturnType<typeof createCursor>;

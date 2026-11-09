@@ -6,10 +6,12 @@ import type { Task } from "../../shared/types";
 import type { TaskPath } from "../logic";
 import { renderInline } from "../markdown/inline";
 import { el } from "./dom";
-import { isTextField } from "../shortcuts";
-import { isEditing, startEdit } from "./edit-text";
+import { startEdit, type EditEnd } from "./edit-text";
 
-/** Action callbacks. Those returning a boolean return false when the action was refused (the key then keeps its default). */
+/** Dispatched on a row (by the keyboard layer) to open its editor. */
+export const BEGIN_EDIT = "begin-edit";
+
+/** Action callbacks. Those returning a boolean return false when the action was refused. */
 export type TaskActions = {
   toggle(path: TaskPath): void;
   remove(path: TaskPath): void;
@@ -54,7 +56,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
           actions.edit(path, result); // the store re-renders the row
         }
       },
-      at,
+      { at },
     );
   text.addEventListener("click", (e) => {
     if ((e.target as Element).closest("a")) return; // links open, they do not start an edit
@@ -71,18 +73,19 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   remove.addEventListener("click", () => actions.remove(path));
   buttons.append(remove);
 
-  row.addEventListener("keydown", (e) => {
-    if ((e.target !== row && e.target !== checkbox) || isEditing() || isTextField(e.target)) return;
-    let handled = true;
-    if (e.altKey && e.key === "ArrowUp") actions.moveUp(path);
-    else if (e.altKey && e.key === "ArrowDown") actions.moveDown(path);
-    else if (e.key === "Tab" && !e.altKey && !e.ctrlKey && !e.metaKey) handled = e.shiftKey ? actions.outdent(path) : actions.indent(path);
-    else if (e.key === "Enter" || e.key === "F2") beginEdit();
-    else if (e.key === "Delete" || e.key === "Backspace") actions.remove(path);
-    else handled = false;
-    if (handled) e.preventDefault();
-  });
+  row.addEventListener(BEGIN_EDIT, () => beginEdit());
 
   row.append(handle, checkbox, text, buttons);
+  return row;
+}
+
+/**
+ * The client-only empty row of a positional add. It is never part of the document, so autosave cannot send it.
+ * The keyboard layer dispatches `begin-edit` on it once it is in the DOM, and `done` receives the typed text.
+ */
+export function renderNewTaskRow(done: (text: string | null, how: EditEnd) => void): HTMLElement {
+  const text = el("span", { class: "task-text" });
+  const row = el("div", { class: "task-row task-new", "data-new": "" }, text);
+  row.addEventListener(BEGIN_EDIT, () => startEdit(text, "", done, { keepOnEmptyEnter: true }));
   return row;
 }

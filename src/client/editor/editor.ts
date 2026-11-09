@@ -9,7 +9,7 @@ import "./editor.css";
 let active = 0;
 
 /** The open editors, so that a re-render can settle them before their host is detached. */
-const open = new Set<{ host: HTMLElement; original: string; finish: (commit: boolean) => void }>();
+const open = new Set<{ host: HTMLElement; original: string; finish: (commit: boolean, how?: EditEnd) => void }>();
 
 /**
  * Closes every open editor before a content render replaces the DOM, so none is detached without `finish`.
@@ -17,7 +17,7 @@ const open = new Set<{ host: HTMLElement; original: string; finish: (commit: boo
  * An editor whose task is unchanged is committed, otherwise discarded (see `settleDecision`).
  */
 export function settleEditors(currentText: (host: HTMLElement) => string | undefined): void {
-  for (const e of [...open]) e.finish(settleDecision(e.original, currentText(e.host)) === "commit");
+  for (const e of [...open]) e.finish(settleDecision(e.original, currentText(e.host)) === "commit", "settle");
   if (open.size === 0) active = 0;
 }
 
@@ -28,21 +28,30 @@ export function isEditing(): boolean {
 
 /**
  * Replaces the content of `host` with the editor for `text`.
- * `done(newText)` is called once on Enter or blur, `done(null)` once on Escape, after the editor was destroyed.
+ * `done(newText, how)` is called once on Enter, Escape or blur (all commit), after the editor was destroyed.
+ * `done(null, "settle")` means a re-render discarded it.
  * Tab and Shift+Tab are not bound, so the browser moves the focus (which commits through blur).
  * With `at` (viewport coordinates of a click), the cursor goes to the closest position, otherwise to the end.
  */
+export type EditEnd = "enter" | "escape" | "blur" | "settle";
+export type EditorOptions = {
+  at?: { x: number; y: number };
+  /** Enter on an empty text does nothing (new tasks). */
+  keepOnEmptyEnter?: boolean;
+};
+
 export function createEditor(
   host: HTMLElement,
   text: string,
-  done: (result: string | null) => void,
-  at?: { x: number; y: number },
+  done: (result: string | null, how: EditEnd) => void,
+  options: EditorOptions = {},
 ): void {
+  const { at, keepOnEmptyEnter } = options;
   if (host.querySelector(".cm-editor")) return;
   let view: EditorView | null = null;
   host.replaceChildren(); // the editor takes the place of the rendered text
-  const entry = { host, original: text, finish: (commit: boolean) => finish(commit) };
-  const finish = (commit: boolean) => {
+  const entry = { host, original: text, finish: (commit: boolean, how: EditEnd = "settle") => finish(commit, how) };
+  const finish = (commit: boolean, how: EditEnd) => {
     if (!view) return;
     const v = view;
     view = null; // later events (blur while destroying) do nothing
@@ -50,7 +59,7 @@ export function createEditor(
     const result = commit ? v.state.doc.toString() : null;
     active--;
     v.destroy();
-    done(result);
+    done(result, how);
   };
 
   // Line breaks, from paste, drop or any command, are replaced by spaces (same length, so selections stay valid).
@@ -79,12 +88,18 @@ export function createEditor(
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ "aria-label": "Edit task" }),
         keymap.of([
-          { key: "Enter", run: () => (finish(true), true) },
-          { key: "Escape", run: () => (finish(false), true) },
+          {
+            key: "Enter",
+            run: () => {
+              if (!(keepOnEmptyEnter && view?.state.doc.toString().trim() === "")) finish(true, "enter");
+              return true;
+            },
+          },
+          { key: "Escape", run: () => (finish(true, "escape"), true) },
           ...historyKeymap,
           ...standardKeymap,
         ]),
-        EditorView.domEventHandlers({ blur: () => void finish(true) }),
+        EditorView.domEventHandlers({ blur: () => void finish(true, "blur") }),
       ],
     }),
   });
