@@ -1,7 +1,7 @@
 // The single seam between the task rows and the editor: delegates to the CodeMirror editor.
-import { createEditor, isEditing } from "../editor/editor";
+import { createEditor, isEditing, settleEditors } from "../editor/editor";
 
-export { isEditing };
+export { isEditing, settleEditors };
 
 /**
  * Replaces the content of `host` with an editor for `text`.
