@@ -115,6 +115,17 @@ describe("drag and drop", () => {
     const r2 = moveTask(frozen(both), { list: 0, task: 0 }, { kind: "child", target: { list: 0, task: 2 } })!;
     expect(r2.doc.lists[0]!.tasks[1]!.done).toBe(true);
   });
+  test("dropping the only subtask as a child of its own parent is refused and loses nothing", () => {
+    const one = outdent(sample(), { list: 0, task: 1, child: 0 })!.doc; // a1 keeps only a1y
+    const drop = { kind: "child", target: { list: 0, task: 1 } } as const;
+    expect(validateDrop(frozen(one), { list: 0, task: 1, child: 0 }, drop).ok).toBe(false);
+    expect(moveTask(one, { list: 0, task: 1, child: 0 }, drop)).toBeNull();
+  });
+  test("dropping a subtask as a child of its own parent moves it last", () => {
+    const r = moveTask(frozen(sample()), { list: 0, task: 1, child: 0 }, { kind: "child", target: { list: 0, task: 1 } })!;
+    expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1y", "a1x"]);
+    expect(r.path).toEqual({ list: 0, task: 1, child: 1 });
+  });
   test("does not mutate its input", () => {
     const s = frozen(sample());
     expect(() => moveTask(s, { list: 0, task: 1 }, { kind: "end", list: 1 })).not.toThrow();

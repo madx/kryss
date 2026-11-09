@@ -1,4 +1,4 @@
-import type { TodoDocument } from "../../shared/types";
+import type { Task, TodoDocument } from "../../shared/types";
 import { cloneDoc, findPath, getNode, parentPath, pruneChildren, samePath, type OpResult, type TaskPath } from "./paths";
 
 /**
@@ -24,6 +24,10 @@ export function validateDrop(doc: TodoDocument, source: TaskPath, drop: Drop): D
   if (source.child === undefined && drop.target.child !== undefined && drop.target.list === source.list && drop.target.task === source.task) {
     return refuse("descendant");
   }
+  // Dropping the only subtask as a child of its own parent would change nothing.
+  if (drop.kind === "child" && source.child !== undefined && drop.target.child === undefined && drop.target.list === source.list && drop.target.task === source.task && target.children!.length === 1) {
+    return refuse("self");
+  }
   const hasChildren = (node.children?.length ?? 0) > 0;
   // A drop becomes a subtask when it is `child`, or before / after a subtask.
   const becomesSubtask = drop.kind === "child" || drop.target.child !== undefined;
@@ -37,56 +41,63 @@ function refuse(reason: DropRefusal): DropCheck {
   return { ok: false, reason };
 }
 
+/** Where a relocated task lands: a container array, the new parent (subtask case) and the node to insert before (absent: append). */
+type Dest = { container: Task[]; parent?: Task; before?: Task };
+
+/** First sibling after `target` that is not `skip` (the moved node, which is about to leave the array). */
+function nextSibling(siblings: Task[], target: Task, skip: Task): Task | undefined {
+  return siblings.slice(siblings.indexOf(target) + 1).find((t) => t !== skip);
+}
+
+/**
+ * Moves a node of a cloned document to the destination computed by `locate`, and applies the check rules.
+ * The destination is resolved by identity before the removal, since indices shift.
+ * Dropping an unchecked task under a different parent unchecks that parent (PRD 5.3).
+ * Reordering under the same parent never changes a check state.
+ */
+function relocate(doc: TodoDocument, source: TaskPath, locate: (next: TodoDocument, node: Task) => Dest): OpResult {
+  const next = cloneDoc(doc);
+  const node = getNode(next, source)!;
+  const oldParent = source.child === undefined ? undefined : next.lists[source.list]!.tasks[source.task]!;
+  const dest = locate(next, node);
+
+  const origin = oldParent ? oldParent.children! : next.lists[source.list]!.tasks;
+  origin.splice(origin.indexOf(node), 1);
+  // Insert before pruning the old parent, so that a destination inside it stays attached.
+  const at = dest.before ? dest.container.indexOf(dest.before) : dest.container.length;
+  dest.container.splice(at, 0, node);
+  if (dest.parent) {
+    delete node.children; // a subtask has no children (validated by the callers)
+    if (dest.parent !== oldParent && !node.done) dest.parent.done = false;
+  }
+  if (oldParent) pruneChildren(oldParent);
+  return { doc: next, path: findPath(next, node)! };
+}
+
 /**
  * Moves a task with its subtree.
  * Returns null if the drop is refused.
- * Dropping an unchecked task under a different checked parent unchecks that parent (PRD 5.3).
- * Reordering under the same parent never changes a check state.
+ * `after` a parent that has subtasks inserts the task as its first subtask (unless the task has subtasks itself, then it goes after the whole parent).
+ * A drop before or after a subtask inserts at that position among the subtasks.
  */
 export function moveTask(doc: TodoDocument, source: TaskPath, drop: Drop): OpResult | null {
   if (!validateDrop(doc, source, drop).ok) return null;
-  const next = cloneDoc(doc);
-  const node = getNode(next, source)!;
-  const sourceTask = next.lists[source.list]!.tasks[source.task]!;
-  const oldParent = source.child === undefined ? undefined : sourceTask;
-
-  // Resolve the destination by identity before removal, since indices shift.
-  let container: typeof node[];
-  let newParent: typeof node | undefined;
-  let anchor: typeof node | undefined;
-  if (drop.kind === "end") {
-    container = next.lists[drop.list]!.tasks;
-  } else {
+  return relocate(doc, source, (next, node) => {
+    if (drop.kind === "end") return { container: next.lists[drop.list]!.tasks };
     const target = getNode(next, drop.target)!;
-    anchor = target;
-    if (drop.kind === "child") {
-      newParent = target;
-      container = target.children ??= [];
-    } else if (drop.target.child === undefined) {
-      container = next.lists[drop.target.list]!.tasks;
-    } else {
-      newParent = next.lists[drop.target.list]!.tasks[drop.target.task]!;
-      container = newParent.children!;
+    const tasks = next.lists[drop.target.list]!.tasks;
+    if (drop.kind === "child") return { container: (target.children ??= []), parent: target };
+    if (drop.target.child !== undefined) {
+      const parent = tasks[drop.target.task]!;
+      const siblings = parent.children!;
+      return { container: siblings, parent, before: drop.kind === "before" ? target : nextSibling(siblings, target, node) };
     }
-  }
-
-  // Remove the source from where it is.
-  const origin = source.child === undefined ? next.lists[source.list]!.tasks : sourceTask.children!;
-  origin.splice(origin.indexOf(node), 1);
-  if (oldParent) pruneChildren(oldParent);
-
-  // Insert at the destination.
-  if (drop.kind === "child" || drop.kind === "end") {
-    container.push(node);
-  } else {
-    const at = container.indexOf(anchor!);
-    container.splice(drop.kind === "before" ? at : at + 1, 0, node);
-  }
-  if (newParent) {
-    delete node.children; // a subtask has no children (validated above)
-    if (newParent !== oldParent && !node.done) newParent.done = false;
-  }
-  return { doc: next, path: findPath(next, node)! };
+    if (drop.kind === "before") return { container: tasks, before: target };
+    if (target.children?.length && !node.children?.length) {
+      return { container: target.children, parent: target, before: target.children.find((c) => c !== node) };
+    }
+    return { container: tasks, before: nextSibling(tasks, target, node) };
+  });
 }
 
 /** Tab: makes the task the last subtask of the previous task of the same list. */
@@ -98,7 +109,11 @@ export function indent(doc: TodoDocument, path: TaskPath): OpResult | null {
 /** Shift+Tab: turns a subtask into a task right after its parent. */
 export function outdent(doc: TodoDocument, path: TaskPath): OpResult | null {
   const parent = parentPath(path);
-  return parent ? moveTask(doc, path, { kind: "after", target: parent }) : null;
+  if (!parent || !getNode(doc, path)) return null;
+  return relocate(doc, path, (next, node) => {
+    const tasks = next.lists[path.list]!.tasks;
+    return { container: tasks, before: nextSibling(tasks, tasks[path.task]!, node) };
+  });
 }
 
 /** Alt+Up: swaps with the previous sibling (same level and parent). Null at the edge. */
