@@ -163,3 +163,41 @@ Each entry lists the initial task, the question, and the approach taken in the m
 - Drag and drop is not keyboard accessible beyond Alt+↑/↓, Tab and Shift+Tab.
   Is that enough?
   Taken: yes, as the PRD says.
+
+## Single-line CodeMirror 6 editor (Enter commits, Escape cancels)
+
+- Should blur commit the edit?
+  Taken: yes, which includes Tab and Shift+Tab, so typing is never lost.
+- The cursor starts at the end of the text instead of selecting all, because selecting all would show every marker.
+  Is this right?
+  Taken: yes.
+- The editor is only verified by unit tests of its pure parts.
+  The manual check list from the editor report must be run in a browser, and these three tasks are left unticked until then.
+
+## Live preview: markers hidden away from the cursor
+
+- Should the preview match the hand-written renderer's marker rules exactly?
+  Taken: no, it uses `@lezer/markdown`, so edge cases may differ slightly.
+  Exact parity would require source positions in `markdown/inline.ts`.
+- Should markers reappear when the editor loses focus?
+  Taken: no, a committed edit is simply re-rendered.
+
+## Coordinate with CodeMirror's own undo
+
+- The global shortcut ignores key events while the editor or any text input has focus.
+  Should it instead take over when the field has nothing left to undo?
+  Taken: no, for simplicity.
+
+## Verify alternating use with Obsidian on the same file
+
+- Not done: it needs a human with Obsidian and a browser, and is left unticked.
+
+## Validate the success criterion: one week of use without loss
+
+- Not done: it needs a week of real use, and is left unticked.
+
+## Apply styles: background and color for completed tasks, system theme
+
+- No browser was available, so the styles are unverified visually and the task is left unticked.
+- The CSS uses design tokens in `src/client/styles/theme.css` only.
+  The old `.edit-input` rule in `components.css` is now unused and can be removed.
