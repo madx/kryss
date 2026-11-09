@@ -188,6 +188,7 @@ A task with an empty text after trimming is rejected.
 - No confirmation to delete a task (undo recovers it).
 - Inside a task's editor, Ctrl+Z first undoes typing (CodeMirror), then the global stack once the task is left.
 - The stack is cleared on page reload and on any detected external change.
+- The shortcut handler is global and does nothing while a task editor or an add input has focus, so that they keep their own undo.
 
 ### 5.7 Pure client logic decisions
 
