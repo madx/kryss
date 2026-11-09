@@ -227,6 +227,9 @@ A task with an empty text after trimming is rejected.
 - Text editing goes through `view/edit-text.ts`, which delegates to the CodeMirror editor in `src/client/editor/`.
 - The editor is created when a task enters editing and destroyed when it leaves, and `isEditing()` tells whether one exists, so the global undo can stay inactive meanwhile.
 - Enter commits, Escape cancels, and a blur (click elsewhere, Tab, Shift+Tab) commits, like the previous input, so typing is never lost.
+- Before a content render replaces the lists (external reload, canonical document of a `PUT`), every open editor is settled so that none is detached without being destroyed, and `isEditing()` stays accurate.
+  If the task under the editor is unchanged in the new document, the typed text is committed through the normal edit path, so it is never lost.
+  If the task changed or disappeared, which means an external change, the disk version wins and the edit is discarded.
 - Line breaks, from paste or any other source, are replaced by one space each.
 - Tab, Shift+Tab and Alt+arrows are not bound by the editor, so it never swallows them.
 - The live preview uses the Lezer Markdown parser restricted to inline syntax (no block syntax, HTML, images or entities, plus strikethrough).

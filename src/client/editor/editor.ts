@@ -3,10 +3,23 @@ import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { livePreview } from "./live-preview";
-import { toSingleLine } from "./text";
+import { settleDecision, toSingleLine } from "./text";
 import "./editor.css";
 
 let active = 0;
+
+/** The open editors, so that a re-render can settle them before their host is detached. */
+const open = new Set<{ host: HTMLElement; original: string; finish: (commit: boolean) => void }>();
+
+/**
+ * Closes every open editor before a content render replaces the DOM, so none is detached without `finish`.
+ * `currentText(host)` returns the task text now in the document for the row holding `host` (undefined if gone).
+ * An editor whose task is unchanged is committed, otherwise discarded (see `settleDecision`).
+ */
+export function settleEditors(currentText: (host: HTMLElement) => string | undefined): void {
+  for (const e of [...open]) e.finish(settleDecision(e.original, currentText(e.host)) === "commit");
+  if (open.size === 0) active = 0;
+}
 
 /** True while an editor exists. The global undo (Ctrl+Z) must not run then: CodeMirror has its own history. */
 export function isEditing(): boolean {
@@ -27,10 +40,12 @@ export function createEditor(
 ): void {
   if (host.querySelector(".cm-editor")) return;
   let view: EditorView | null = null;
+  const entry = { host, original: text, finish: (commit: boolean) => finish(commit) };
   const finish = (commit: boolean) => {
     if (!view) return;
     const v = view;
     view = null; // later events (blur while destroying) do nothing
+    open.delete(entry);
     const result = commit ? v.state.doc.toString() : null;
     active--;
     v.destroy();
@@ -73,6 +88,7 @@ export function createEditor(
     }),
   });
   active++;
+  open.add(entry);
   const pos = at ? view.posAtCoords(at) : null;
   if (pos !== null) view.dispatch({ selection: EditorSelection.cursor(pos) });
   view.focus();

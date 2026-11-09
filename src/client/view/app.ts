@@ -16,8 +16,10 @@ import {
   type OpResult,
   type TaskPath,
 } from "../logic";
+import { getNode } from "../logic/paths";
 import type { Store, StoreState } from "../store";
 import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnreachable } from "./banners";
+import { settleEditors } from "./edit-text";
 import { renderHeader } from "./header";
 import { setupDnd } from "./dnd";
 import { renderListSection, type ListContext } from "./list-section";
@@ -109,7 +111,16 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
   };
 
-  function renderMain(state: StoreState) {
+  /** Settles the open editors first (their commit may change the document), then renders from the up-to-date state. */
+  function renderMain() {
+    settleEditors((host) => {
+      const row = host.closest<HTMLElement>(".task-row");
+      const d = store.getState().doc;
+      if (!row || !d) return undefined;
+      const child = row.dataset.child;
+      return getNode(d, { list: Number(row.dataset.list), task: Number(row.dataset.task), child: child === undefined ? undefined : Number(child) })?.text;
+    });
+    const state = store.getState();
     if (state.invalid) {
       roots.main.replaceChildren(renderInvalid(state.invalid, store.hasPendingChanges()));
     } else if (!state.doc) {
@@ -127,7 +138,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
-    renderMain(state);
+    renderMain();
     if (pendingFocus) document.querySelector<HTMLElement>(pendingFocus)?.focus();
     pendingFocus = null;
   }
