@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ensureTodoFile, resolveTodoFile } from "./config";
+import { ensureTodoFile, resolveHost, resolveTodoFile } from "./config";
 
 describe("resolveTodoFile", () => {
   test("defaults to ./todo.md when TODO_FILE is unset", () => {
@@ -15,6 +15,20 @@ describe("resolveTodoFile", () => {
 
   test("falls back to the default when TODO_FILE is empty", () => {
     expect(resolveTodoFile({ TODO_FILE: "" })).toBe("./todo.md");
+  });
+});
+
+describe("resolveHost", () => {
+  test("defaults to 127.0.0.1 when HOST is unset", () => {
+    expect(resolveHost({})).toBe("127.0.0.1");
+  });
+
+  test("uses HOST when it is set", () => {
+    expect(resolveHost({ HOST: "0.0.0.0" })).toBe("0.0.0.0");
+  });
+
+  test("falls back to the default when HOST is empty", () => {
+    expect(resolveHost({ HOST: "" })).toBe("127.0.0.1");
   });
 });
 

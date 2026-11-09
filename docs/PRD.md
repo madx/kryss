@@ -19,8 +19,9 @@ No virtualization needed.
   No framework.
 - **Configuration**: the file is set by the `TODO_FILE` environment variable, defaulting to `./todo.md`, and created empty if missing.
   One instance manages one file.
-- **Network**: listens on `127.0.0.1` by default, **without authentication** (local machine use only).
-  The current `0.0.0.0` binding in `index.ts` must be changed.
+- **Network**: listens on `127.0.0.1` by default, **without authentication**.
+  The `HOST` environment variable overrides the listening address, for example `HOST=0.0.0.0` when the app runs inside a container.
+  Exposing the app beyond the loopback interface is an explicit opt-in.
 - **Dependencies**: `xit-parse` is removed.
 
 ### 2.1 API
@@ -42,6 +43,7 @@ The server serializes `PUT` and file-change handling, and writes through a tempo
 The server watches the file's directory and, after a short debounce, compares the ETag of the file with the last one it knows, so its own writes and duplicate events emit nothing.
 An external change that makes the file invalid still emits a `change` event.
 The `PORT` environment variable sets the listening port, defaulting to 5173.
+The `HOST` environment variable sets the listening address, defaulting to `127.0.0.1`.
 
 ### 2.2 JSON model
 

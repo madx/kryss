@@ -1,9 +1,14 @@
 import { writeFile } from "node:fs/promises";
 
 const DEFAULT_TODO_FILE = "./todo.md";
+const DEFAULT_HOST = "127.0.0.1";
 
 export function resolveTodoFile(env: Record<string, string | undefined>): string {
   return env.TODO_FILE || DEFAULT_TODO_FILE;
+}
+
+export function resolveHost(env: Record<string, string | undefined>): string {
+  return env.HOST || DEFAULT_HOST;
 }
 
 export async function ensureTodoFile(path: string): Promise<void> {

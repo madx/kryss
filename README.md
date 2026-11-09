@@ -16,13 +16,15 @@ bun run dev
 ```
 
 The app is then available on `http://127.0.0.1:5173`.
-The server only listens on the loopback interface and has no authentication.
+The server only listens on the loopback interface by default and has no authentication.
 
 ## Configuration
 
 `TODO_FILE` is the path of the Markdown file, `./todo.md` by default.
 The file is created empty if it is missing.
 `PORT` is the listening port, `5173` by default.
+`HOST` is the listening address, `127.0.0.1` by default.
+Set `HOST=0.0.0.0` to expose the app, for example inside a container, and remember that there is no authentication.
 
 ```sh
 TODO_FILE=~/notes/todo.md PORT=5200 bun run dev

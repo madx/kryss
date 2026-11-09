@@ -26,7 +26,7 @@ Work plan: `docs/TODO.md`.
 
 - **Bun server** that owns the file.
   It is the only component that parses and serializes Markdown.
-  It listens on `127.0.0.1`, without authentication.
+  It listens on `127.0.0.1` by default (overridable with `HOST`, e.g. `0.0.0.0` in a container), without authentication.
 - **Client**: vanilla TypeScript, built by Bun from `index.ts`, no framework.
   Client and server exchange JSON.
 - **API**: `GET /api/todos` (JSON + `ETag`), `PUT /api/todos` (`If-Match`, `409` on conflict), `GET /api/events` (SSE for external file changes).

@@ -1,7 +1,7 @@
 import { serve } from "bun";
 import homepage from "../client/index.html";
 import { createApp } from "./app";
-import { ensureTodoFile, resolveTodoFile } from "./config";
+import { ensureTodoFile, resolveHost, resolveTodoFile } from "./config";
 
 const todoFile = resolveTodoFile(process.env);
 await ensureTodoFile(todoFile);
@@ -9,7 +9,7 @@ await ensureTodoFile(todoFile);
 const app = createApp({ file: todoFile });
 
 const server = serve({
-  hostname: "127.0.0.1",
+  hostname: resolveHost(process.env),
   port: process.env.PORT ? Number(process.env.PORT) : 5173,
   routes: {
     "/": homepage,

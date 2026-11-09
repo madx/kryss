@@ -2,6 +2,7 @@
 - [x] Remove `xit-parse` from the dependencies
 - [x] Listen on `127.0.0.1` instead of `0.0.0.0` in `index.ts`
 - [x] Read `TODO_FILE` (default `./todo.md`) and create the empty file if missing
+- [x] Read the listening address from a `HOST` environment variable (default `127.0.0.1`) so the container can bind `0.0.0.0`
 - [x] Structure the project
   - [x] Split into `src/server`, `src/client` and `src/shared` (JSON types)
   - [x] Add the `dev`, `build` and `test` scripts to `package.json`
