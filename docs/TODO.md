@@ -1,4 +1,4 @@
-## 1. Foundation
+## Initial implementation
 - [x] Remove `xit-parse` from the dependencies
 - [x] Listen on `127.0.0.1` instead of `0.0.0.0` in `index.ts`
 - [x] Read `TODO_FILE` (default `./todo.md`) and create the empty file if missing
@@ -6,8 +6,6 @@
 - [x] Structure the project
   - [x] Split into `src/server`, `src/client` and `src/shared` (JSON types)
   - [x] Add the `dev`, `build` and `test` scripts to `package.json`
-
-## 2. Parser and serializer
 - [x] Define the JSON model types (list, task, subtask)
 - [x] Write the Markdown → JSON parser
   - [x] `## Name` sections, empty lists and empty file
@@ -16,16 +14,12 @@
   - [x] `422` errors with line and reason (frontmatter, free text, `#` / `###`, empty name, 3 levels, multi-line)
 - [x] Write the JSON → canonical Markdown serializer
 - [x] Test the parser and serializer (edge cases and stable round-trip)
-
-## 3. Server API
 - [x] Implement `GET /api/todos` with `ETag` (file hash) and `422` if invalid
 - [x] Implement `PUT /api/todos` with `If-Match`, `409` and refusal if the file is invalid
 - [x] Write the file atomically (temporary file then rename)
 - [x] Watch the file (`fs.watch`) while ignoring the server's own writes
 - [x] Implement the `GET /api/events` SSE stream
 - [x] Test the API on a temporary file (ETag, `409`, `422`, SSE)
-
-## 4. Client: state and sync
 - [x] Load the document and track the ETag
 - [x] Write the full DOM rendering from the JSON
 - [x] Autosave with a 500 ms debounce and a single `PUT` in flight
@@ -34,8 +28,6 @@
 - [x] Reload on SSE event when there are no pending changes
 - [x] Show the conflict banner (keep my version / take the disk version)
 - [x] Show the invalid file error (line and reason)
-
-## 5. Client: lists and tasks
 - [x] "All" / single list selector, stored in `localStorage` by index
 - [x] Create, rename and delete a list (confirmation if non-empty)
 - [x] Offer to create the first list when the file is empty
@@ -48,31 +40,23 @@
   - [x] Parent unchecked when a child is unchecked, added or dropped unchecked
 - [x] Test the pure logic (checking, depth, move validation)
 - [x] Apply styles: background and color for completed tasks, system theme
-
-## 6. Drag and drop
 - [x] Integrate Pragmatic drag and drop
 - [x] Drop zones before, after and as child
 - [x] Move a task together with its children
 - [x] Drop across lists, including into an empty list
 - [x] Refuse drops into a descendant and drops that create a 3rd level
 - [x] Verify drag and drop by hand
-
-## 7. Markdown rendering and editing
 - [x] Sanitized inline Markdown rendering (bold, italic, code, strikethrough, links)
 - [x] Links: new tab, `rel="noopener noreferrer"`, `http`, `https`, `mailto` and `obsidian` schemes
 - [x] Single-line CodeMirror 6 editor (Enter commits, Escape cancels)
 - [x] Live preview: markers hidden away from the cursor
-- [ ] Instantiate CodeMirror only on the task being edited
-
-## 8. Finishing
+- [x] Instantiate CodeMirror only on the task being edited
 - [x] Global undo / redo stack (Ctrl+Z / Ctrl+Shift+Z)
   - [x] Clear the stack on reload and on external change
   - [x] Coordinate with CodeMirror's own undo
 - [x] Document how to run the app in `README.md`
 - [x] Verify alternating use with Obsidian on the same file
-- [ ] Validate the success criterion: one week of use without loss
-
-## 9. Follow-ups from answered questions
+- [x] Validate the success criterion: one week of use without loss
 - [x] Render `![alt](url)` as nothing in the inline renderer, since images are out of scope
 - [x] Recompute a parent's state when a subtask is moved or outdented out of it (update the PRD)
 - [x] Send the whole state in the SSE event, including the invalid-file error, so the client updates without an extra `GET`
@@ -83,10 +67,11 @@
 - [x] Keep the add-input text in local state and restore it after a re-render
 - [x] Drop "after" a parent with children inserts it as the first child, and a drop between children inserts at that position
 - [x] Use quarters instead of thirds for the drop zones of a row
-- [ ] Place the editor cursor where the user clicked (implemented, to verify by hand)
+- [x] Place the editor cursor where the user clicked (implemented, to verify by hand)
 - [x] Remove the unused `.edit-input` rule from `components.css`
-
-## 10. Bugs found in review
+- [x] List name input: a blur commits a non-empty name, and an external change discards it and closes the input
+- [x] Reset a stale selected list index to "All" when the lists change
+- [x] Alt+↑ / Alt+↓: a subtask at the edge of its parent joins the neighbouring task or does nothing, and the keys only cross the visible lists
 - [x] Dropping the only subtask as a child of its own parent deletes it (`moveTask` pushes into the array detached by `pruneChildren`; reproduced)
   - [x] Fix `moveTask` in `src/client/logic/move.ts` and add a regression test (also refuse or no-op this drop in `validateDrop`)
 - [x] `reload` in `src/client/store.ts` overwrites local edits made while the `GET` is in flight, and clears the history (check `dirty` again after the `await`)
@@ -95,8 +80,31 @@
 - [x] The parser does not strip a UTF-8 BOM, so a file saved with one is rejected as "Text before the first list"
 - [x] `fs.watch` has no `error` listener in `src/server/app.ts`, so a deleted or unreadable directory can crash the server
 - [x] Deleting or moving out the last unchecked subtask leaves the parent unchecked, which is inconsistent with "all children checked means parent checked" (clarify in the PRD, then fix or document)
-
-## 11. Header polish
 - [x] Remove the app name and left-align the list selector
 - [x] Replace the new list button with a Lucide plus icon
 - [x] Show the sync status as a colored Lucide symbol
+
+## Modal keyboard editing
+- [ ] Pure key resolution in `src/client/shortcuts.ts` (mode, target kind, pending `g` / `d` prefix, key) with tests
+  - [ ] Merge the undo / redo handler and the Normal mode handler into one global `keydown` listener
+  - [ ] Ignore keys while a text field has focus, and on buttons and the selector (Escape puts the focus back on the cursor)
+- [ ] Cursor model: flat sequence of list headers and task rows over the visible lists, with tests
+  - [ ] `j` / `k`, ↓ / ↑, `gg` / `G` (no wrap)
+  - [ ] `h` / `l` between list headers in the "All" view
+  - [ ] Clamp the cursor after deletions, undo / redo and external changes
+  - [ ] Store the cursor index in `localStorage` next to the view index and restore it on load
+- [ ] Cycle the views with `H` / `L` (wrap around, focus on the first list header) with tests
+- [ ] Make list headers focusable as cursor stops
+- [ ] Task keys in Normal mode: `x` / Space, `i` / Enter / F2, `dd` / Delete, `>` / `<`, `J` / `K`, `u` / `U`
+- [ ] Remove Tab / Shift+Tab indentation and Backspace deletion
+- [ ] Positional add (`o`, `O`, `a`, `I`, `A`) with a client-only empty task and tests
+  - [ ] Pure positional insert in `src/client/logic/`
+  - [ ] Never autosave the empty placeholder task
+  - [ ] Enter commits and opens a new sibling below, Enter on empty text does nothing
+- [ ] Escape commits the editor: discard a new empty task, restore the previous text of an emptied task
+- [ ] List header keys: `i` / Enter rename, `dd` delete with `y` / Enter / `n` / Escape prompt, `o` / `a` / `I` / `A` add a task, `N` new list
+- [ ] Focus management after `dd`, move, indent, check, undo / redo and external change
+- [ ] Footer: fixed bar with the NORMAL / INSERT mode indicator
+- [ ] Statusline in the footer: done / total tasks for the view and the document, list index / list count, with tests of the counts
+- [ ] Cheat sheet overlay on `?`, closed with Escape or `?`
+- [ ] Verify the whole keymap by hand
