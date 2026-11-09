@@ -19,6 +19,7 @@ import {
 import type { Store, StoreState } from "../store";
 import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnreachable } from "./banners";
 import { renderHeader } from "./header";
+import { setupDnd } from "./dnd";
 import { renderListSection, type ListContext } from "./list-section";
 import type { TaskActions } from "./task-row";
 
@@ -31,6 +32,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let pendingFocus: string | null = null;
 
   const doc = (): TodoDocument => store.getState().doc!;
+  const dnd = setupDnd(roots.main, { getDoc: () => store.getState().doc, commit: (next) => store.commit(next) });
   const apply = (result: OpResult | null, focus = true): boolean => {
     if (!result) return false;
     if (focus) pendingFocus = rowSelector(result.path);
@@ -118,6 +120,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       const shown = state.selected === null ? state.doc.lists.map((_, i) => i) : [state.selected];
       roots.main.replaceChildren(...shown.map((i) => renderListSection(state.doc!.lists[i]!, i, tasks, lists, ctx)));
     }
+    dnd.refresh();
   }
 
   function renderAll(state: StoreState) {

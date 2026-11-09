@@ -1,0 +1,23 @@
+/* Drag and drop feedback: the drop zone is shown with a `data-drop` attribute set on the hovered row or empty list. */
+.task-row[data-dragging="true"] {
+  opacity: 0.4;
+}
+
+.task-row[data-drop="before"] {
+  box-shadow: 0 -2px 0 0 var(--color-accent);
+}
+
+.task-row[data-drop="after"] {
+  box-shadow: 0 2px 0 0 var(--color-accent);
+}
+
+.task-row[data-drop="child"] {
+  border-color: var(--color-accent);
+  background: var(--color-hover);
+}
+
+.tasks[data-drop="end"] {
+  outline: 2px dashed var(--color-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
