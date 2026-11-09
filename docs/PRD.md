@@ -174,7 +174,8 @@ A task with an empty text after trimming is rejected.
 - Rendered text is sanitized (no raw HTML interpreted).
 - Rendering is done by a small hand-written inline parser (`src/client/markdown/inline.ts`) that produces an AST, then builds the DOM with `createElement` and text nodes only, never `innerHTML`.
   Supported syntax: `**bold**`, `*italic*`, `_italic_`, `` `code` ``, `~~strikethrough~~`, `[label](url)`.
-  Raw HTML, images (`![alt](url)` renders as `!` followed by a link) and block syntax are shown as literal text.
+  Images (`![alt](url)`) render as nothing.
+  Raw HTML and block syntax are shown as literal text.
 - Unmatched markers are literal text.
   An underscore inside a word (`snake_case`) is never italic.
 - Backslash escapes are supported for `` \ ` * _ ~ [ ] ( ) ``, any other backslash is literal.

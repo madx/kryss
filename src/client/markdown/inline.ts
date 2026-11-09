@@ -1,6 +1,7 @@
 // Small hand-written inline Markdown parser and DOM renderer.
 // Supported: **bold**, *italic*, _italic_, `code`, ~~strike~~, [label](url) and backslash escapes.
-// Everything else (raw HTML, images, headings, lists) stays literal text.
+// `![alt](url)` renders as nothing.
+// Everything else (raw HTML, headings, lists) stays literal text.
 // The DOM is only ever built with createElement and textContent, never innerHTML.
 
 export type InlineNode =
@@ -109,6 +110,18 @@ function parse(s: string, allowLinks: boolean): InlineNode[] {
         i++;
       }
       continue;
+    }
+
+    if (c === "!" && s[i + 1] === "[") {
+      // Images are out of scope: a well-formed `![alt](url)` renders as nothing.
+      const labelEnd = findLabelEnd(s, i + 2);
+      if (labelEnd > 0 && s[labelEnd + 1] === "(") {
+        const urlEnd = findLinkEnd(s, labelEnd + 2);
+        if (urlEnd > 0 && !/\s/.test(s.slice(labelEnd + 2, urlEnd))) {
+          i = urlEnd + 1;
+          continue;
+        }
+      }
     }
 
     if (c === "[" && allowLinks) {
