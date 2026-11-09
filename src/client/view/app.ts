@@ -114,7 +114,11 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
         const next = addList(doc(), name);
         if (next !== doc()) {
           store.commit(next);
-          if (store.getState().selected !== null) store.select(next.lists.length - 1); // a single-list view must show the new list
+          const created = next.lists.length - 1;
+          if (store.getState().selected !== null) store.select(created); // a single-list view must show the new list
+          // The cursor goes to the new list and its first task is typed right away.
+          const target = insertTarget(doc(), "list-start", { kind: "header", list: created });
+          if (target) openPlaceholder(target, stopSelector({ kind: "header", list: created }));
           return;
         }
       } else if (rename) {
@@ -227,7 +231,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const wanted = pendingFocus ? document.querySelector<HTMLElement>(pendingFocus) : null;
     pendingFocus = null;
     if (wanted) wanted.focus();
-    else if (!document.activeElement || document.activeElement === document.body) {
+    else if (cursor.last() >= 0 && (!document.activeElement || document.activeElement === document.body)) {
       cursor.focusIndex(cursor.last()); // the rebuilt DOM lost the focus: back to the same position, clamped
     }
     if (!cursorRestored && state.doc && !state.invalid) {
@@ -296,13 +300,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     apply: (result) => void apply(result),
     commitFocus: (next, path) => commitFocus(next, rowSelector(path)),
     renameList: lists.rename,
-    deleteList(index) {
-      if (doc().lists[index]?.tasks.length) lists.confirmRemove(index);
-      else {
-        lists.remove(index);
-        cursor.focusIndex(cursor.last());
-      }
-    },
+    deleteList: lists.confirmRemove,
     confirming: () => ctx.confirmingRemove,
     confirmDelete(index) {
       lists.remove(index);

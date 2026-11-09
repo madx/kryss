@@ -41,7 +41,7 @@ export function renderListSection(
   const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list" }, "✎");
   rename.addEventListener("click", () => actions.rename(index));
   const remove = el("button", { type: "button", class: "icon-button", title: "Delete list", "aria-label": "Delete list" }, "×");
-  remove.addEventListener("click", () => (list.tasks.length > 0 ? actions.confirmRemove(index) : actions.remove(index)));
+  remove.addEventListener("click", () => actions.confirmRemove(index));
 
   // `data-list` on the <ul> makes it a drop target for empty lists later on.
   const ul = el("ul", { class: "tasks", "data-list": String(index) });
@@ -86,7 +86,7 @@ export function renderListSection(
     const no = el("button", { type: "button", class: "button", "data-cancel-remove": "" }, "Cancel");
     no.addEventListener("click", actions.cancelRemove);
     header.append(
-      el("div", { class: "list-confirm", role: "alert" }, el("span", {}, `Delete this list and its ${list.tasks.length} task(s)?`), yes, no),
+      el("div", { class: "list-confirm", role: "alert" }, el("span", {}, list.tasks.length > 0 ? `Delete this list and its ${list.tasks.length} task(s)?` : "Delete this empty list?"), yes, no),
     );
   }
 
