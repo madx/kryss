@@ -147,6 +147,8 @@ A task with an empty text after trimming is rejected.
   Unchecking a parent only changes the parent.
 - When all children are checked, the parent is checked automatically.
 - Unchecking a child, adding a child, or dropping an unchecked task under a checked parent unchecks the parent.
+- When a subtask leaves a parent (move, outdent or delete) and the parent still has subtasks that are all checked, the parent becomes checked.
+  A parent left with no subtask keeps its state.
 - These rules only apply to UI actions: the server does not normalize states.
 - A completed task stays in place.
   It is distinguished by its checked box and a different background or color (not by strikethrough text, to avoid confusion with `~~strikethrough~~`).
@@ -203,7 +205,8 @@ A task with an empty text after trimming is rejected.
 - Keyboard move (Alt+↑ / Alt+↓) swaps with the previous or next sibling at the same level and parent, and does nothing at the edges, never crossing a list or a parent.
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
-- Moving a task out of a parent does not recompute that parent's state.
+- Moving or outdenting a subtask out of a parent, or deleting one, recomputes that parent: if it still has subtasks and all are checked, it becomes checked.
+- A parent left with no subtask keeps its state.
 - The undo stack is bounded to 100 snapshots.
 - Texts and list titles are trimmed, line breaks become spaces, and empty values are refused.
 

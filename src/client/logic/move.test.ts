@@ -37,6 +37,25 @@ describe("indent / outdent", () => {
   });
 });
 
+describe("old parent recompute", () => {
+  const halfChecked = () => toggleDone(sample(), { list: 0, task: 1, child: 0 }); // a1x checked, a1y unchecked
+  test("moving the last unchecked subtask out checks the parent", () => {
+    const r = moveTask(frozen(halfChecked()), { list: 0, task: 1, child: 1 }, { kind: "after", target: { list: 0, task: 2 } })!;
+    expect(r.doc.lists[0]!.tasks[1]!.done).toBe(true);
+  });
+  test("outdent checks the parent when the remaining subtasks are all checked", () => {
+    const r = outdent(frozen(halfChecked()), { list: 0, task: 1, child: 1 })!;
+    expect(r.doc.lists[0]!.tasks[1]!.done).toBe(true);
+    expect(outdent(frozen(halfChecked()), { list: 0, task: 1, child: 0 })!.doc.lists[0]!.tasks[1]!.done).toBe(false);
+  });
+  test("a parent left with no subtask keeps its state", () => {
+    const one = outdent(sample(), { list: 0, task: 1, child: 0 })!.doc;
+    expect(outdent(frozen(one), { list: 0, task: 1, child: 0 })!.doc.lists[0]!.tasks[1]!.done).toBe(false);
+    const checked = toggleDone(one, { list: 0, task: 1 });
+    expect(outdent(frozen(checked), { list: 0, task: 1, child: 0 })!.doc.lists[0]!.tasks[1]!.done).toBe(true);
+  });
+});
+
 describe("keyboard move", () => {
   test("moveUp / moveDown swap with a sibling and carry the subtree", () => {
     const s = frozen(sample());

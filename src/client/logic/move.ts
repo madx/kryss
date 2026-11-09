@@ -1,5 +1,5 @@
 import type { Task, TodoDocument } from "../../shared/types";
-import { cloneDoc, findPath, getNode, parentPath, pruneChildren, samePath, type OpResult, type TaskPath } from "./paths";
+import { cloneDoc, findPath, getNode, parentPath, pruneChildren, recomputeParent, samePath, type OpResult, type TaskPath } from "./paths";
 
 /**
  * Where to drop a task.
@@ -53,6 +53,7 @@ function nextSibling(siblings: Task[], target: Task, skip: Task): Task | undefin
  * Moves a node of a cloned document to the destination computed by `locate`, and applies the check rules.
  * The destination is resolved by identity before the removal, since indices shift.
  * Dropping an unchecked task under a different parent unchecks that parent (PRD 5.3).
+ * The old parent is recomputed: all remaining subtasks checked means checked.
  * Reordering under the same parent never changes a check state.
  */
 function relocate(doc: TodoDocument, source: TaskPath, locate: (next: TodoDocument, node: Task) => Dest): OpResult {
@@ -70,7 +71,10 @@ function relocate(doc: TodoDocument, source: TaskPath, locate: (next: TodoDocume
     delete node.children; // a subtask has no children (validated by the callers)
     if (dest.parent !== oldParent && !node.done) dest.parent.done = false;
   }
-  if (oldParent) pruneChildren(oldParent);
+  if (oldParent) {
+    pruneChildren(oldParent);
+    if (oldParent !== dest.parent) recomputeParent(oldParent);
+  }
   return { doc: next, path: findPath(next, node)! };
 }
 

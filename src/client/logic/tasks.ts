@@ -5,6 +5,7 @@ import {
   isSubtaskPath,
   normalizeText,
   pruneChildren,
+  recomputeParent,
   type OpResult,
   type TaskPath,
 } from "./paths";
@@ -61,7 +62,7 @@ export function addSibling(doc: TodoDocument, path: TaskPath, text: string): OpR
     : addChild(doc, { list: path.list, task: path.task }, text, path.child + 1);
 }
 
-/** Deletes a task (with its subtasks) or a subtask. The parent state is left unchanged. */
+/** Deletes a task (with its subtasks) or a subtask. Deleting the last unchecked subtask checks the parent, deleting the last subtask leaves its state unchanged. */
 export function deleteTask(doc: TodoDocument, path: TaskPath): TodoDocument {
   if (!getNode(doc, path)) return doc;
   const next = cloneDoc(doc);
@@ -71,6 +72,7 @@ export function deleteTask(doc: TodoDocument, path: TaskPath): TodoDocument {
   } else {
     task.children!.splice(path.child, 1);
     pruneChildren(task);
+    recomputeParent(task);
   }
   return next;
 }
