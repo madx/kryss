@@ -90,6 +90,11 @@ code {
 .app-main {
   max-width: var(--content-width);
   margin: 0 auto;
+}
+
+/* The header sets its own padding in components.css: the dev server may load that file before this one. */
+#banners,
+.app-main {
   padding: 0 var(--space-1);
 }
 
