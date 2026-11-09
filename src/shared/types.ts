@@ -26,3 +26,6 @@ export type ParseError = {
   line: number;
   reason: string;
 };
+
+/** Data of the `change` SSE event: the new ETag and either the parsed document or the parse error of the invalid file. */
+export type ChangeEvent = { etag: string; doc: TodoDocument } | { etag: string; error: ParseError };

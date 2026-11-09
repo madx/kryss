@@ -38,7 +38,7 @@ async function collectEvents(res: Response, count: number, timeout = 1500) {
   const reader = res.body!.getReader();
   const decoder = new TextDecoder();
   let buf = "";
-  const events: string[] = [];
+  const events: unknown[] = [];
   const deadline = Date.now() + timeout;
   while (events.length < count && Date.now() < deadline) {
     const r = await Promise.race([reader.read(), sleep(deadline - Date.now()).then(() => null)]);
@@ -48,7 +48,7 @@ async function collectEvents(res: Response, count: number, timeout = 1500) {
     while ((i = buf.indexOf("\n\n")) >= 0) {
       const block = buf.slice(0, i);
       buf = buf.slice(i + 2);
-      if (block.includes("event: change")) events.push(block.split("\n").find((l) => l.startsWith("data:"))!.slice(5).trim());
+      if (block.includes("event: change")) events.push(JSON.parse(block.split("\n").find((l) => l.startsWith("data:"))!.slice(5)));
     }
   }
   reader.cancel();
@@ -158,7 +158,7 @@ describe("GET /api/events", () => {
     writeFileSync(file, "## L\n- [ ] external\n");
     const events = await collectEvents(res, 1);
     const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag");
-    expect(events).toEqual([etag!]);
+    expect(events).toEqual([{ etag: etag!, doc: { lists: [{ title: "L", tasks: [{ text: "external", done: false }] }] } }]);
   });
 
   test("catches rename-based saves", async () => {
@@ -167,7 +167,7 @@ describe("GET /api/events", () => {
     await sleep(100);
     writeFileSync(join(dir, "swap.tmp"), "## Other\n");
     renameSync(join(dir, "swap.tmp"), file);
-    expect((await collectEvents(res, 1)).length).toBe(1);
+    expect(await collectEvents(res, 1)).toMatchObject([{ doc: { lists: [{ title: "Other" }] } }]);
   });
 
   test("does not emit for the server's own writes", async () => {
@@ -184,6 +184,18 @@ describe("GET /api/events", () => {
     const res = await fetch(`${base}/api/events`);
     await sleep(100);
     writeFileSync(file, "garbage\n");
-    expect((await collectEvents(res, 2, 800)).length).toBe(1);
+    const events = await collectEvents(res, 2, 800);
+    expect(events.length).toBe(1);
+    expect(events[0]).toMatchObject({ error: { line: 1 } });
+    expect(events[0]).not.toHaveProperty("doc");
+  });
+});
+
+describe("file watcher", () => {
+  test("a deleted directory does not crash the server", async () => {
+    start("## L\n");
+    rmSync(dir, { recursive: true, force: true });
+    await sleep(200);
+    expect((await fetch(`${base}/api/todos`)).status).toBe(200);
   });
 });
