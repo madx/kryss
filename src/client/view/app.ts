@@ -29,7 +29,9 @@ const rowSelector = (p: TaskPath) =>
   `.task-row[data-list="${p.list}"][data-task="${p.task}"]` + (p.child === undefined ? ":not([data-child])" : `[data-child="${p.child}"]`);
 
 export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store): void {
-  const ctx: ListContext = { addingSubtaskTo: null };
+  const ctx: ListContext = { addingSubtaskTo: null, renaming: null, confirmingRemove: null, drafts: new Map() };
+  /** Create-list input open in the header, with the text typed so far. */
+  let creating: { draft: string } | null = null;
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
 
@@ -62,6 +64,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     moveDown: (path) => apply(moveDown(doc(), path)),
     addSubtask(path) {
       ctx.addingSubtaskTo = { list: path.list, task: path.task };
+      for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key); // keyed by parent, which may have shifted
       pendingFocus = `[data-add="child-${path.list}-${path.task}"]`;
       renderAll(store.getState());
     },
@@ -71,24 +74,70 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   };
 
   const createList = () => {
-    const title = window.prompt("List name");
-    if (!title) return;
-    const next = addList(doc(), title);
-    if (next === doc()) return;
-    store.commit(next);
-    store.select(next.lists.length - 1);
+    creating = { draft: "" };
+    pendingFocus = "[data-name-input]";
+    renderAll(store.getState());
+  };
+
+  /** Callbacks shared by the create and rename inputs (only one of them is open at a time). */
+  const naming = {
+    input(draft: string) {
+      if (creating) creating.draft = draft;
+      else if (ctx.renaming) ctx.renaming.draft = draft;
+    },
+    submit(name: string) {
+      const rename = ctx.renaming;
+      const create = creating;
+      creating = null;
+      ctx.renaming = null;
+      if (create) {
+        const next = addList(doc(), name);
+        if (next !== doc()) {
+          store.commit(next);
+          store.select(next.lists.length - 1);
+          return;
+        }
+      } else if (rename) {
+        const next = renameList(doc(), rename.list, name);
+        if (next !== doc()) {
+          store.commit(next);
+          return;
+        }
+      }
+      renderAll(store.getState());
+    },
+    cancel() {
+      if (!creating && !ctx.renaming) return;
+      creating = null;
+      ctx.renaming = null;
+      renderAll(store.getState());
+    },
   };
 
   const lists = {
+    naming,
     rename(index: number) {
-      const title = window.prompt("Rename the list", doc().lists[index]?.title);
-      if (title) store.commit(renameList(doc(), index, title));
+      creating = null;
+      ctx.confirmingRemove = null;
+      ctx.renaming = { list: index, draft: doc().lists[index]?.title ?? "" };
+      pendingFocus = "[data-name-input]";
+      renderAll(store.getState());
+    },
+    confirmRemove(index: number) {
+      ctx.confirmingRemove = index;
+      pendingFocus = "[data-cancel-remove]";
+      renderAll(store.getState());
+    },
+    cancelRemove() {
+      ctx.confirmingRemove = null;
+      renderAll(store.getState());
     },
     remove(index: number) {
-      const list = doc().lists[index];
-      if (!list) return;
-      if (list.tasks.length > 0 && !window.confirm(`Delete the list "${list.title}" and its ${list.tasks.length} task(s)?`)) return;
+      ctx.confirmingRemove = null;
+      if (!doc().lists[index]) return;
       const selected = store.getState().selected;
+      // Add input drafts are keyed by list index, which shifts.
+      ctx.drafts.clear();
       store.commit(deleteList(doc(), index));
       if (selected === index) store.select(null);
       else if (selected !== null && selected > index) store.select(selected - 1);
@@ -106,6 +155,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     cancelSubtask() {
       const from = ctx.addingSubtaskTo;
       ctx.addingSubtaskTo = null;
+      for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key);
       if (from) pendingFocus = rowSelector(from);
       renderAll(store.getState());
     },
@@ -135,7 +185,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   }
 
   function renderAll(state: StoreState) {
-    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList });
+    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, creating, naming });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();

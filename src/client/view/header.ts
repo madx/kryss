@@ -1,8 +1,9 @@
 // Header: title, list selector (All or one list), new list button and the sync status badge.
 import type { StoreState } from "../store";
 import { el } from "./dom";
+import { renderNameInput, type NameInputActions } from "./name-input";
 
-export type HeaderActions = { select(index: number | null): void; newList(): void };
+export type HeaderActions = { select(index: number | null): void; newList(): void; creating: { draft: string } | null; naming: NameInputActions };
 
 export function renderHeader(root: HTMLElement, state: StoreState, actions: HeaderActions): void {
   const children: Node[] = [el("h1", {}, "Tasks")];
@@ -12,9 +13,14 @@ export function renderHeader(root: HTMLElement, state: StoreState, actions: Head
     state.doc.lists.forEach((list, i) => select.append(el("option", { value: String(i) }, list.title)));
     select.value = state.selected === null ? "all" : String(state.selected);
     select.addEventListener("change", () => actions.select(select.value === "all" ? null : Number(select.value)));
-    const newList = el("button", { type: "button", class: "button" }, "New list");
-    newList.addEventListener("click", actions.newList);
-    children.push(select, newList);
+    children.push(select);
+    if (actions.creating) {
+      children.push(renderNameInput(actions.creating.draft, "New list name", actions.naming));
+    } else {
+      const newList = el("button", { type: "button", class: "button" }, "New list");
+      newList.addEventListener("click", actions.newList);
+      children.push(newList);
+    }
   }
   children.push(el("span", { id: "sync-status", class: "sync-status", role: "status" }));
   root.replaceChildren(...children);
