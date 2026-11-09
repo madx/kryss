@@ -1,0 +1,45 @@
+/* Editor look: tokens from theme.css only. */
+.task-text .cm-editor {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  cursor: text;
+}
+
+.task-text .cm-editor.cm-focused {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 0;
+}
+
+.task-text .cm-content,
+.task-text .cm-line {
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size);
+}
+
+.cm-md-strong {
+  font-weight: 700;
+}
+
+.cm-md-em {
+  font-style: italic;
+}
+
+.cm-md-strike {
+  text-decoration: line-through;
+}
+
+.cm-md-code {
+  font-family: var(--font-mono);
+  background: var(--color-hover);
+  border-radius: 3px;
+}
+
+.cm-md-link {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
