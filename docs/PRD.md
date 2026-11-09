@@ -32,6 +32,11 @@ No virtualization needed.
 | `GET /api/events` | SSE stream: an event is emitted whenever the file changes and the change was not caused by the server itself. |
 
 The `422` body contains the line number and the reason.
+`GET` and `PUT` return the JSON document as the body and the `ETag` header, so the client always holds the canonical state.
+The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
+`PUT` returns `400` when the body is not a valid document, `428` when `If-Match` is missing, and `409` with the current ETag in the header when it does not match.
+The ETag is a quoted hash of the exact bytes of the file.
+The SSE event is named `change`, and its data is the new ETag.
 
 ### 2.2 JSON model
 
