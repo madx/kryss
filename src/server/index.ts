@@ -9,7 +9,7 @@ await ensureTodoFile(todoFile);
 const app = createApp({ file: todoFile });
 
 const server = serve({
-  hostname: "0.0.0.0",
+  hostname: "127.0.0.1",
   port: process.env.PORT ? Number(process.env.PORT) : 5173,
   routes: {
     "/": homepage,
