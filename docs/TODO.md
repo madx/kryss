@@ -57,8 +57,8 @@
 - [ ] Verify drag and drop by hand
 
 ## 7. Markdown rendering and editing
-- [ ] Sanitized inline Markdown rendering (bold, italic, code, strikethrough, links)
-- [ ] Links: new tab, `rel="noopener noreferrer"`, `http`, `https`, `mailto` and `obsidian` schemes
+- [x] Sanitized inline Markdown rendering (bold, italic, code, strikethrough, links)
+- [x] Links: new tab, `rel="noopener noreferrer"`, `http`, `https`, `mailto` and `obsidian` schemes
 - [ ] Single-line CodeMirror 6 editor (Enter commits, Escape cancels)
 - [ ] Live preview: markers hidden away from the cursor
 - [ ] Instantiate CodeMirror only on the task being edited
