@@ -125,9 +125,10 @@ A task with an empty text after trimming is rejected.
 ### 5.1 Lists and selector
 
 - A **selector** shows a single list or "All" (default on first launch).
-- The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All".
+- The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All" and forget the stale index, so a list appearing later at that position is not selected.
 - Create, rename and delete a list from the selector.
-  Names are typed in an inline input (header for a new list, list title for a rename): Enter confirms, Escape or a blur cancels.
+  Names are typed in an inline input (header for a new list, list title for a rename): Enter confirms, Escape cancels, and a blur commits a non-empty name (like the task editor) and cancels an empty one.
+  An external change discards the name being typed and closes the input.
   Deleting a non-empty list asks for confirmation with an inline Delete / Cancel prompt in the list header, and an empty list is deleted at once.
   A new list is appended at the end.
   The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
@@ -137,15 +138,17 @@ A task with an empty text after trimming is rejected.
 
 ### 5.2 Tasks
 
-- Add (Enter), edit in place, check, delete.
-- Indent / outdent with Tab / Shift+Tab.
+- Add, edit in place, check and delete, with the mouse or with the modal keyboard keys of 5.9.
+- Indent / outdent with `>` / `<` in Normal mode (5.9).
+  Tab and Shift+Tab no longer indent: they only move the browser focus.
   A subtask cannot be indented, and a task that has subtasks cannot become a subtask.
 - Move a task with the keyboard (up / down).
-  Shortcut: Alt+↑ / Alt+↓.
+  Shortcuts: `J` / `K` in Normal mode, or Alt+↑ / Alt+↓.
   A top-level task swaps with the previous or next top-level task (it never enters a task that has subtasks), and at the top or bottom of a list it goes to the end of the previous list or the start of the next list.
   A subtask swaps with the previous or next subtask.
-  At the edge of its parent, a subtask becomes the last subtask of the previous top-level task (up) or the first subtask of the next top-level task (down), or, when there is no such task in the list, a top-level task just before or after its parent.
-  Nothing happens at the very top or bottom of the document.
+  At the edge of its parent, a subtask becomes the last subtask of the previous top-level task (up) or the first subtask of the next top-level task (down), and nothing happens when there is no such task in the list.
+  The keys only cross the visible lists: with a single list shown, nothing leaves it.
+  Nothing happens at the very top or bottom of the visible lists.
   The check rules of 5.3 apply (an unchecked task landing under a parent unchecks it, the old parent is recomputed).
 
 ### 5.3 Checking
@@ -182,7 +185,7 @@ A task with an empty text after trimming is rejected.
   No images, headings, lists or raw HTML.
 - At rest, the task is rendered.
   When editing, it switches to a **single-line CodeMirror 6 editor** with live preview (markers hidden away from the cursor), instantiated only on the task being edited.
-  Enter commits, Escape cancels.
+  Enter commits, and Escape commits too and returns to Normal mode (5.9).
 - **Links** are clickable and open in a new tab with `rel="noopener noreferrer"`.
   Allowed schemes: `http`, `https`, `mailto`, `obsidian`.
   Any other scheme (`javascript:`, `data:`…) is refused.
@@ -201,18 +204,19 @@ A task with an empty text after trimming is rejected.
 
 ### 5.6 Undo
 
-- Global undo / redo stack over the document (Ctrl+Z / Ctrl+Shift+Z), in memory.
+- Global undo / redo stack over the document (Ctrl+Z / Ctrl+Shift+Z, or `u` / `U` in Normal mode), in memory.
   Each undo triggers a normal `PUT`.
 - No confirmation to delete a task (undo recovers it).
 - Inside a task's editor, Ctrl+Z first undoes typing (CodeMirror), then the global stack once the task is left.
 - The stack is cleared on page reload and on any detected external change.
-- The shortcut handler is global and does nothing while a task editor or an add input has focus, so that they keep their own undo.
+- The shortcut handler is global and does nothing while a task editor or a text input has focus, so that they keep their own undo.
+  It is the same handler as the Normal mode handler of 5.9, so there is one global `keydown` listener and no second one.
 
 ### 5.7 Pure client logic decisions
 
 - The pure logic lives in `src/client/logic/`, is immutable, and addresses tasks by `{ list, task, child? }` paths.
 - An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
-- Keyboard move (Alt+↑ / Alt+↓) follows 5.2: it crosses parent and list boundaries, works on the document whether or not the target list is visible, and returns `null` only at the very edges of the document.
+- Keyboard move (`J` / `K`, Alt+↑ / Alt+↓) follows 5.2: it crosses parent and visible list boundaries, takes the visible list range as a parameter (default: the whole document), and returns `null` at the edges of that range and for a subtask with no task to join.
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
 - Moving or outdenting a subtask out of a parent, or deleting one, recomputes that parent: if it still has subtasks and all are checked, it becomes checked.
@@ -235,15 +239,16 @@ A task with an empty text after trimming is rejected.
   When the SSE stream reconnects, the client reloads if nothing is pending, since events may have been missed.
 - A `422` on `PUT` shows the invalid file error in place of the lists and keeps the local document in memory, and the next external change then opens the conflict banner.
 - "Keep my version" re-sends the local document with the ETag of the disk version, and "take the disk version" reloads and discards local changes.
-- Rows are focusable, and the keyboard shortcuts (Tab, Shift+Tab, Alt+↑, Alt+↓, Enter or F2 to edit, Delete or Backspace) act on the focused row.
-  A refused Tab or Shift+Tab keeps its default behavior.
-- Tasks are added from an input at the end of each list, subtasks from the "+" button of a top-level task or with Tab.
+- Rows and list headers are focusable, and the keyboard shortcuts of 5.9 act on the focused row or header.
+  Tab and Shift+Tab are plain focus keys and are never intercepted.
+- Tasks are also added from the permanent input at the end of each list and from the "+" button of a top-level task, which stay for mouse use.
+  The keyboard adds tasks with the positional keys of 5.9.
 - The text typed in an add input is kept per list (or per parent task for subtasks), so it survives a re-render.
-- Backspace deletes the focused row like Delete, unless a text field or the editor has the focus.
+- Backspace no longer deletes a row.
 - Lists are created, renamed and deleted with inline UI, never with `window.prompt` or `window.confirm`.
 - Text editing goes through `view/edit-text.ts`, which delegates to the CodeMirror editor in `src/client/editor/`.
 - The editor is created when a task enters editing and destroyed when it leaves, and `isEditing()` tells whether one exists, so the global undo can stay inactive meanwhile.
-- Enter commits, Escape cancels, and a blur (click elsewhere, Tab, Shift+Tab) commits, like the previous input, so typing is never lost.
+- Enter commits, Escape commits and leaves Insert mode (5.9), and a blur (click elsewhere, Tab, Shift+Tab) commits, so typing is never lost.
 - Before a content render replaces the lists (external reload, canonical document of a `PUT`), every open editor is settled so that none is detached without being destroyed, and `isEditing()` stays accurate.
   If the task under the editor is unchanged in the new document, the typed text is committed through the normal edit path, so it is never lost.
   If the task changed or disappeared, which means an external change, the disk version wins and the edit is discarded.
@@ -253,13 +258,108 @@ A task with an empty text after trimming is rejected.
   Markers of a node are hidden unless a selection range is in or touching that node, and a link is only previewed when its URL is allowed.
 - The cursor starts at the end of the text when editing begins.
 
+### 5.9 Modal keyboard editing
+
+The app is fully usable from the keyboard, with a Vim-like modal model.
+The mouse keeps working as before.
+
+**Modes**
+
+- There are two modes only, Normal and Insert.
+  There is no Visual mode and no Command mode.
+- Normal is the default.
+  Single keys act on the **cursor**, which is the focused row or list header.
+- Insert is active while a text field has focus (the task editor or a list name input).
+  It only ever edits the one focused task or name.
+- A click on a task's text enters Insert mode on it, and a click on a row moves the cursor to it.
+
+**Cursor and navigation**
+
+- The cursor walks a flat sequence of stops in document order: the list headers and the task rows, subtasks included, across the visible lists.
+  It stops at both ends and never wraps.
+- `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
+- In the "All" view, `h` / `l` move to the previous / next list header.
+  They do nothing in a single-list view.
+- `H` / `L` select the previous / next view in the sequence All, list 1, …, list n.
+  The sequence wraps around, and focus goes to the first list header of the new view.
+  The choice is stored in `localStorage` by index, as in 5.1.
+- The cursor position is stored in `localStorage` as its index in the flat sequence of stops of the current view, next to the view index, and it is restored on load.
+  An index that no longer exists is clamped to the last stop, and an empty view has no cursor.
+- With no focused row or header, the first Normal key press puts the cursor on the first stop.
+- Normal keys are active only when focus is on a row, on a list header or on nothing.
+  Buttons and the selector keep their native behavior, Enter or Space activates them, and Escape on any of them puts the focus back on the cursor.
+  The conflict banner is the first Tab stop and has no dedicated key.
+- A pending first key (`g` or `d`) is cancelled by any other key or by a blur, with no timeout.
+- Escape in Normal mode does nothing.
+
+**Keys on a task**
+
+| Key | Action |
+|---|---|
+| `x`, Space | toggle the check state (rules of 5.3) |
+| `i`, Enter, F2 | edit the task, caret at the end |
+| `dd`, Delete | delete the task with its subtree |
+| `>` / `<` | indent / outdent |
+| `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2) |
+| `u` / `U`, Ctrl+Z / Ctrl+Shift+Z | undo / redo |
+| `o` / `O` | add a sibling below / above, always at the same level |
+| `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
+| `I` / `A` | add the first / last subtask of the task. On a subtask, of its parent. |
+| `?` | open or close the cheat sheet |
+
+**Keys on a list header**
+
+| Key | Action |
+|---|---|
+| `i`, Enter | rename the list in its inline name input |
+| `dd` | delete the list: at once if empty, otherwise with the inline prompt, answered by `y` or Enter (confirm) and `n` or Escape (cancel) |
+| `o`, `a`, `I` | add a task as the first task of the list |
+| `A` | add a task as the last task of the list |
+| `N` | create a list at the end and open its name input, from anywhere in Normal mode |
+
+- `x`, `>`, `<`, `J` and `K` do nothing on a header, since lists cannot be reordered.
+- `N` keeps the current view, except in a single-list view where it selects the new list so that the name input is visible.
+
+**Positional add and Insert mode**
+
+- `o`, `O`, `a`, `I` and `A` create an empty task at the target position, focus it and open the task editor on it.
+  The empty task exists only in the client until it is committed, because an empty text is invalid in the file, and autosave never sends it.
+- Enter commits a non-empty text and opens a new empty sibling right below it, at the same level, to chain several tasks.
+  Enter on an empty text does nothing.
+- Escape always commits and returns to Normal mode.
+  A new task with an empty text is discarded, and the cursor returns to the row it started from.
+  An existing task whose text was emptied gets its previous text back, and it is never deleted this way.
+- A blur commits, as in 5.8.
+- The list name input keeps its own rule: Enter confirms and Escape cancels.
+
+**Focus after an action**
+
+- After `dd`, the cursor goes to the next stop at the same position, or to the previous stop if the deleted one was last.
+- After a move, indent, outdent, check, or leaving Insert mode, the cursor stays on the same task, following it to its new position.
+- After an undo or a redo, the cursor goes to the first task that changed, or to the same position clamped to the visible range if it cannot be determined.
+- After an external change, the cursor keeps the same position clamped to the visible range, since tasks have no identity.
+
+**Footer, statusline and cheat sheet**
+
+- A fixed footer, like the header, shows the mode (NORMAL or INSERT, with a different color for each) and a short statusline.
+- The statusline shows the done / total task counts of the current view and of the whole document, then the index of the list that holds the cursor over the total number of lists.
+  Subtasks count as tasks.
+- `?` opens a static cheat sheet overlay that lists every key, closed with Escape or `?`.
+  It is not configurable.
+
+**Implementation decisions**
+
+- The key handling is a pure function in `src/client/shortcuts.ts` that takes the mode, the kind of focused target, the pending prefix and the key, and returns an action.
+  The DOM layer only applies the action.
+- The positional add, the cursor movement and clamping, and the view cycling are pure functions in `src/client/logic/`, with the same immutable and `null` conventions as 5.7.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422`, SSE after external modification.
-- **Pure client logic**: checking rules, move and depth validation, undo stack.
+- **Pure client logic**: checking rules, move and depth validation, undo stack, the key resolution of 5.9 (modes, prefixes, target kinds), positional add, cursor clamping, view cycling and statusline counts.
 - No e2e in v1: drag and drop and CodeMirror are verified by hand.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; frontmatter and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond Tab / Shift+Tab and up / down moves.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; frontmatter and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list.
