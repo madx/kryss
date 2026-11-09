@@ -1,16 +1,19 @@
-// Sync badge, banners and notices (invalid file, empty file).
+// Sync status symbol, banners and notices (invalid file, empty file).
 import type { ParseError } from "../../shared/types";
 import type { StoreState } from "../store";
 import { STATUS_LABELS } from "../sync";
 import { el } from "./dom";
+import { statusIcon } from "./icons";
 
 export type BannerActions = { keepMine(): void; takeDisk(): void };
 
-/** Updates the status badge in the header (it exists after `renderHeader`). */
+/** Updates the status symbol in the header (it exists after `renderHeader`). */
 export function renderStatus(state: StoreState): void {
   const badge = document.getElementById("sync-status");
   if (!badge) return;
-  badge.textContent = STATUS_LABELS[state.status];
+  badge.replaceChildren(statusIcon(state.status));
+  badge.title = STATUS_LABELS[state.status];
+  badge.setAttribute("aria-label", STATUS_LABELS[state.status]);
   badge.dataset.status = state.status;
 }
 

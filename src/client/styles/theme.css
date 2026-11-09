@@ -6,12 +6,14 @@
   --color-surface: #ffffff;
   --color-text: #1f2328;
   --color-muted: #6b7280;
+  --color-faint: #9ca3af;
   --color-border: #d9d9d4;
   --color-accent: #2f6fed;
   --color-accent-text: #ffffff;
   --color-hover: #ecece8;
   --color-done-bg: #e6f2e6;
   --color-done-text: #5b6b5b;
+  --color-success: #2e7d32;
   --color-danger: #c0392b;
   --color-warning-bg: #fff4d6;
   --color-warning-text: #5c4400;
@@ -30,28 +32,31 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --font-size: 15px;
+  --line-height: 1.625;
   --font-size-small: 13px;
-  --font-size-title: 22px;
 }
 
+/* Dark palette: Sonokai, as in the Obsidian vault (snippet sonokai.css). */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #16181c;
-    --color-surface: #1f2228;
-    --color-text: #e6e8eb;
-    --color-muted: #9aa1ab;
-    --color-border: #343943;
-    --color-accent: #6b9bff;
-    --color-accent-text: #101214;
-    --color-hover: #2a2e36;
-    --color-done-bg: #223326;
-    --color-done-text: #94a898;
-    --color-danger: #ff7b6b;
-    --color-warning-bg: #3a3014;
-    --color-warning-text: #f2dc9b;
-    --color-error-bg: #3d1d1a;
-    --color-error-text: #ffb4aa;
-    --color-focus: #6b9bff;
+    --color-bg: #181a1c;
+    --color-surface: #252630;
+    --color-text: #e1e3e4;
+    --color-muted: #b5b7bf;
+    --color-faint: #7e8284;
+    --color-border: #333648;
+    --color-accent: #508bf1;
+    --color-accent-text: #181a1c;
+    --color-hover: #2b2d3a;
+    --color-done-bg: #313736;
+    --color-done-text: #7e8284;
+    --color-success: #9ed06c;
+    --color-danger: #fb617e;
+    --color-warning-bg: #393635;
+    --color-warning-text: #edc763;
+    --color-error-bg: #3a2c38;
+    --color-error-text: #fb617e;
+    --color-focus: #508bf1;
     --shadow: 0 1px 2px rgb(0 0 0 / 40%);
   }
 }

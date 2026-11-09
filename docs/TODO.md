@@ -55,13 +55,13 @@
 - [x] Move a task together with its children
 - [x] Drop across lists, including into an empty list
 - [x] Refuse drops into a descendant and drops that create a 3rd level
-- [ ] Verify drag and drop by hand
+- [x] Verify drag and drop by hand
 
 ## 7. Markdown rendering and editing
 - [x] Sanitized inline Markdown rendering (bold, italic, code, strikethrough, links)
 - [x] Links: new tab, `rel="noopener noreferrer"`, `http`, `https`, `mailto` and `obsidian` schemes
-- [ ] Single-line CodeMirror 6 editor (Enter commits, Escape cancels)
-- [ ] Live preview: markers hidden away from the cursor
+- [x] Single-line CodeMirror 6 editor (Enter commits, Escape cancels)
+- [x] Live preview: markers hidden away from the cursor
 - [ ] Instantiate CodeMirror only on the task being edited
 
 ## 8. Finishing
@@ -95,3 +95,8 @@
 - [x] The parser does not strip a UTF-8 BOM, so a file saved with one is rejected as "Text before the first list"
 - [x] `fs.watch` has no `error` listener in `src/server/app.ts`, so a deleted or unreadable directory can crash the server
 - [x] Deleting or moving out the last unchecked subtask leaves the parent unchecked, which is inconsistent with "all children checked means parent checked" (clarify in the PRD, then fix or document)
+
+## 11. Header polish
+- [x] Remove the app name and left-align the list selector
+- [x] Replace the new list button with a Lucide plus icon
+- [x] Show the sync status as a colored Lucide symbol
