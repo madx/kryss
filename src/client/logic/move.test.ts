@@ -65,12 +65,77 @@ describe("keyboard move", () => {
     expect(down.path).toEqual({ list: 0, task: 2 });
     expect(down.doc.lists[0]!.tasks[2]!.children).toHaveLength(2);
   });
-  test("edges return null", () => {
+  test("null at the very edges of the document", () => {
     const s = frozen(sample());
     expect(moveUp(s, { list: 0, task: 0 })).toBeNull();
-    expect(moveDown(s, { list: 0, task: 2 })).toBeNull();
-    expect(moveUp(s, { list: 0, task: 1, child: 0 })).toBeNull();
-    expect(moveDown(s, { list: 0, task: 1, child: 1 })).toBeNull();
+    expect(moveDown(s, { list: 1, task: 0 })).toBeNull();
+    const last = moveTask(s, { list: 0, task: 2 }, { kind: "end", list: 1 })!.doc;
+    expect(moveDown(frozen(last), { list: 1, task: 0 })).toBeNull();
+    expect(moveUp(s, { list: 0, task: 99 })).toBeNull();
+  });
+  test("a top-level task crosses to the end of the previous list and the start of the next", () => {
+    const s = frozen(sample());
+    const down = moveDown(s, { list: 0, task: 2 })!;
+    expect(down.path).toEqual({ list: 1, task: 0 });
+    expect(texts(down.doc, 0)).toEqual(["a0", "a1"]);
+    const back = moveUp(frozen(down.doc), down.path)!;
+    expect(back.path).toEqual({ list: 0, task: 2 });
+    const nonEmpty = frozen(moveTask(s, { list: 0, task: 0 }, { kind: "end", list: 1 })!.doc); // list 1: a0
+    const d3 = moveDown(nonEmpty, { list: 0, task: 1 })!; // list 0: a1, a2 ; a2 goes to the start of list 1
+    expect(d3.path).toEqual({ list: 1, task: 0 });
+    expect(texts(d3.doc, 1)).toEqual(["a2", "a0"]);
+    const up = moveUp(frozen(d3.doc), { list: 1, task: 0 })!;
+    expect(up.path).toEqual({ list: 0, task: 1 });
+  });
+  test("a top-level task swaps past a previous or next task that has subtasks without entering it", () => {
+    const s = frozen(sample());
+    expect(moveDown(s, { list: 0, task: 0 })!.path).toEqual({ list: 0, task: 1 });
+    expect(texts(moveDown(s, { list: 0, task: 0 })!.doc)).toEqual(["a1", "a0", "a2"]);
+    expect(texts(moveUp(s, { list: 0, task: 2 })!.doc)).toEqual(["a0", "a2", "a1"]);
+  });
+  test("a subtask swaps with its siblings", () => {
+    const r = moveDown(frozen(sample()), { list: 0, task: 1, child: 0 })!;
+    expect(r.path).toEqual({ list: 0, task: 1, child: 1 });
+  });
+  test("the first subtask moves to the previous top-level task as its last subtask", () => {
+    const r = moveUp(frozen(sample()), { list: 0, task: 1, child: 0 })!;
+    expect(r.path).toEqual({ list: 0, task: 0, child: 0 });
+    expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1y"]);
+  });
+  test("the first subtask of the first task becomes a task just before its parent", () => {
+    const d = moveTask(sample(), { list: 0, task: 0 }, { kind: "end", list: 1 })!.doc; // a1 is now first
+    const r = moveUp(frozen(d), { list: 0, task: 0, child: 0 })!;
+    expect(r.path).toEqual({ list: 0, task: 0 });
+    expect(texts(r.doc)).toEqual(["a1x", "a1", "a2"]);
+  });
+  test("the last subtask moves to the next top-level task as its first subtask", () => {
+    const r = moveDown(frozen(sample()), { list: 0, task: 1, child: 1 })!;
+    expect(r.path).toEqual({ list: 0, task: 2, child: 0 });
+    expect(r.doc.lists[0]!.tasks[2]!.children!.map((c) => c.text)).toEqual(["a1y"]);
+  });
+  test("the last subtask goes before the first subtask of a next task that has subtasks", () => {
+    const d = moveTask(sample(), { list: 0, task: 0 }, { kind: "child", target: { list: 0, task: 2 } })!.doc; // a1, a2(a0)
+    const r = moveDown(frozen(d), { list: 0, task: 0, child: 1 })!;
+    expect(r.path).toEqual({ list: 0, task: 1, child: 0 });
+    expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1y", "a0"]);
+  });
+  test("the last subtask of the last task becomes a task just after its parent", () => {
+    const d = moveTask(sample(), { list: 0, task: 2 }, { kind: "before", target: { list: 0, task: 0 } })!.doc; // a2, a0, a1
+    const r = moveDown(frozen(d), { list: 0, task: 2, child: 1 })!;
+    expect(r.path).toEqual({ list: 0, task: 3 });
+    expect(texts(r.doc)).toEqual(["a2", "a0", "a1", "a1y"]);
+  });
+  test("an unchecked subtask landing under a checked task unchecks it, and the old parent is recomputed", () => {
+    let d = toggleDone(sample(), { list: 0, task: 1, child: 0 }); // a1x checked
+    d = toggleDone(d, { list: 0, task: 0 }); // a0 checked
+    const r = moveUp(frozen(d), { list: 0, task: 1, child: 0 })!; // a1x (checked) to a0
+    expect(r.doc.lists[0]!.tasks[0]!.done).toBe(true);
+    const r2 = moveUp(frozen(toggleDone(d, { list: 0, task: 1, child: 1 })), { list: 0, task: 1, child: 1 })!; // a1y checked? toggled to checked
+    expect(r2.path.child).toBe(0);
+    const r3 = moveDown(frozen(d), { list: 0, task: 1, child: 1 })!; // a1y unchecked onto a2
+    expect(r3.doc.lists[0]!.tasks[1]!.done).toBe(true); // a1 keeps only checked a1x
+    const e = toggleDone(d, { list: 0, task: 2 }); // a2 checked
+    expect(moveDown(frozen(e), { list: 0, task: 1, child: 1 })!.doc.lists[0]!.tasks[2]!.done).toBe(false);
   });
   test("subtasks stay under their parent and never change its state", () => {
     const d = toggleDone(sample(), { list: 0, task: 1 }); // parent and children checked

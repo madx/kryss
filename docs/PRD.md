@@ -140,6 +140,11 @@ A task with an empty text after trimming is rejected.
   A subtask cannot be indented, and a task that has subtasks cannot become a subtask.
 - Move a task with the keyboard (up / down).
   Shortcut: Alt+↑ / Alt+↓.
+  A top-level task swaps with the previous or next top-level task (it never enters a task that has subtasks), and at the top or bottom of a list it goes to the end of the previous list or the start of the next list.
+  A subtask swaps with the previous or next subtask.
+  At the edge of its parent, a subtask becomes the last subtask of the previous top-level task (up) or the first subtask of the next top-level task (down), or, when there is no such task in the list, a top-level task just before or after its parent.
+  Nothing happens at the very top or bottom of the document.
+  The check rules of 5.3 apply (an unchecked task landing under a parent unchecks it, the old parent is recomputed).
 
 ### 5.3 Checking
 
@@ -205,7 +210,7 @@ A task with an empty text after trimming is rejected.
 
 - The pure logic lives in `src/client/logic/`, is immutable, and addresses tasks by `{ list, task, child? }` paths.
 - An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
-- Keyboard move (Alt+↑ / Alt+↓) swaps with the previous or next sibling at the same level and parent, and does nothing at the edges, never crossing a list or a parent.
+- Keyboard move (Alt+↑ / Alt+↓) follows 5.2: it crosses parent and list boundaries, works on the document whether or not the target list is visible, and returns `null` only at the very edges of the document.
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
 - Moving or outdenting a subtask out of a parent, or deleting one, recomputes that parent: if it still has subtasks and all are checked, it becomes checked.

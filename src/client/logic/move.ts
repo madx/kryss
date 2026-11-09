@@ -120,19 +120,56 @@ export function outdent(doc: TodoDocument, path: TaskPath): OpResult | null {
   });
 }
 
-/** Alt+Up: swaps with the previous sibling (same level and parent). Null at the edge. */
+/**
+ * Alt+Up moves the task one step up, across parents and lists (PRD 5.2).
+ * A top-level task swaps with the previous task, and at the top of a list goes to the end of the previous list.
+ * A subtask swaps with the previous subtask, and at the top of its parent becomes the last subtask of the previous top-level task, or a top-level task just before its parent when there is none.
+ * Null at the very top of the document.
+ */
 export function moveUp(doc: TodoDocument, path: TaskPath): OpResult | null {
-  const index = path.child ?? path.task;
-  if (index === 0) return null;
-  const target = path.child === undefined ? { ...path, task: index - 1 } : { ...path, child: index - 1 };
-  return moveTask(doc, path, { kind: "before", target });
+  if (!getNode(doc, path)) return null;
+  if (path.child === undefined) {
+    if (path.task > 0) return moveTask(doc, path, { kind: "before", target: { ...path, task: path.task - 1 } });
+    return path.list > 0 ? moveTask(doc, path, { kind: "end", list: path.list - 1 }) : null;
+  }
+  if (path.child > 0) return moveTask(doc, path, { kind: "before", target: { ...path, child: path.child - 1 } });
+  if (path.task > 0) return moveTask(doc, path, { kind: "child", target: { list: path.list, task: path.task - 1 } });
+  return relocate(doc, path, (next) => ({ container: next.lists[path.list]!.tasks, before: next.lists[path.list]!.tasks[path.task] }));
 }
 
-/** Alt+Down: swaps with the next sibling (same level and parent). Null at the edge. */
+/**
+ * Alt+Down moves the task one step down, across parents and lists (PRD 5.2).
+ * A top-level task swaps with the next task, and at the end of a list goes to the start of the next list.
+ * A subtask swaps with the next subtask, and at the end of its parent becomes the first subtask of the next top-level task, or a top-level task just after its parent when there is none.
+ * Null at the very bottom of the document.
+ */
 export function moveDown(doc: TodoDocument, path: TaskPath): OpResult | null {
-  const index = path.child ?? path.task;
-  const siblings = path.child === undefined ? doc.lists[path.list]?.tasks : doc.lists[path.list]?.tasks[path.task]?.children;
-  if (!siblings || index >= siblings.length - 1) return null;
-  const target = path.child === undefined ? { ...path, task: index + 1 } : { ...path, child: index + 1 };
-  return moveTask(doc, path, { kind: "after", target });
+  if (!getNode(doc, path)) return null;
+  const tasks = doc.lists[path.list]!.tasks;
+  if (path.child === undefined) {
+    if (path.task < tasks.length - 1) return swapDown(doc, path, { ...path, task: path.task + 1 });
+    if (path.list >= doc.lists.length - 1) return null;
+    const nextHasTasks = doc.lists[path.list + 1]!.tasks.length > 0;
+    return nextHasTasks
+      ? moveTask(doc, path, { kind: "before", target: { list: path.list + 1, task: 0 } })
+      : moveTask(doc, path, { kind: "end", list: path.list + 1 });
+  }
+  const siblings = tasks[path.task]!.children!;
+  if (path.child < siblings.length - 1) return moveTask(doc, path, { kind: "after", target: { ...path, child: path.child + 1 } });
+  const next = tasks[path.task + 1];
+  if (next) {
+    return next.children?.length
+      ? moveTask(doc, path, { kind: "before", target: { list: path.list, task: path.task + 1, child: 0 } })
+      : moveTask(doc, path, { kind: "child", target: { list: path.list, task: path.task + 1 } });
+  }
+  return outdent(doc, path);
+}
+
+/** Swap with the next top-level task: the task goes after it, but never into it, even when it has subtasks. */
+function swapDown(doc: TodoDocument, path: TaskPath, target: TaskPath): OpResult | null {
+  if (!validateDrop(doc, path, { kind: "after", target }).ok) return null;
+  return relocate(doc, path, (next, node) => {
+    const tasks = next.lists[path.list]!.tasks;
+    return { container: tasks, before: nextSibling(tasks, tasks[target.task]!, node) };
+  });
 }
