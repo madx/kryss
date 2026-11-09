@@ -37,6 +37,11 @@ The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
 `PUT` returns `400` when the body is not a valid document, `428` when `If-Match` is missing, and `409` with the current ETag in the header when it does not match.
 The ETag is a quoted hash of the exact bytes of the file.
 The SSE event is named `change`, and its data is the new ETag.
+`PUT` validates the body (non-empty single-line titles and texts, at most 2 levels), then serializes it, and returns the document parsed back from the canonical text, so surrounding whitespace is trimmed.
+The server serializes `PUT` and file-change handling, and writes through a temporary file in the same directory followed by a rename.
+The server watches the file's directory and, after a short debounce, compares the ETag of the file with the last one it knows, so its own writes and duplicate events emit nothing.
+An external change that makes the file invalid still emits a `change` event.
+The `PORT` environment variable sets the listening port, defaulting to 5173.
 
 ### 2.2 JSON model
 
@@ -90,6 +95,10 @@ Accepted on read, then normalized on the next `PUT`: `-` or `*` bullets, upperca
 
 Everything else is rejected with line and reason: frontmatter, free text, `#` or `###` headings, text before the first `##`, empty list name, tasks nested 3 or more levels deep, multi-line description under a task, inconsistent indentation.
 **The server never writes to an invalid file.**
+
+Indentation is read with a unit fixed by the first indented task of the file (one tab, 2 spaces or 4 spaces), and every later indent must be a whole multiple of that unit using the same characters.
+`\r\n` line endings and blank lines are accepted on read.
+A task with an empty text after trimming is rejected.
 
 ### 3.4 Canonical serialization
 
