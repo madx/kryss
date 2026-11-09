@@ -72,7 +72,9 @@ describe("parseInline", () => {
   });
 
   test("links are not nested", () => {
-    expect(html("[a [b](http://x.y)](http://z.y)")).not.toContain("<a href=\"http://z.y\"");
+    expect(html("[a [b](http://x.y)](http://z.y)")).toBe(
+      '<a href="http://z.y" target="_blank" rel="noopener noreferrer">a [b](http://x.y)</a>',
+    );
   });
 
   test("parentheses in urls", () => {

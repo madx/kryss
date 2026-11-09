@@ -155,6 +155,16 @@ Everything else is rejected with line and reason: frontmatter, free text, `#` or
   Allowed schemes: `http`, `https`, `mailto`, `obsidian`.
   Any other scheme (`javascript:`, `data:`…) is refused.
 - Rendered text is sanitized (no raw HTML interpreted).
+- Rendering is done by a small hand-written inline parser (`src/client/markdown/inline.ts`) that produces an AST, then builds the DOM with `createElement` and text nodes only, never `innerHTML`.
+  Supported syntax: `**bold**`, `*italic*`, `_italic_`, `` `code` ``, `~~strikethrough~~`, `[label](url)`.
+  Raw HTML, images (`![alt](url)` renders as `!` followed by a link) and block syntax are shown as literal text.
+- Unmatched markers are literal text.
+  An underscore inside a word (`snake_case`) is never italic.
+- Backslash escapes are supported for `` \ ` * _ ~ [ ] ( ) ``, any other backslash is literal.
+- A link whose target is refused, or that contains whitespace, is shown as its literal source text.
+  Before checking the scheme, whitespace, control and zero-width characters are removed (so `java\tscript:` is refused), and the cleaned URL is the one used as `href`.
+  Relative URLs are refused.
+- Links are not nested, and inline syntax inside a link label is supported.
 
 ### 5.6 Undo
 
