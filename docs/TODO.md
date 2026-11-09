@@ -25,10 +25,10 @@
 - [x] Test the API on a temporary file (ETag, `409`, `422`, SSE)
 
 ## 4. Client: state and sync
-- [ ] Load the document and track the ETag
+- [x] Load the document and track the ETag
 - [ ] Write the full DOM rendering from the JSON
-- [ ] Autosave with a 500 ms debounce and a single `PUT` in flight
-- [ ] Show the "unsaved" indicator with increasing-delay retries
+- [x] Autosave with a 500 ms debounce and a single `PUT` in flight
+- [x] Show the "unsaved" indicator with increasing-delay retries
 - [ ] Warn on close with `beforeunload` if changes remain
 - [ ] Reload on SSE event when there are no pending changes
 - [ ] Show the conflict banner (keep my version / take the disk version)
@@ -41,10 +41,10 @@
 - [ ] Add, delete and check a task
 - [ ] Indent and outdent with Tab / Shift+Tab (2-level limit)
 - [ ] Move a task with the keyboard using Alt+↑ / Alt+↓
-- [ ] Parent / children checking rules
-  - [ ] Checking a parent checks its children
-  - [ ] Parent checked automatically when all children are
-  - [ ] Parent unchecked when a child is unchecked, added or dropped unchecked
+- [x] Parent / children checking rules
+  - [x] Checking a parent checks its children
+  - [x] Parent checked automatically when all children are
+  - [x] Parent unchecked when a child is unchecked, added or dropped unchecked
 - [x] Test the pure logic (checking, depth, move validation)
 - [ ] Apply styles: background and color for completed tasks, system theme
 

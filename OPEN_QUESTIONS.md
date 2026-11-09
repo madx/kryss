@@ -97,3 +97,41 @@ Each entry lists the initial task, the question, and the approach taken in the m
 
 - Is dropping a task onto itself refused or a no-op?
   Taken: refused (`self`) so the UI can hide that zone, while dropping at its own position through a neighbour is a no-op.
+
+## Show the invalid file error
+
+- When `PUT` returns `422` while local changes are pending, should the local lists be hidden?
+  Taken: the error replaces the lists, the local document stays in memory, and the next external change opens the conflict banner.
+
+## Reload on SSE event when there are no pending changes
+
+- What happens when an SSE event arrives while a `PUT` is in flight?
+  Taken: the announced ETag is remembered and handled as an external change once the `PUT` returns, and a reconnect reloads silently if nothing is pending.
+
+## Show the "unsaved" indicator with increasing-delay retries
+
+- Should "offline" be a status distinct from "unsaved"?
+  Taken: yes, "offline" means the server is unreachable or answered unexpectedly, including a failed initial load.
+
+## Create, rename and delete a list
+
+- Is native `prompt` and `confirm` acceptable?
+  Taken: yes for now, with rename and delete buttons in each list header instead of the selector.
+
+## Add, delete and check a task
+
+- How are subtasks added without a task to press Enter on?
+  Taken: a "+" button on top-level rows, plus Tab to indent, F2 or Enter to edit a focused row and Delete to remove it.
+- Re-rendering after a commit recreates the add inputs, so half-typed text is lost.
+  Should the DOM be patched instead of fully re-rendered?
+  Taken: full re-render for simplicity.
+
+## Indent and outdent with Tab / Shift+Tab
+
+- Should a refused Tab keep its default behavior?
+  Taken: yes, to avoid a keyboard trap.
+
+## Global undo / redo stack
+
+- The store exposes `undo()` and `redo()` but no shortcut is bound yet.
+  Taken: the finishing unit binds them.
