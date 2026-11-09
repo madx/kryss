@@ -49,11 +49,11 @@
 - [ ] Apply styles: background and color for completed tasks, system theme
 
 ## 6. Drag and drop
-- [ ] Integrate Pragmatic drag and drop
-- [ ] Drop zones before, after and as child
-- [ ] Move a task together with its children
-- [ ] Drop across lists, including into an empty list
-- [ ] Refuse drops into a descendant and drops that create a 3rd level
+- [x] Integrate Pragmatic drag and drop
+- [x] Drop zones before, after and as child
+- [x] Move a task together with its children
+- [x] Drop across lists, including into an empty list
+- [x] Refuse drops into a descendant and drops that create a 3rd level
 - [ ] Verify drag and drop by hand
 
 ## 7. Markdown rendering and editing

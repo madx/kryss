@@ -135,3 +135,31 @@ Each entry lists the initial task, the question, and the approach taken in the m
 
 - The store exposes `undo()` and `redo()` but no shortcut is bound yet.
   Taken: the finishing unit binds them.
+
+## Integrate Pragmatic drag and drop
+
+- Should the row stay in place or be lifted by the native drag preview?
+  Taken: the library default (native preview) plus a dimmed original.
+- All the dragging behavior is unverified because no browser was available.
+  The manual check list is in the dnd report and must be run by hand (see "Verify drag and drop by hand").
+
+## Drop across lists, including into an empty list
+
+- A non-empty list has no "end" target, so appending at the bottom uses the "after" zone of the last row.
+  Should the empty area below the last row, or the list header, also be a drop target?
+  Taken: no, for simplicity.
+
+## Drop zones before, after and as child
+
+- Dropping "after" a parent that has children makes the task the next top-level sibling, after the whole subtree.
+  Should it mean "first child" instead?
+  Taken: keep the `moveTask` semantics.
+- Zones are the top, middle and bottom thirds of the row, and only halves when "child" is refused.
+  Is this rule right?
+  Taken: yes for now.
+
+## Verify drag and drop by hand
+
+- Drag and drop is not keyboard accessible beyond Alt+↑/↓, Tab and Shift+Tab.
+  Is that enough?
+  Taken: yes, as the PRD says.
