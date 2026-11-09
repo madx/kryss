@@ -167,7 +167,7 @@ A task with an empty text after trimming is rejected.
   Dropping before or after a subtask inserts the task at that position among the subtasks.
 - Dropping into another list is possible in the "All" view, including into an empty list.
 - Forbidden: dropping a task into one of its own descendants, and any drop that creates a third level.
-- The drop zone comes from the pointer position in the hovered row: top third is before, middle third is as child, bottom third is after.
+- The drop zone comes from the pointer position in the hovered row: top quarter is before, middle half is as child, bottom quarter is after.
   When a child drop is refused for that row, the row is split in two halves (before, after) instead.
 - A refused zone shows no indicator and a drop on it does nothing.
 - The drag starts from the row's drag handle only, and the drop indicator is a line above or below the row, or a highlighted border for "as child".
