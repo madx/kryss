@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 
 const DEFAULT_TODO_FILE = "./todo.md";
@@ -8,10 +7,8 @@ export function resolveTodoFile(env: Record<string, string | undefined>): string
 }
 
 export async function ensureTodoFile(path: string): Promise<void> {
-  if (!existsSync(path)) {
-    // "wx" fails if the file appeared in the meantime, so it is never overwritten.
-    await writeFile(path, "", { flag: "wx" }).catch((error) => {
-      if (error.code !== "EEXIST") throw error;
-    });
-  }
+  // The "wx" flag fails if the file exists, so an existing file is never overwritten.
+  await writeFile(path, "", { flag: "wx" }).catch((error: NodeJS.ErrnoException) => {
+    if (error.code !== "EEXIST") throw error;
+  });
 }
