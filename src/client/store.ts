@@ -174,8 +174,9 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
         dirty = false;
         status = "saved";
         // The server returns the canonical document; adopt it when it differs (e.g. trimmed text), without touching the history.
-        if (JSON.stringify(result.doc) !== JSON.stringify(snapshot)) doc = result.doc;
-        emit("content");
+        const canonical = JSON.stringify(result.doc) !== JSON.stringify(snapshot);
+        if (canonical) doc = result.doc;
+        emit(canonical ? "content" : "status"); // no full render when nothing changed: it would drop what the user is typing
       } else {
         status = "unsaved"; // more changes were made while saving: they go out in the next PUT
         emit("status");

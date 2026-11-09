@@ -1,47 +1,17 @@
-<html>
+<!doctype html>
+<html lang="en">
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Tasks</title>
-    <style>
-      main {
-        ul {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          li {
-            display: inline-flex;
-            background-color: orange;
-            padding: 6px 4px;
-            border-radius: 7px;
-          }
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./styles/theme.css" />
+    <link rel="stylesheet" href="./styles/base.css" />
+    <link rel="stylesheet" href="./styles/components.css" />
   </head>
   <body>
-    <header></header>
-    <main>
-      <ul>
-        <li>
-          <input type="checkbox" />
-          <input type="text" value="Hello" />
-        </li>
-        <li>
-          <input type="checkbox" />
-          <input type="text" value="Another value" />
-        </li>
-        <ul>
-          <li>
-            <input type="checkbox" />
-            <input type="text" value="Hello" />
-          </li>
-          <li>
-            <input type="checkbox" />
-            <input type="text" value="Another value" />
-          </li>
-        </ul>
-      </ul>
-    </main>
-    <footer></footer>
+    <header id="app-header" class="app-header"></header>
+    <div id="banners"></div>
+    <main id="app-main" class="app-main"></main>
     <script type="module" src="./index.ts"></script>
   </body>
 </html>

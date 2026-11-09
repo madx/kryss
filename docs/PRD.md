@@ -194,6 +194,23 @@ A task with an empty text after trimming is rejected.
 - The undo stack is bounded to 200 snapshots.
 - Texts and list titles are trimmed, line breaks become spaces, and empty values are refused.
 
+### 5.8 Client state and UI decisions
+
+- `src/client/store.ts` holds the document, the ETag, the sync status, the selected list and the history.
+  Local changes enter through `commit(doc)` only, server documents through `replace(doc, etag)`, which clears the history.
+- The sync statuses are saved, unsaved, saving, conflict, invalid and offline.
+  "Offline" means a save or the initial load failed on the network or with an unexpected status, and it is retried after 1 s, 2 s, 4 s and so on, capped at 30 s.
+- A save that completes without changing the document only updates the status badge, never the DOM of the lists, so typing is never interrupted.
+- An SSE `change` event with no pending change reloads silently, with pending changes it opens the conflict banner, and an event received during a `PUT` is handled once that `PUT` returns.
+  When the SSE stream reconnects, the client reloads if nothing is pending, since events may have been missed.
+- A `422` on `PUT` shows the invalid file error in place of the lists and keeps the local document in memory, and the next external change then opens the conflict banner.
+- "Keep my version" re-sends the local document with the ETag of the disk version, and "take the disk version" reloads and discards local changes.
+- Rows are focusable, and the keyboard shortcuts (Tab, Shift+Tab, Alt+↑, Alt+↓, Enter or F2 to edit, Delete) act on the focused row.
+  A refused Tab or Shift+Tab keeps its default behavior.
+- Tasks are added from an input at the end of each list, subtasks from the "+" button of a top-level task or with Tab.
+- List names are asked with `window.prompt` and deletions confirmed with `window.confirm`.
+- Text editing is a plain input isolated in `view/edit-text.ts`, to be replaced by the CodeMirror editor.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
