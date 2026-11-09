@@ -20,7 +20,8 @@ export type StoreState = {
 };
 
 /** "content": everything may have changed (full render). "status": only the sync status changed. */
-export type ChangeKind = "content" | "status";
+/** `external` is a content change coming from the disk (load, SSE, take the disk version), as opposed to a local edit. */
+export type ChangeKind = "content" | "external" | "status";
 
 export type Timers = { set(fn: () => void, ms: number): unknown; clear(handle: unknown): void };
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
@@ -70,7 +71,19 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     };
   }
 
+  /** A stored index that no longer points to a list goes back to "All". */
+  function resetStaleSelection() {
+    if (selected !== null && doc && !doc.lists[selected]) storeSelection((selected = null));
+  }
+
+  function storeSelection(index: number | null) {
+    try {
+      storage?.setItem(SELECTION_KEY, index === null ? "all" : String(index));
+    } catch {}
+  }
+
   function emit(kind: ChangeKind) {
+    if (kind !== "status") resetStaleSelection();
     const state = getState();
     for (const fn of listeners) fn(state, kind);
   }
@@ -131,7 +144,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     conflictEtag = externalEvent = null;
     attempts = 0;
     status = "saved";
-    emit("content");
+    emit("external");
   }
 
   /** The file on disk is invalid and nothing local is kept. */
@@ -144,7 +157,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     conflictEtag = externalEvent = null;
     invalid = error;
     status = "invalid";
-    emit("content");
+    emit("external");
   }
 
   /** Loads the document from the server. Silent when nothing changed. */
@@ -280,9 +293,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     /** Selects a list by index, or null for "All". Stored in localStorage. */
     select(index: number | null) {
       selected = index;
-      try {
-        storage?.setItem(SELECTION_KEY, index === null ? "all" : String(index));
-      } catch {}
+      storeSelection(index);
       emit("content");
     },
   };

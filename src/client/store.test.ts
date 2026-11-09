@@ -317,6 +317,9 @@ describe("selection", () => {
     expect(store.getState().selected).toBe(1);
     store.commit(doc("A"));
     expect(store.getState().selected).toBeNull();
+    expect(mem.get(SELECTION_KEY)).toBe("all");
+    store.commit(doc("A", "B")); // a list appearing at the old index is not selected again
+    expect(store.getState().selected).toBeNull();
     store.select(null);
     expect(mem.get(SELECTION_KEY)).toBe("all");
   });

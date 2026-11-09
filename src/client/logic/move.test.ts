@@ -102,11 +102,16 @@ describe("keyboard move", () => {
     expect(r.path).toEqual({ list: 0, task: 0, child: 0 });
     expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1y"]);
   });
-  test("the first subtask of the first task becomes a task just before its parent", () => {
+  test("the first subtask of the first task does nothing on Alt+Up", () => {
     const d = moveTask(sample(), { list: 0, task: 0 }, { kind: "end", list: 1 })!.doc; // a1 is now first
-    const r = moveUp(frozen(d), { list: 0, task: 0, child: 0 })!;
-    expect(r.path).toEqual({ list: 0, task: 0 });
-    expect(texts(r.doc)).toEqual(["a1x", "a1", "a2"]);
+    expect(moveUp(frozen(d), { list: 0, task: 0, child: 0 })).toBeNull();
+  });
+  test("the keyboard moves stay within the visible lists", () => {
+    const d = frozen(moveTask(sample(), { list: 0, task: 2 }, { kind: "end", list: 1 })!.doc); // a2 is alone in list 1
+    expect(moveUp(d, { list: 1, task: 0 }, { first: 1, last: 1 })).toBeNull();
+    expect(moveDown(d, { list: 0, task: 1 }, { first: 0, last: 0 })).toBeNull(); // last task of the only visible list
+    expect(moveDown(d, { list: 0, task: 1 }, { first: 0, last: 1 })!.path.list).toBe(1);
+    expect(moveUp(d, { list: 1, task: 0 }, { first: 0, last: 1 })!.path.list).toBe(0);
   });
   test("the last subtask moves to the next top-level task as its first subtask", () => {
     const r = moveDown(frozen(sample()), { list: 0, task: 1, child: 1 })!;
@@ -119,11 +124,9 @@ describe("keyboard move", () => {
     expect(r.path).toEqual({ list: 0, task: 1, child: 0 });
     expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1y", "a0"]);
   });
-  test("the last subtask of the last task becomes a task just after its parent", () => {
+  test("the last subtask of the last task does nothing on Alt+Down", () => {
     const d = moveTask(sample(), { list: 0, task: 2 }, { kind: "before", target: { list: 0, task: 0 } })!.doc; // a2, a0, a1
-    const r = moveDown(frozen(d), { list: 0, task: 2, child: 1 })!;
-    expect(r.path).toEqual({ list: 0, task: 3 });
-    expect(texts(r.doc)).toEqual(["a2", "a0", "a1", "a1y"]);
+    expect(moveDown(frozen(d), { list: 0, task: 2, child: 1 })).toBeNull();
   });
   test("an unchecked subtask landing under a checked task unchecks it, and the old parent is recomputed", () => {
     let d = toggleDone(sample(), { list: 0, task: 1, child: 0 }); // a1x checked
