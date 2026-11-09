@@ -5,7 +5,7 @@ export type ParseResult = { ok: true; doc: TodoDocument } | { ok: false; error: 
 const TASK = /^([-*]) \[([ xX])\](?:\s+(.*))?$/;
 
 export function parse(md: string): ParseResult {
-  const lines = md.split("\n").map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l));
+  const lines = (md.startsWith("\uFEFF") ? md.slice(1) : md).split("\n").map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l));
   const lists: TodoList[] = [];
   let list: TodoList | undefined;
   let parent: Task | undefined;
