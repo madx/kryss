@@ -1,15 +1,18 @@
 {
   "name": "todoapp",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
+  "module": "src/server/index.ts",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "xit-parse": "^1.2.1"
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/server/index.ts",
+    "build": "bun build src/client/index.html --outdir dist",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   }
 }

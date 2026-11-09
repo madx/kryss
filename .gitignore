@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # bun build cache
 *.bun-build
+
+# default todo file
+/todo.md
