@@ -1,5 +1,5 @@
 // Thin fetch / EventSource wrapper around the server API. It never throws: failures become result values.
-import type { ParseError, TodoDocument } from "../shared/types";
+import type { ChangeEvent, ParseError, TodoDocument } from "../shared/types";
 
 export type LoadResult =
   | { kind: "ok"; doc: TodoDocument; etag: string }
@@ -11,7 +11,9 @@ export type SaveResult =
   /** `etag` is the current ETag of the file on disk. */
   | { kind: "conflict"; etag: string }
   | { kind: "invalid"; error: ParseError }
-  /** Network failure or any unexpected status: the changes stay pending and the save is retried. */
+  /** The server refused the request itself (`400`, `428`): retrying the same request cannot succeed. */
+  | { kind: "rejected"; status: number }
+  /** Network failure or any other unexpected status: the changes stay pending and the save is retried. */
   | { kind: "offline" };
 
 export interface Api {
@@ -39,6 +41,7 @@ export function createApi(): Api {
         if (res.status === 200) return { kind: "ok", doc: await res.json(), etag: res.headers.get("ETag") ?? "" };
         if (res.status === 409) return { kind: "conflict", etag: res.headers.get("ETag") ?? "" };
         if (res.status === 422) return { kind: "invalid", error: await res.json() };
+        if (res.status === 400 || res.status === 428) return { kind: "rejected", status: res.status };
       } catch {}
       return { kind: "offline" };
     },
@@ -46,14 +49,23 @@ export function createApi(): Api {
 }
 
 /**
- * Subscribes to the SSE `change` event (its data is the new ETag).
+ * Subscribes to the SSE `change` event (its data is a JSON `ChangeEvent`: the new ETag and the document or the parse error).
  * `onReconnect` fires when the stream opens again after a loss, since events may have been missed.
+ * An event that cannot be parsed is handled like a missed one.
  * Returns a function that closes the stream.
  */
-export function subscribeEvents(onChange: (etag: string) => void, onReconnect: () => void): () => void {
+export function subscribeEvents(onChange: (event: ChangeEvent) => void, onReconnect: () => void): () => void {
   const source = new EventSource("/api/events");
   let opened = false;
-  source.addEventListener("change", (e) => onChange((e as MessageEvent<string>).data));
+  source.addEventListener("change", (e) => {
+    let event: ChangeEvent;
+    try {
+      event = JSON.parse((e as MessageEvent<string>).data);
+    } catch {
+      return onReconnect();
+    }
+    onChange(event);
+  });
   source.onopen = () => {
     if (opened) onReconnect();
     opened = true;

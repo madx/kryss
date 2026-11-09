@@ -31,6 +31,8 @@ export function renderBanners(root: HTMLElement, state: StoreState, actions: Ban
     );
   } else if (state.status === "offline" && state.doc) {
     banners.push(el("div", { class: "banner banner-warning", role: "alert" }, el("p", {}, "The server is unreachable. Your changes are not saved yet, saving is retried automatically.")));
+  } else if (state.status === "error") {
+    banners.push(el("div", { class: "banner banner-warning", role: "alert" }, el("p", {}, "The server refused the save (bad request). Your changes are kept in this page, the next edit tries again.")));
   }
   root.replaceChildren(...banners);
 }

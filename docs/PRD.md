@@ -203,17 +203,20 @@ A task with an empty text after trimming is rejected.
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
 - Moving a task out of a parent does not recompute that parent's state.
-- The undo stack is bounded to 200 snapshots.
+- The undo stack is bounded to 100 snapshots.
 - Texts and list titles are trimmed, line breaks become spaces, and empty values are refused.
 
 ### 5.8 Client state and UI decisions
 
 - `src/client/store.ts` holds the document, the ETag, the sync status, the selected list and the history.
   Local changes enter through `commit(doc)` only, server documents through `replace(doc, etag)`, which clears the history.
-- The sync statuses are saved, unsaved, saving, conflict, invalid and offline.
-  "Offline" means a save or the initial load failed on the network or with an unexpected status, and it is retried after 1 s, 2 s, 4 s and so on, capped at 30 s.
+- The sync statuses are saved, unsaved, saving, conflict, invalid, offline and error.
+  "Error" means a `PUT` was refused with `400` or `428`, so retrying the same request cannot succeed: it is not retried, the local document is kept, a banner explains it and the next edit sends a new `PUT`.
+  "Offline" means a save or the initial load failed on the network or with another unexpected status, and it is retried after 1 s, 2 s, 4 s and so on, capped at 30 s.
 - A save that completes without changing the document only updates the status badge, never the DOM of the lists, so typing is never interrupted.
-- An SSE `change` event with no pending change reloads silently, with pending changes it opens the conflict banner, and an event received during a `PUT` is handled once that `PUT` returns.
+- An SSE `change` event carries the new ETag and the parsed document or the parse error.
+  With no pending change the client applies it directly without a `GET`, with pending changes it opens the conflict banner, and an event received during a `PUT` is handled once that `PUT` returns.
+  A `GET` that returns after a local edit was made is ignored, so that the edit is never overwritten.
   When the SSE stream reconnects, the client reloads if nothing is pending, since events may have been missed.
 - A `422` on `PUT` shows the invalid file error in place of the lists and keeps the local document in memory, and the next external change then opens the conflict banner.
 - "Keep my version" re-sends the local document with the ETag of the disk version, and "take the disk version" reloads and discards local changes.

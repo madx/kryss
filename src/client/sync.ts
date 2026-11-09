@@ -9,7 +9,7 @@ export function retryDelay(attempt: number): number {
   return Math.min(RETRY_BASE_MS * 2 ** Math.max(0, attempt), RETRY_MAX_MS);
 }
 
-export type SyncStatus = "saved" | "unsaved" | "saving" | "conflict" | "invalid" | "offline";
+export type SyncStatus = "saved" | "unsaved" | "saving" | "conflict" | "invalid" | "offline" | "error";
 
 export const STATUS_LABELS: Record<SyncStatus, string> = {
   saved: "Saved",
@@ -18,4 +18,5 @@ export const STATUS_LABELS: Record<SyncStatus, string> = {
   conflict: "Conflict",
   invalid: "Invalid file",
   offline: "Unsaved (server unreachable)",
+  error: "Save failed",
 };
