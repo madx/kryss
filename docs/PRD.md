@@ -215,7 +215,14 @@ A task with an empty text after trimming is rejected.
   A refused Tab or Shift+Tab keeps its default behavior.
 - Tasks are added from an input at the end of each list, subtasks from the "+" button of a top-level task or with Tab.
 - List names are asked with `window.prompt` and deletions confirmed with `window.confirm`.
-- Text editing is a plain input isolated in `view/edit-text.ts`, to be replaced by the CodeMirror editor.
+- Text editing goes through `view/edit-text.ts`, which delegates to the CodeMirror editor in `src/client/editor/`.
+- The editor is created when a task enters editing and destroyed when it leaves, and `isEditing()` tells whether one exists, so the global undo can stay inactive meanwhile.
+- Enter commits, Escape cancels, and a blur (click elsewhere, Tab, Shift+Tab) commits, like the previous input, so typing is never lost.
+- Line breaks, from paste or any other source, are replaced by one space each.
+- Tab, Shift+Tab and Alt+arrows are not bound by the editor, so it never swallows them.
+- The live preview uses the Lezer Markdown parser restricted to inline syntax (no block syntax, HTML, images or entities, plus strikethrough).
+  Markers of a node are hidden unless a selection range is in or touching that node, and a link is only previewed when its URL is allowed.
+- The cursor starts at the end of the text when editing begins.
 
 ## 6. Tests
 
