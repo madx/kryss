@@ -126,7 +126,8 @@ A task with an empty text after trimming is rejected.
 - A **selector** shows a single list or "All" (default on first launch).
 - The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All".
 - Create, rename and delete a list from the selector.
-  Deleting a non-empty list asks for confirmation.
+  Names are typed in an inline input (header for a new list, list title for a rename): Enter confirms, Escape or a blur cancels.
+  Deleting a non-empty list asks for confirmation with an inline Delete / Cancel prompt in the list header, and an empty list is deleted at once.
   A new list is appended at the end.
 - Lists cannot be reordered in the app (order is the file's order).
   Empty file: the app offers to create the first list.
@@ -220,10 +221,12 @@ A task with an empty text after trimming is rejected.
   When the SSE stream reconnects, the client reloads if nothing is pending, since events may have been missed.
 - A `422` on `PUT` shows the invalid file error in place of the lists and keeps the local document in memory, and the next external change then opens the conflict banner.
 - "Keep my version" re-sends the local document with the ETag of the disk version, and "take the disk version" reloads and discards local changes.
-- Rows are focusable, and the keyboard shortcuts (Tab, Shift+Tab, Alt+↑, Alt+↓, Enter or F2 to edit, Delete) act on the focused row.
+- Rows are focusable, and the keyboard shortcuts (Tab, Shift+Tab, Alt+↑, Alt+↓, Enter or F2 to edit, Delete or Backspace) act on the focused row.
   A refused Tab or Shift+Tab keeps its default behavior.
 - Tasks are added from an input at the end of each list, subtasks from the "+" button of a top-level task or with Tab.
-- List names are asked with `window.prompt` and deletions confirmed with `window.confirm`.
+- The text typed in an add input is kept per list (or per parent task for subtasks), so it survives a re-render.
+- Backspace deletes the focused row like Delete, unless a text field or the editor has the focus.
+- Lists are created, renamed and deleted with inline UI, never with `window.prompt` or `window.confirm`.
 - Text editing goes through `view/edit-text.ts`, which delegates to the CodeMirror editor in `src/client/editor/`.
 - The editor is created when a task enters editing and destroyed when it leaves, and `isEditing()` tells whether one exists, so the global undo can stay inactive meanwhile.
 - Enter commits, Escape cancels, and a blur (click elsewhere, Tab, Shift+Tab) commits, like the previous input, so typing is never lost.

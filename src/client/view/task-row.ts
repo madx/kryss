@@ -6,7 +6,8 @@ import type { Task } from "../../shared/types";
 import type { TaskPath } from "../logic";
 import { renderInline } from "../markdown/inline";
 import { el } from "./dom";
-import { startEdit } from "./edit-text";
+import { isTextField } from "../shortcuts";
+import { isEditing, startEdit } from "./edit-text";
 
 /** Action callbacks. Those returning a boolean return false when the action was refused (the key then keeps its default). */
 export type TaskActions = {
@@ -71,13 +72,13 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   buttons.append(remove);
 
   row.addEventListener("keydown", (e) => {
-    if (e.target !== row && e.target !== checkbox) return;
+    if ((e.target !== row && e.target !== checkbox) || isEditing() || isTextField(e.target)) return;
     let handled = true;
     if (e.altKey && e.key === "ArrowUp") actions.moveUp(path);
     else if (e.altKey && e.key === "ArrowDown") actions.moveDown(path);
     else if (e.key === "Tab" && !e.altKey && !e.ctrlKey && !e.metaKey) handled = e.shiftKey ? actions.outdent(path) : actions.indent(path);
     else if (e.key === "Enter" || e.key === "F2") beginEdit();
-    else if (e.key === "Delete") actions.remove(path);
+    else if (e.key === "Delete" || e.key === "Backspace") actions.remove(path);
     else handled = false;
     if (handled) e.preventDefault();
   });

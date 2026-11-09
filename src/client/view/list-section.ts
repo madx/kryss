@@ -2,6 +2,7 @@
 import type { TodoList } from "../../shared/types";
 import { renderAddInput } from "./add-input";
 import { el } from "./dom";
+import { renderNameInput, type NameInputActions } from "./name-input";
 import { renderTaskRow, type TaskActions } from "./task-row";
 
 export type ListActions = {
@@ -10,9 +11,21 @@ export type ListActions = {
   addTask(list: number, text: string): void;
   addSubtask(list: number, task: number, text: string): void;
   cancelSubtask(): void;
+  /** Delete confirmation for a non-empty list. */
+  confirmRemove(list: number): void;
+  cancelRemove(): void;
+  naming: NameInputActions;
 };
 
-export type ListContext = { addingSubtaskTo: { list: number; task: number } | null };
+export type ListContext = {
+  addingSubtaskTo: { list: number; task: number } | null;
+  /** List being renamed, with the text typed so far. */
+  renaming: { list: number; draft: string } | null;
+  /** List whose deletion awaits confirmation. */
+  confirmingRemove: number | null;
+  /** Half-typed text of the add inputs, by `data-add` key. */
+  drafts: Map<string, string>;
+};
 
 export function renderListSection(
   list: TodoList,
@@ -24,7 +37,7 @@ export function renderListSection(
   const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list" }, "✎");
   rename.addEventListener("click", () => actions.rename(index));
   const remove = el("button", { type: "button", class: "icon-button", title: "Delete list", "aria-label": "Delete list" }, "×");
-  remove.addEventListener("click", () => actions.remove(index));
+  remove.addEventListener("click", () => (list.tasks.length > 0 ? actions.confirmRemove(index) : actions.remove(index)));
 
   // `data-list` on the <ul> makes it a drop target for empty lists later on.
   const ul = el("ul", { class: "tasks", "data-list": String(index) });
@@ -42,7 +55,7 @@ export function renderListSection(
           el(
             "li",
             { class: "task-item" },
-            renderAddInput(`child-${index}-${t}`, "Add a subtask", (text) => actions.addSubtask(index, t, text), actions.cancelSubtask),
+            renderAddInput(`child-${index}-${t}`, "Add a subtask", ctx.drafts, (text) => actions.addSubtask(index, t, text), actions.cancelSubtask),
           ),
         );
       }
@@ -51,11 +64,29 @@ export function renderListSection(
     ul.append(item);
   });
 
+  const renaming = ctx.renaming?.list === index ? ctx.renaming : null;
+  const title = renaming
+    ? renderNameInput(renaming.draft, "List name", actions.naming)
+    : el("h2", { class: "list-title" }, list.title);
+  const header = el("header", { class: "list-header" }, title, el("span", { class: "list-actions" }, rename, remove));
+  if (ctx.confirmingRemove === index) {
+    const yes = el("button", { type: "button", class: "button button-danger", "data-confirm-remove": "" }, "Delete");
+    yes.addEventListener("click", () => actions.remove(index));
+    const no = el("button", { type: "button", class: "button", "data-cancel-remove": "" }, "Cancel");
+    no.addEventListener("click", actions.cancelRemove);
+    header.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") actions.cancelRemove();
+    });
+    header.append(
+      el("div", { class: "list-confirm", role: "alert" }, el("span", {}, `Delete this list and its ${list.tasks.length} task(s)?`), yes, no),
+    );
+  }
+
   return el(
     "section",
     { class: "list", "data-list": String(index) },
-    el("header", { class: "list-header" }, el("h2", { class: "list-title" }, list.title), el("span", { class: "list-actions" }, rename, remove)),
+    header,
     ul,
-    renderAddInput(`list-${index}`, "Add a task", (text) => actions.addTask(index, text)),
+    renderAddInput(`list-${index}`, "Add a task", ctx.drafts, (text) => actions.addTask(index, text)),
   );
 }
