@@ -20,7 +20,7 @@ If it is missing, ask for it.
 1. Read the selected section of `docs/TODO.md`, the parts of `docs/PRD.md` it relies on, and `CLAUDE.md`.
 2. Check that the earlier sections or tasks it depends on are ticked off.
    Otherwise say so and stop.
-3. If the project is a git repository, check that the working tree is clean, then work on a branch named `type/slug`.
+3. If the project is a git repository, check that the working tree is clean, then work on a branch named `type/slug`, created from the current tip of `main`.
    If it is not a repository, skip every git step and never initialize one without being asked.
 4. Check that `docs/TODO.md` still respects the file format defined in `CLAUDE.md`, because the app reads it.
 
@@ -90,6 +90,7 @@ Wait for the decision:
   Commit if the project is a git repository.
   Never push.
   Merge a branch only after explicit approval given for this unit alone.
+  Follow the git history rules below when merging.
 - **To fix**: apply the feedback and resume at the relevant step.
 
 ## Rules
@@ -97,6 +98,10 @@ Wait for the decision:
 - Never tick a task without the explicit validation 2.
 - Never `git push`.
 - Never merge without explicit approval, given for each merge.
+- Keep the git history linear-looking: every branch forks from `main`, adds its commits, then is merged back into `main` with `git merge --no-ff`.
+  Never merge `main` or any other branch into a feature branch, and never merge one feature branch into another.
+  If `main` has moved since the branch was created, rebase the branch onto `main` before asking for the merge approval.
+  Rewriting history, including a rebase, only applies to unmerged local branches and never to `main`.
 - Write in English, in the conversation and in every file.
   In documentation, write one sentence per line.
 - No real data: tests, fixtures and examples are fictional.

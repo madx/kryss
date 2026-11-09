@@ -22,6 +22,14 @@ Work plan: `docs/TODO.md`.
   Tick tasks off as they are completed.
   Keep the PRD and TODO consistent.
 
+## Git history
+
+- Every branch forks from the tip of `main`, adds its commits, then is merged back into `main` with `git merge --no-ff`.
+  The history must show no crossing lines.
+- Never merge `main` or another branch into a feature branch, and never cross-merge feature branches.
+  If `main` has moved, rebase the unmerged branch onto `main` instead.
+- Never push, and never rewrite history that is already merged into `main`, without explicit approval.
+
 ## Architecture (summary)
 
 - **Bun server** that owns the file.
