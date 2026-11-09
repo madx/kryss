@@ -23,6 +23,7 @@ No virtualization needed.
   The `HOST` environment variable overrides the listening address, for example `HOST=0.0.0.0` when the app runs inside a container.
   Exposing the app beyond the loopback interface is an explicit opt-in.
 - **Dependencies**: `xit-parse` is removed.
+  `lucide` provides the icons (new list button, sync status), and only the icons in use are bundled.
 
 ### 2.1 API
 
@@ -129,6 +130,7 @@ A task with an empty text after trimming is rejected.
   Names are typed in an inline input (header for a new list, list title for a rename): Enter confirms, Escape or a blur cancels.
   Deleting a non-empty list asks for confirmation with an inline Delete / Cancel prompt in the list header, and an empty list is deleted at once.
   A new list is appended at the end.
+  The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
 - Lists cannot be reordered in the app (order is the file's order).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
@@ -223,9 +225,10 @@ A task with an empty text after trimming is rejected.
 - `src/client/store.ts` holds the document, the ETag, the sync status, the selected list and the history.
   Local changes enter through `commit(doc)` only, server documents through `replace(doc, etag)`, which clears the history.
 - The sync statuses are saved, unsaved, saving, conflict, invalid, offline and error.
+  Each one is shown in the header as a colored Lucide symbol with no text (check, pencil, loader, arrows, triangle, cloud-off and circle exclamation), the label being kept as tooltip and accessible name.
   "Error" means a `PUT` was refused with `400` or `428`, so retrying the same request cannot succeed: it is not retried, the local document is kept, a banner explains it and the next edit sends a new `PUT`.
   "Offline" means a save or the initial load failed on the network or with another unexpected status, and it is retried after 1 s, 2 s, 4 s and so on, capped at 30 s.
-- A save that completes without changing the document only updates the status badge, never the DOM of the lists, so typing is never interrupted.
+- A save that completes without changing the document only updates the status symbol, never the DOM of the lists, so typing is never interrupted.
 - An SSE `change` event carries the new ETag and the parsed document or the parse error.
   With no pending change the client applies it directly without a `GET`, with pending changes it opens the conflict banner, and an event received during a `PUT` is handled once that `PUT` returns.
   A `GET` that returns after a local edit was made is ignored, so that the edit is never overwritten.
