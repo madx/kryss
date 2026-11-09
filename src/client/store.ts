@@ -1,7 +1,7 @@
 // Client state: document, ETag, sync status, selected list and undo history.
 // Everything that changes the document goes through `commit`, everything that comes from the server through `replace`.
 // Dependencies (api, timers, storage) are injected so that the state machine can be tested without DOM or network.
-import type { ParseError, TodoDocument } from "../shared/types";
+import type { ChangeEvent, ParseError, TodoDocument } from "../shared/types";
 import type { Api } from "./api";
 import { canRedo, canUndo, clear, createHistory, push, redo as redoHistory, undo as undoHistory } from "./logic";
 import { DEBOUNCE_MS, retryDelay, type SyncStatus } from "./sync";
@@ -46,7 +46,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let saveTimer: unknown;
   let retryTimer: unknown;
   let conflictEtag: string | null = null; // ETag of the disk version when in conflict
-  let externalEtag: string | null = null; // external change announced while a PUT was in flight
+  let externalEvent: ChangeEvent | null = null; // external change announced while a PUT was in flight
   const listeners = new Set<(state: StoreState, kind: ChangeKind) => void>();
 
   function readSelection(): number | null {
@@ -128,28 +128,35 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     history = clear();
     dirty = false;
     invalid = null;
-    conflictEtag = externalEtag = null;
+    conflictEtag = externalEvent = null;
     attempts = 0;
     status = "saved";
+    emit("content");
+  }
+
+  /** The file on disk is invalid and nothing local is kept. */
+  function replaceInvalid(error: ParseError) {
+    stopTimers();
+    doc = null;
+    etag = null;
+    history = clear();
+    dirty = false;
+    conflictEtag = externalEvent = null;
+    invalid = error;
+    status = "invalid";
     emit("content");
   }
 
   /** Loads the document from the server. Silent when nothing changed. */
   async function reload(force = false): Promise<void> {
     const result = await api.load();
+    // Edits made while the GET was in flight win: the next PUT answers 409 if the disk changed.
+    if (!force && dirty) return;
     if (result.kind === "ok") {
-      if (!force && doc && !dirty && result.etag === etag) return;
+      if (!force && doc && result.etag === etag) return;
       replace(result.doc, result.etag);
     } else if (result.kind === "invalid") {
-      stopTimers();
-      doc = null;
-      etag = null;
-      history = clear();
-      dirty = false;
-      conflictEtag = externalEtag = null;
-      invalid = result.error;
-      status = "invalid";
-      emit("content");
+      replaceInvalid(result.error);
     } else if (!doc) {
       status = "offline";
       emit("content");
@@ -182,8 +189,8 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
         emit("status");
         if (saveTimer === undefined) scheduleSave(0);
       }
-      const announced = externalEtag;
-      externalEtag = null;
+      const announced = externalEvent;
+      externalEvent = null;
       if (announced !== null) onExternalChange(announced);
     } else if (result.kind === "conflict") {
       stopTimers();
@@ -194,6 +201,11 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       invalid = result.error;
       status = "invalid";
       emit("content");
+    } else if (result.kind === "rejected") {
+      // The request itself is wrong (400, 428): retrying cannot help. The next edit tries again.
+      stopTimers();
+      status = "error";
+      emit("status");
     } else {
       status = "offline";
       emit("status");
@@ -201,16 +213,17 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     }
   }
 
-  /** SSE `change` event: the file was modified by someone else. */
-  function onExternalChange(newEtag: string) {
-    if (newEtag === etag) return;
+  /** SSE `change` event: the file was modified by someone else. It carries the new state of the file. */
+  function onExternalChange(event: ChangeEvent) {
+    if (event.etag === etag) return;
     if (inFlight) {
-      externalEtag = newEtag;
+      externalEvent = event;
     } else if (!dirty) {
-      void reload();
+      if ("doc" in event) replace(event.doc, event.etag);
+      else replaceInvalid(event.error);
     } else {
       stopTimers();
-      conflictEtag = newEtag;
+      conflictEtag = event.etag;
       invalid = null;
       status = "conflict";
       emit("content");

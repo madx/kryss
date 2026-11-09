@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { TodoDocument } from "../shared/types";
+import type { ChangeEvent, TodoDocument } from "../shared/types";
 import type { Api, LoadResult, SaveResult } from "./api";
 import { addTask } from "./logic";
 import { createStore, SELECTION_KEY, type Timers } from "./store";
@@ -71,6 +71,7 @@ beforeEach(async () => {
   await store.load();
 });
 
+const change = (etag: string, d: TodoDocument): ChangeEvent => ({ etag, doc: d });
 const edit = (title: string) => store.commit(doc(title));
 
 describe("retryDelay", () => {
@@ -89,6 +90,17 @@ describe("load", () => {
     api.loadResult = { kind: "invalid", error: { line: 3, reason: "bad" } };
     await store.load();
     expect(store.getState()).toMatchObject({ doc: null, status: "invalid", invalid: { line: 3, reason: "bad" } });
+  });
+
+  test("local edits made while the GET is in flight are kept", async () => {
+    let release!: (r: LoadResult) => void;
+    api.load = () => new Promise((r) => (release = r));
+    const pending = store.load();
+    edit("Local");
+    release({ kind: "ok", doc: doc("Disk"), etag: '"9"' });
+    await pending;
+    expect(store.getState()).toMatchObject({ doc: doc("Local"), etag: '"1"', canUndo: true });
+    expect(store.hasPendingChanges()).toBe(true);
   });
 
   test("unreachable server retries with increasing delay", async () => {
@@ -168,6 +180,20 @@ describe("autosave", () => {
     expect(store.getState().status).toBe("saved");
   });
 
+  test("400 and 428 are shown as an error and not retried, the next edit tries again", async () => {
+    api.saveResults.push({ kind: "rejected", status: 400 });
+    edit("B");
+    await clock.advance(DEBOUNCE_MS);
+    expect(store.getState().status).toBe("error");
+    expect(store.hasPendingChanges()).toBe(true);
+    await clock.advance(60000);
+    expect(api.calls).toHaveLength(1);
+    edit("C");
+    await clock.advance(DEBOUNCE_MS);
+    expect(api.calls).toHaveLength(2);
+    expect(store.getState().status).toBe("saved");
+  });
+
   test("a no-op commit changes nothing", () => {
     store.commit(store.getState().doc!);
     expect(store.hasPendingChanges()).toBe(false);
@@ -202,7 +228,7 @@ describe("conflicts", () => {
 
   test("external change with pending changes is a conflict", async () => {
     edit("B");
-    store.onExternalChange('"other"');
+    store.onExternalChange(change('"other"', doc("Ext")));
     expect(store.getState().status).toBe("conflict");
     await clock.advance(5000);
     expect(api.calls).toHaveLength(0);
@@ -211,18 +237,46 @@ describe("conflicts", () => {
     expect(api.calls[0]!.etag).toBe('"other"');
   });
 
-  test("external change without pending changes reloads silently and clears the history", async () => {
+  test("external change without pending changes is applied without a GET and clears the history", async () => {
     edit("B");
     await clock.advance(DEBOUNCE_MS);
     expect(store.getState().canUndo).toBe(true);
-    api.loadResult = { kind: "ok", doc: doc("Ext"), etag: '"ext"' };
-    store.onExternalChange('"ext"');
+    store.onExternalChange(change('"ext"', doc("Ext")));
+    expect(store.getState()).toMatchObject({ doc: doc("Ext"), etag: '"ext"', canUndo: false, status: "saved" });
+    expect(api.loads).toBe(1);
+  });
+
+  test("an invalid external change shows the error without a GET", () => {
+    store.onExternalChange({ etag: '"bad"', error: { line: 4, reason: "oops" } });
+    expect(store.getState()).toMatchObject({ doc: null, status: "invalid", invalid: { line: 4, reason: "oops" } });
+    expect(api.loads).toBe(1);
+  });
+
+  test("an event received during a PUT is handled once the PUT returns", async () => {
+    let release!: (r: SaveResult) => void;
+    api.save = (d, etag) => {
+      api.calls.push({ doc: d, etag });
+      return new Promise((r) => (release = r));
+    };
+    edit("B");
+    await clock.advance(DEBOUNCE_MS);
+    store.onExternalChange(change('"ext"', doc("Ext")));
+    expect(store.getState().doc).toEqual(doc("B"));
+    release({ kind: "ok", doc: doc("B"), etag: '"2"' });
     await tick();
-    expect(store.getState()).toMatchObject({ doc: doc("Ext"), canUndo: false, status: "saved" });
+    expect(store.getState()).toMatchObject({ doc: doc("Ext"), etag: '"ext"', status: "saved" });
+  });
+
+  test("the event of our own write is ignored", async () => {
+    edit("B");
+    await clock.advance(DEBOUNCE_MS);
+    store.onExternalChange(change('"2"', doc("B")));
+    expect(store.getState().canUndo).toBe(true);
   });
 
   test("an event carrying the known ETag is ignored", () => {
-    store.onExternalChange('"1"');
+    store.onExternalChange(change('"1"', doc("Other")));
+    expect(store.getState().doc).toEqual(doc("A"));
     expect(api.loads).toBe(1);
   });
 

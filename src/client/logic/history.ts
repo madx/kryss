@@ -3,7 +3,7 @@ import type { TodoDocument } from "../../shared/types";
 /** Global in-memory undo / redo stack made of document snapshots (documents are never mutated, so no copy). */
 export type History = { past: TodoDocument[]; future: TodoDocument[] };
 
-export const MAX_HISTORY = 200;
+export const MAX_HISTORY = 100;
 
 export function createHistory(): History {
   return { past: [], future: [] };
