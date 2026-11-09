@@ -1,0 +1,57 @@
+/* Design tokens only. Every other stylesheet uses these custom properties and no literal color. */
+:root {
+  color-scheme: light dark;
+
+  --color-bg: #f6f6f4;
+  --color-surface: #ffffff;
+  --color-text: #1f2328;
+  --color-muted: #6b7280;
+  --color-border: #d9d9d4;
+  --color-accent: #2f6fed;
+  --color-accent-text: #ffffff;
+  --color-hover: #ecece8;
+  --color-done-bg: #e6f2e6;
+  --color-done-text: #5b6b5b;
+  --color-danger: #c0392b;
+  --color-warning-bg: #fff4d6;
+  --color-warning-text: #5c4400;
+  --color-error-bg: #fde8e6;
+  --color-error-text: #7a1f14;
+  --color-focus: #2f6fed;
+  --shadow: 0 1px 2px rgb(0 0 0 / 8%);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 20px;
+  --radius: 8px;
+  --content-width: 720px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-size: 15px;
+  --font-size-small: 13px;
+  --font-size-title: 22px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #16181c;
+    --color-surface: #1f2228;
+    --color-text: #e6e8eb;
+    --color-muted: #9aa1ab;
+    --color-border: #343943;
+    --color-accent: #6b9bff;
+    --color-accent-text: #101214;
+    --color-hover: #2a2e36;
+    --color-done-bg: #223326;
+    --color-done-text: #94a898;
+    --color-danger: #ff7b6b;
+    --color-warning-bg: #3a3014;
+    --color-warning-text: #f2dc9b;
+    --color-error-bg: #3d1d1a;
+    --color-error-text: #ffb4aa;
+    --color-focus: #6b9bff;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%);
+  }
+}
