@@ -157,6 +157,9 @@ A task with an empty text after trimming is rejected.
 
 - Three drop zones per task: **before**, **after** and **as child**.
   A moved task takes its children with it.
+- Dropping **after** a parent that has subtasks inserts the task as its **first subtask**, since the subtasks are displayed right below the parent row.
+  If the moved task has subtasks itself, it cannot become a subtask and goes after the whole parent instead.
+  Dropping before or after a subtask inserts the task at that position among the subtasks.
 - Dropping into another list is possible in the "All" view, including into an empty list.
 - Forbidden: dropping a task into one of its own descendants, and any drop that creates a third level.
 - The drop zone comes from the pointer position in the hovered row: top third is before, middle third is as child, bottom third is after.

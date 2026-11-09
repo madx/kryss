@@ -102,6 +102,31 @@ describe("drag and drop", () => {
     expect(r.path).toEqual({ list: 0, task: 0, child: 1 });
     expect(r.doc.lists[0]!.tasks[0]!.children!.map((c) => c.text)).toEqual(["a1x", "a0", "a1y"]);
   });
+  test("after a parent with subtasks inserts the task as its first subtask", () => {
+    const r = moveTask(frozen(sample()), { list: 0, task: 0 }, { kind: "after", target: { list: 0, task: 1 } })!;
+    expect(r.path).toEqual({ list: 0, task: 0, child: 0 });
+    expect(r.doc.lists[0]!.tasks[0]!.children!.map((c) => c.text)).toEqual(["a0", "a1x", "a1y"]);
+    expect(texts(r.doc)).toEqual(["a1", "a2"]);
+  });
+  test("after a parent with subtasks, a task that has subtasks goes after the whole parent", () => {
+    const d = moveTask(sample(), { list: 0, task: 2 }, { kind: "child", target: { list: 0, task: 0 } })!.doc; // a0 has a2
+    const r = moveTask(frozen(d), { list: 0, task: 1 }, { kind: "after", target: { list: 0, task: 0 } })!;
+    expect(texts(r.doc)).toEqual(["a0", "a1"]);
+    expect(r.path).toEqual({ list: 0, task: 1 });
+  });
+  test("after its own parent, a subtask becomes the first subtask", () => {
+    const r = moveTask(frozen(sample()), { list: 0, task: 1, child: 1 }, { kind: "after", target: { list: 0, task: 1 } })!;
+    expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1y", "a1x"]);
+  });
+  test("after a parent without subtasks stays a sibling", () => {
+    const r = moveTask(frozen(sample()), { list: 0, task: 1 }, { kind: "after", target: { list: 0, task: 0 } })!;
+    expect(texts(r.doc)).toEqual(["a0", "a1", "a2"]);
+  });
+  test("between subtasks inserts at that position", () => {
+    const r = moveTask(frozen(sample()), { list: 0, task: 2 }, { kind: "before", target: { list: 0, task: 1, child: 1 } })!;
+    expect(r.path).toEqual({ list: 0, task: 1, child: 1 });
+    expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1x", "a2", "a1y"]);
+  });
   test("across lists, including into an empty list", () => {
     const s = frozen(sample());
     const r = moveTask(s, { list: 0, task: 1 }, { kind: "end", list: 1 })!;
