@@ -41,18 +41,23 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
 
   const text = el("span", { class: "task-text" });
   text.append(renderInline(task.text));
-  const beginEdit = () =>
-    startEdit(text, task.text, (result) => {
-      if (result === null || result.trim() === "" || result === task.text) {
-        text.replaceChildren(renderInline(task.text));
-        actions.focusRow(path);
-      } else {
-        actions.edit(path, result); // the store re-renders the row
-      }
-    });
+  const beginEdit = (at?: { x: number; y: number }) =>
+    startEdit(
+      text,
+      task.text,
+      (result) => {
+        if (result === null || result.trim() === "" || result === task.text) {
+          text.replaceChildren(renderInline(task.text));
+          actions.focusRow(path);
+        } else {
+          actions.edit(path, result); // the store re-renders the row
+        }
+      },
+      at,
+    );
   text.addEventListener("click", (e) => {
     if ((e.target as Element).closest("a")) return; // links open, they do not start an edit
-    beginEdit();
+    beginEdit({ x: e.clientX, y: e.clientY });
   });
 
   const buttons = el("span", { class: "task-actions" });
