@@ -64,6 +64,16 @@ describe("add / edit / delete", () => {
     d = deleteTask(frozen(d), { list: 0, task: 1, child: 0 });
     expect("children" in d.lists[0]!.tasks[1]!).toBe(false);
   });
+  test("deleting the last unchecked subtask checks the parent", () => {
+    const d = toggleDone(sample(), { list: 0, task: 1, child: 0 }); // a1x checked, a1y unchecked
+    expect(deleteTask(frozen(d), { list: 0, task: 1, child: 1 }).lists[0]!.tasks[1]!.done).toBe(true);
+    expect(deleteTask(frozen(d), { list: 0, task: 1, child: 0 }).lists[0]!.tasks[1]!.done).toBe(false);
+  });
+  test("deleting the only subtask leaves the parent state unchanged", () => {
+    let d = deleteTask(sample(), { list: 0, task: 1, child: 0 });
+    d = deleteTask(frozen(d), { list: 0, task: 1, child: 0 });
+    expect(d.lists[0]!.tasks[1]!.done).toBe(false);
+  });
   test("editText changes text, refuses empty", () => {
     const s = frozen(sample());
     expect(editText(s, { list: 0, task: 0 }, " hi\nthere ").lists[0]!.tasks[0]!.text).toBe("hi there");

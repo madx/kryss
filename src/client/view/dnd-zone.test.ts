@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test";
 import { zoneFromPointer } from "./dnd-zone";
 
-test("thirds when a child drop is allowed", () => {
-  expect(zoneFromPointer(105, 100, 30, true)).toBe("before");
-  expect(zoneFromPointer(115, 100, 30, true)).toBe("child");
-  expect(zoneFromPointer(125, 100, 30, true)).toBe("after");
+test("quarters when a child drop is allowed", () => {
+  expect(zoneFromPointer(105, 100, 40, true)).toBe("before");
+  expect(zoneFromPointer(112, 100, 40, true)).toBe("child");
+  expect(zoneFromPointer(128, 100, 40, true)).toBe("child");
+  expect(zoneFromPointer(135, 100, 40, true)).toBe("after");
 });
 
 test("halves when a child drop is not allowed", () => {

@@ -52,3 +52,8 @@ export function findPath(doc: TodoDocument, node: Task): TaskPath | undefined {
 export function pruneChildren(task: Task): void {
   if (task.children && task.children.length === 0) delete task.children;
 }
+
+/** After a subtask left `parent`: if it still has subtasks and all are checked, it becomes checked. With no subtask left, its state is unchanged (PRD 5.3). */
+export function recomputeParent(parent: Task): void {
+  if (parent.children?.length && parent.children.every((c) => c.done)) parent.done = true;
+}

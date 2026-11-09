@@ -140,6 +140,11 @@ A task with an empty text after trimming is rejected.
   A subtask cannot be indented, and a task that has subtasks cannot become a subtask.
 - Move a task with the keyboard (up / down).
   Shortcut: Alt+↑ / Alt+↓.
+  A top-level task swaps with the previous or next top-level task (it never enters a task that has subtasks), and at the top or bottom of a list it goes to the end of the previous list or the start of the next list.
+  A subtask swaps with the previous or next subtask.
+  At the edge of its parent, a subtask becomes the last subtask of the previous top-level task (up) or the first subtask of the next top-level task (down), or, when there is no such task in the list, a top-level task just before or after its parent.
+  Nothing happens at the very top or bottom of the document.
+  The check rules of 5.3 apply (an unchecked task landing under a parent unchecks it, the old parent is recomputed).
 
 ### 5.3 Checking
 
@@ -147,6 +152,8 @@ A task with an empty text after trimming is rejected.
   Unchecking a parent only changes the parent.
 - When all children are checked, the parent is checked automatically.
 - Unchecking a child, adding a child, or dropping an unchecked task under a checked parent unchecks the parent.
+- When a subtask leaves a parent (move, outdent or delete) and the parent still has subtasks that are all checked, the parent becomes checked.
+  A parent left with no subtask keeps its state.
 - These rules only apply to UI actions: the server does not normalize states.
 - A completed task stays in place.
   It is distinguished by its checked box and a different background or color (not by strikethrough text, to avoid confusion with `~~strikethrough~~`).
@@ -155,9 +162,12 @@ A task with an empty text after trimming is rejected.
 
 - Three drop zones per task: **before**, **after** and **as child**.
   A moved task takes its children with it.
+- Dropping **after** a parent that has subtasks inserts the task as its **first subtask**, since the subtasks are displayed right below the parent row.
+  If the moved task has subtasks itself, it cannot become a subtask and goes after the whole parent instead.
+  Dropping before or after a subtask inserts the task at that position among the subtasks.
 - Dropping into another list is possible in the "All" view, including into an empty list.
 - Forbidden: dropping a task into one of its own descendants, and any drop that creates a third level.
-- The drop zone comes from the pointer position in the hovered row: top third is before, middle third is as child, bottom third is after.
+- The drop zone comes from the pointer position in the hovered row: top quarter is before, middle half is as child, bottom quarter is after.
   When a child drop is refused for that row, the row is split in two halves (before, after) instead.
 - A refused zone shows no indicator and a drop on it does nothing.
 - The drag starts from the row's drag handle only, and the drop indicator is a line above or below the row, or a highlighted border for "as child".
@@ -200,10 +210,11 @@ A task with an empty text after trimming is rejected.
 
 - The pure logic lives in `src/client/logic/`, is immutable, and addresses tasks by `{ list, task, child? }` paths.
 - An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
-- Keyboard move (Alt+↑ / Alt+↓) swaps with the previous or next sibling at the same level and parent, and does nothing at the edges, never crossing a list or a parent.
+- Keyboard move (Alt+↑ / Alt+↓) follows 5.2: it crosses parent and list boundaries, works on the document whether or not the target list is visible, and returns `null` only at the very edges of the document.
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
-- Moving a task out of a parent does not recompute that parent's state.
+- Moving or outdenting a subtask out of a parent, or deleting one, recomputes that parent: if it still has subtasks and all are checked, it becomes checked.
+- A parent left with no subtask keeps its state.
 - The undo stack is bounded to 100 snapshots.
 - Texts and list titles are trimmed, line breaks become spaces, and empty values are refused.
 
