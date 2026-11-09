@@ -8,6 +8,6 @@ export { isEditing };
  * Calls `done(newText)` on commit (Enter or blur), or `done(null)` on cancel (Escape).
  * The caller re-renders the host afterwards (the editor does not restore it).
  */
-export function startEdit(host: HTMLElement, text: string, done: (result: string | null) => void): void {
-  createEditor(host, text, done);
+export function startEdit(host: HTMLElement, text: string, done: (result: string | null) => void, at?: { x: number; y: number }): void {
+  createEditor(host, text, done, at);
 }

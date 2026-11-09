@@ -17,8 +17,14 @@ export function isEditing(): boolean {
  * Replaces the content of `host` with the editor for `text`.
  * `done(newText)` is called once on Enter or blur, `done(null)` once on Escape, after the editor was destroyed.
  * Tab and Shift+Tab are not bound, so the browser moves the focus (which commits through blur).
+ * With `at` (viewport coordinates of a click), the cursor goes to the closest position, otherwise to the end.
  */
-export function createEditor(host: HTMLElement, text: string, done: (result: string | null) => void): void {
+export function createEditor(
+  host: HTMLElement,
+  text: string,
+  done: (result: string | null) => void,
+  at?: { x: number; y: number },
+): void {
   if (host.querySelector(".cm-editor")) return;
   let view: EditorView | null = null;
   const finish = (commit: boolean) => {
@@ -67,5 +73,7 @@ export function createEditor(host: HTMLElement, text: string, done: (result: str
     }),
   });
   active++;
+  const pos = at ? view.posAtCoords(at) : null;
+  if (pos !== null) view.dispatch({ selection: EditorSelection.cursor(pos) });
   view.focus();
 }
