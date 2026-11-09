@@ -1,17 +1,25 @@
 /* Editor look: tokens from theme.css only. */
 .task-text .cm-editor {
-  background: var(--color-surface);
+  /* Transparent and layout-neutral, so the text stays where the rendered text was. */
+  background: transparent;
   color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: var(--space-1) var(--space-2);
   font: inherit;
   cursor: text;
+  /* Padding inside the focus ring, cancelled by the negative margin so the layout does not move. */
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--radius);
 }
 
 .task-text .cm-editor.cm-focused {
-  outline: 2px solid var(--color-focus);
+  outline: 1px solid var(--color-focus);
   outline-offset: 0;
+}
+
+/* CodeMirror's base theme sets a black cursor with the same specificity and loads later, hence the extra selector and !important. */
+.task-text .cm-editor .cm-cursor,
+.task-text .cm-editor .cm-dropCursor {
+  border-left-color: var(--color-text) !important;
 }
 
 .task-text .cm-content,
@@ -27,15 +35,19 @@
 
 .cm-md-em {
   font-style: italic;
+  color: var(--color-muted);
 }
 
 .cm-md-strike {
   text-decoration: line-through;
+  color: var(--color-faint);
 }
 
 .cm-md-code {
   font-family: var(--font-mono);
+  color: var(--color-muted);
   background: var(--color-hover);
+  border: 1px solid var(--color-border);
   border-radius: 3px;
 }
 

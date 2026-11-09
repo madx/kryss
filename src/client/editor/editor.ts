@@ -40,6 +40,7 @@ export function createEditor(
 ): void {
   if (host.querySelector(".cm-editor")) return;
   let view: EditorView | null = null;
+  host.replaceChildren(); // the editor takes the place of the rendered text
   const entry = { host, original: text, finish: (commit: boolean) => finish(commit) };
   const finish = (commit: boolean) => {
     if (!view) return;
@@ -89,7 +90,7 @@ export function createEditor(
   });
   active++;
   open.add(entry);
-  const pos = at ? view.posAtCoords(at) : null;
+  const pos = at ? view.posAtCoords(at, false) : null;
   if (pos !== null) view.dispatch({ selection: EditorSelection.cursor(pos) });
   view.focus();
 }
