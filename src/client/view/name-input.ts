@@ -1,4 +1,4 @@
-// Inline list name input: Enter submits, Escape or a blur cancels. Used to create and rename lists.
+// Inline list name input: Enter submits, Escape cancels, a blur commits a non-empty name (and cancels otherwise). Used to create and rename lists.
 import { el } from "./dom";
 
 export type NameInputActions = { submit(name: string): void; cancel(): void; input(draft: string): void };
@@ -6,7 +6,7 @@ export type NameInputActions = { submit(name: string): void; cancel(): void; inp
 export function renderNameInput(initial: string, label: string, actions: NameInputActions): HTMLInputElement {
   const input = el("input", { type: "text", class: "name-input", "data-name-input": "", placeholder: label, "aria-label": label });
   input.value = initial;
-  let finished = false; // removing the focused input fires a blur, which must not cancel twice
+  let finished = false; // removing the focused input fires a blur, which must not finish twice
   const finish = (run: () => void) => {
     if (finished) return;
     finished = true;
@@ -22,6 +22,6 @@ export function renderNameInput(initial: string, label: string, actions: NameInp
       finish(actions.cancel);
     }
   });
-  input.addEventListener("blur", () => finish(actions.cancel));
+  input.addEventListener("blur", () => finish(input.value.trim() !== "" ? () => actions.submit(input.value) : actions.cancel));
   return input;
 }

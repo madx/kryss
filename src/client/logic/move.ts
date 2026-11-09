@@ -120,35 +120,43 @@ export function outdent(doc: TodoDocument, path: TaskPath): OpResult | null {
   });
 }
 
+/** Indices of the first and last visible lists, which bound the keyboard moves. */
+export type ListBounds = { first: number; last: number };
+
+function fullBounds(doc: TodoDocument): ListBounds {
+  return { first: 0, last: doc.lists.length - 1 };
+}
+
 /**
  * Alt+Up moves the task one step up, across parents and lists (PRD 5.2).
  * A top-level task swaps with the previous task, and at the top of a list goes to the end of the previous list.
- * A subtask swaps with the previous subtask, and at the top of its parent becomes the last subtask of the previous top-level task, or a top-level task just before its parent when there is none.
- * Null at the very top of the document.
+ * A subtask swaps with the previous subtask, and at the top of its parent becomes the last subtask of the previous top-level task, or does nothing when there is none.
+ * Only the visible lists (`bounds`, default: the whole document) are crossed.
+ * Null at the very top of the visible lists.
  */
-export function moveUp(doc: TodoDocument, path: TaskPath): OpResult | null {
+export function moveUp(doc: TodoDocument, path: TaskPath, bounds: ListBounds = fullBounds(doc)): OpResult | null {
   if (!getNode(doc, path)) return null;
   if (path.child === undefined) {
     if (path.task > 0) return moveTask(doc, path, { kind: "before", target: { ...path, task: path.task - 1 } });
-    return path.list > 0 ? moveTask(doc, path, { kind: "end", list: path.list - 1 }) : null;
+    return path.list > bounds.first ? moveTask(doc, path, { kind: "end", list: path.list - 1 }) : null;
   }
   if (path.child > 0) return moveTask(doc, path, { kind: "before", target: { ...path, child: path.child - 1 } });
-  if (path.task > 0) return moveTask(doc, path, { kind: "child", target: { list: path.list, task: path.task - 1 } });
-  return relocate(doc, path, (next) => ({ container: next.lists[path.list]!.tasks, before: next.lists[path.list]!.tasks[path.task] }));
+  return path.task > 0 ? moveTask(doc, path, { kind: "child", target: { list: path.list, task: path.task - 1 } }) : null;
 }
 
 /**
  * Alt+Down moves the task one step down, across parents and lists (PRD 5.2).
  * A top-level task swaps with the next task, and at the end of a list goes to the start of the next list.
- * A subtask swaps with the next subtask, and at the end of its parent becomes the first subtask of the next top-level task, or a top-level task just after its parent when there is none.
- * Null at the very bottom of the document.
+ * A subtask swaps with the next subtask, and at the end of its parent becomes the first subtask of the next top-level task, or does nothing when there is none.
+ * Only the visible lists (`bounds`, default: the whole document) are crossed.
+ * Null at the very bottom of the visible lists.
  */
-export function moveDown(doc: TodoDocument, path: TaskPath): OpResult | null {
+export function moveDown(doc: TodoDocument, path: TaskPath, bounds: ListBounds = fullBounds(doc)): OpResult | null {
   if (!getNode(doc, path)) return null;
   const tasks = doc.lists[path.list]!.tasks;
   if (path.child === undefined) {
     if (path.task < tasks.length - 1) return swapDown(doc, path, { ...path, task: path.task + 1 });
-    if (path.list >= doc.lists.length - 1) return null;
+    if (path.list >= bounds.last) return null;
     const nextHasTasks = doc.lists[path.list + 1]!.tasks.length > 0;
     return nextHasTasks
       ? moveTask(doc, path, { kind: "before", target: { list: path.list + 1, task: 0 } })
@@ -157,12 +165,10 @@ export function moveDown(doc: TodoDocument, path: TaskPath): OpResult | null {
   const siblings = tasks[path.task]!.children!;
   if (path.child < siblings.length - 1) return moveTask(doc, path, { kind: "after", target: { ...path, child: path.child + 1 } });
   const next = tasks[path.task + 1];
-  if (next) {
-    return next.children?.length
-      ? moveTask(doc, path, { kind: "before", target: { list: path.list, task: path.task + 1, child: 0 } })
-      : moveTask(doc, path, { kind: "child", target: { list: path.list, task: path.task + 1 } });
-  }
-  return outdent(doc, path);
+  if (!next) return null;
+  return next.children?.length
+    ? moveTask(doc, path, { kind: "before", target: { list: path.list, task: path.task + 1, child: 0 } })
+    : moveTask(doc, path, { kind: "child", target: { list: path.list, task: path.task + 1 } });
 }
 
 /** Swap with the next top-level task: the task goes after it, but never into it, even when it has subtasks. */

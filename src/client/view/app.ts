@@ -37,6 +37,11 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   const doc = (): TodoDocument => store.getState().doc!;
   const dnd = setupDnd(roots.main, { getDoc: () => store.getState().doc, commit: (next) => store.commit(next) });
+  /** Keyboard moves only cross the lists on screen. */
+  const visibleBounds = () => {
+    const selected = store.getState().selected;
+    return selected === null ? { first: 0, last: doc().lists.length - 1 } : { first: selected, last: selected };
+  };
   const apply = (result: OpResult | null, focus = true): boolean => {
     if (!result) return false;
     if (focus) pendingFocus = rowSelector(result.path);
@@ -60,8 +65,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
     indent: (path) => apply(indent(doc(), path)),
     outdent: (path) => apply(outdent(doc(), path)),
-    moveUp: (path) => apply(moveUp(doc(), path)),
-    moveDown: (path) => apply(moveDown(doc(), path)),
+    moveUp: (path) => apply(moveUp(doc(), path, visibleBounds())),
+    moveDown: (path) => apply(moveDown(doc(), path, visibleBounds())),
     addSubtask(path) {
       ctx.addingSubtaskTo = { list: path.list, task: path.task };
       for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key); // keyed by parent, which may have shifted
@@ -88,6 +93,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     submit(name: string) {
       const rename = ctx.renaming;
       const create = creating;
+      if (!rename && !create) return; // the input was discarded (e.g. by an external change)
       creating = null;
       ctx.renaming = null;
       if (create) {
@@ -194,7 +200,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   }
 
   store.subscribe((state, kind) => {
-    if (kind === "content") renderAll(state);
+    if (kind === "external") {
+      // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
+      creating = null;
+      ctx.renaming = null;
+    }
+    if (kind !== "status") renderAll(state);
     else {
       renderStatus(state);
       renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
