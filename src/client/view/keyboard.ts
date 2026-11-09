@@ -51,6 +51,7 @@ export function installKeyboard(env: KeyboardEnv): void {
   });
 
   window.addEventListener("keydown", (e) => {
+    if (e.defaultPrevented || e.isComposing) return; // already handled, e.g. by the editor that just closed
     const state = store.getState();
     const overlay: Overlay = env.cheatsheet.isOpen() ? "cheatsheet" : env.confirming() !== null ? "confirm-delete" : "none";
     const res = resolveKey({
@@ -107,8 +108,7 @@ export function installKeyboard(env: KeyboardEnv): void {
         if (!(action.type === "undo" ? store.undo() : store.redo())) return;
         const after = store.getState().doc;
         const changed = after && firstChanged(before, after);
-        if (changed) cursor.focusStop(changed);
-        else cursor.focusIndex(index);
+        if (!changed || !cursor.focusStop(changed)) cursor.focusIndex(index); // undeterminable or in a hidden list
         return;
       }
     }

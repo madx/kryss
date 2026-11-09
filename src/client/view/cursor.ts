@@ -53,9 +53,14 @@ export function createCursor(main: HTMLElement, store: Store, storage?: Storage)
       const i = clampIndex(all.length, index);
       if (i >= 0) main.querySelector<HTMLElement>(stopSelector(all[i]!))?.focus();
     },
-    focusStop(stop: Stop): void {
-      main.querySelector<HTMLElement>(stopSelector(stop))?.focus();
+    /** Focuses a stop; false when it is not on screen (for instance in a hidden list). */
+    focusStop(stop: Stop): boolean {
+      const el = main.querySelector<HTMLElement>(stopSelector(stop));
+      el?.focus();
+      return el !== null;
     },
+    /** The stop at `index` of the visible sequence, if any. */
+    stopAt: (index: number): Stop | null => visibleStops()[index] ?? null,
     /** True when the focus is on a stop, so a re-render that drops it must restore it. */
     hasFocus: (): boolean => cursor.current() !== null,
     /** Puts the cursor back on the stored index (once, on load). */

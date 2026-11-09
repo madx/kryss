@@ -1,7 +1,7 @@
 // Footer: mode badge (NORMAL / INSERT) and a short statusline.
 import { el } from "./dom";
 
-export type Counts = { done: number; total: number };
+import type { Counts } from "../logic/stats";
 export type FooterState = { mode: "normal" | "insert"; view: Counts; document: Counts; list: number; lists: number };
 
 export function createFooter(): { el: HTMLElement; update(s: FooterState): void } {

@@ -52,17 +52,21 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const selected = store.getState().selected;
     return selected === null ? { first: 0, last: doc().lists.length - 1 } : { first: selected, last: selected };
   };
+  /** Commits with a focus request. The render is synchronous, so a request left over means nothing rendered and must not leak into a later render. */
+  const commitFocus = (next: TodoDocument, selector: string | null) => {
+    pendingFocus = selector;
+    store.commit(next);
+    pendingFocus = null;
+  };
   const apply = (result: OpResult | null, focus = true): boolean => {
     if (!result) return false;
-    if (focus) pendingFocus = rowSelector(result.path);
-    store.commit(result.doc);
+    commitFocus(result.doc, focus ? rowSelector(result.path) : null);
     return true;
   };
 
   const tasks: TaskActions = {
     toggle(path) {
-      pendingFocus = rowSelector(path);
-      store.commit(toggleDone(doc(), path));
+      commitFocus(toggleDone(doc(), path), rowSelector(path));
     },
     remove(path) {
       store.commit(deleteTask(doc(), path));
@@ -116,14 +120,16 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       } else if (rename) {
         const next = renameList(doc(), rename.list, name);
         if (next !== doc()) {
-          store.commit(next);
+          commitFocus(next, stopSelector({ kind: "header", list: rename.list }));
           return;
         }
+        pendingFocus = stopSelector({ kind: "header", list: rename.list });
       }
       renderAll(store.getState());
     },
     cancel() {
       if (!creating && !ctx.renaming) return;
+      if (ctx.renaming) pendingFocus = stopSelector({ kind: "header", list: ctx.renaming.list });
       creating = null;
       ctx.renaming = null;
       renderAll(store.getState());
@@ -159,14 +165,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       else if (selected !== null && selected > index) store.select(selected - 1);
     },
     addTask(index: number, text: string) {
-      pendingFocus = `[data-add="list-${index}"]`;
       const result = addTask(doc(), index, text);
-      if (result) store.commit(result.doc);
+      if (result) commitFocus(result.doc, `[data-add="list-${index}"]`);
     },
     addSubtask(list: number, task: number, text: string) {
-      pendingFocus = `[data-add="child-${list}-${task}"]`;
       const result = addChild(doc(), { list, task }, text);
-      if (result) store.commit(result.doc);
+      if (result) commitFocus(result.doc, `[data-add="child-${list}-${task}"]`);
     },
     cancelSubtask() {
       const from = ctx.addingSubtaskTo;
@@ -209,20 +213,23 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const state = store.getState();
     if (!state.doc) return;
     const range = visibleRange(state.selected, state.doc.lists.length);
-    const stop = cursor.current();
+    const stop = cursor.current() ?? cursor.stopAt(cursor.last()); // keeps the list number while a field has the focus
     const insert = isEditing() || isTextField(document.activeElement);
     footer.update({ mode: insert ? "insert" : "normal", ...statusline(state.doc, range, stop ? (stop.kind === "header" ? stop.list : stop.path.list) : null) });
   }
 
-  function renderAll(state: StoreState) {
-    const hadCursor = cursor.hasFocus();
+  function renderAll(state: StoreState, focus: string | null = null) {
+    if (focus) pendingFocus = focus;
     renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, creating, naming });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();
-    if (pendingFocus) document.querySelector<HTMLElement>(pendingFocus)?.focus();
-    else if (hadCursor) cursor.focusIndex(cursor.last()); // the rebuilt DOM lost the cursor: same position, clamped
+    const wanted = pendingFocus ? document.querySelector<HTMLElement>(pendingFocus) : null;
     pendingFocus = null;
+    if (wanted) wanted.focus();
+    else if (!document.activeElement || document.activeElement === document.body) {
+      cursor.focusIndex(cursor.last()); // the rebuilt DOM lost the focus: back to the same position, clamped
+    }
     if (!cursorRestored && state.doc && !state.invalid) {
       cursorRestored = true;
       if (!document.activeElement || document.activeElement === document.body) cursor.restore();
@@ -254,27 +261,31 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const origin = cursor.current();
     openPlaceholder(target, origin ? stopSelector(origin) : null);
   };
-  const openPlaceholder = (target: NonNullable<ReturnType<typeof insertTarget>>, originSelector: string | null) => {
-    ctx.placeholder = {
+  type Target = NonNullable<ReturnType<typeof insertTarget>>;
+  /** Registers the empty row for `target`. The caller renders (directly, or through a commit). */
+  const setPlaceholder = (target: Target, originSelector: string | null) => {
+    const self: NonNullable<ListContext["placeholder"]> = {
       target,
       done(text: string | null, how: EditEnd) {
-        ctx.placeholder = null;
+        if (ctx.placeholder === self) ctx.placeholder = null; // a stale closure must not drop a newer placeholder
         if (text === null) return; // discarded by a re-render
         const result = text.trim() === "" ? null : commitInsert(doc(), target, text);
         if (!result) {
           // Nothing typed: the empty task is dropped and the cursor goes back where it started.
-          if (how !== "blur") pendingFocus = originSelector;
-          renderAll(store.getState());
+          renderAll(store.getState(), how === "blur" ? null : originSelector);
           return;
         }
         if (how === "enter") {
           const next = insertTarget(result.doc, "below", { kind: "task", path: result.path });
-          if (next) openPlaceholder(next, rowSelector(result.path));
-        } else if (how === "escape") pendingFocus = rowSelector(result.path);
-        store.commit(result.doc);
-        if (ctx.placeholder) renderAll(store.getState()); // commit may not render when the document is unchanged
+          if (next) setPlaceholder(next, rowSelector(result.path)); // rendered by the commit below
+        }
+        commitFocus(result.doc, how === "escape" ? rowSelector(result.path) : null);
       },
     };
+    ctx.placeholder = self;
+  };
+  const openPlaceholder = (target: Target, originSelector: string | null) => {
+    setPlaceholder(target, originSelector);
     renderAll(store.getState());
   };
 
@@ -283,10 +294,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     cursor,
     cheatsheet,
     apply: (result) => void apply(result),
-    commitFocus(next, path) {
-      pendingFocus = rowSelector(path);
-      store.commit(next);
-    },
+    commitFocus: (next, path) => commitFocus(next, rowSelector(path)),
     renameList: lists.rename,
     deleteList(index) {
       if (doc().lists[index]?.tasks.length) lists.confirmRemove(index);

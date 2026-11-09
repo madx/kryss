@@ -201,6 +201,11 @@ describe("indexOfStop", () => {
 });
 
 describe("firstChanged", () => {
+  test("undoing an add leaves fewer stops and nothing to point at", () => {
+    const before = sample();
+    const after = { lists: [{ ...before.lists[0]!, tasks: before.lists[0]!.tasks.slice(0, 2) }, before.lists[1]!] };
+    expect(firstChanged(before, after)).toEqual({ kind: "header", list: 1 });
+  });
   test("null for identical documents", () => {
     expect(firstChanged(sample(), sample())).toBeNull();
   });

@@ -268,8 +268,9 @@ describe("resolveKey: target control", () => {
       expect(resolveKey(k(key, control))).toEqual({ action: null, pending: "", preventDefault: false });
     }
   });
-  test("Ctrl+Z does nothing on a control", () => {
-    expect(act("z", { ...control, ctrlKey: true })).toBeNull();
+  test("undo and redo still work after a click on a button", () => {
+    expect(act("z", { ...control, ctrlKey: true })).toEqual({ type: "undo" });
+    expect(act("Z", { ...control, ctrlKey: true, shiftKey: true })).toEqual({ type: "redo" });
   });
 });
 
@@ -330,6 +331,11 @@ describe("resolveKey: cheat sheet overlay", () => {
   test("undo is blocked while the overlay is open", () => {
     expect(act("z", { ...cheat, ctrlKey: true })).toBeNull();
   });
+  test("plain keys are swallowed so that nothing behind the overlay reacts, browser shortcuts are not", () => {
+    expect(resolveKey(k(" ", cheat)).preventDefault).toBe(true);
+    expect(resolveKey(k("Tab", cheat)).preventDefault).toBe(true);
+    expect(resolveKey(k("r", { ...cheat, ctrlKey: true })).preventDefault).toBe(false);
+  });
   test("a pending prefix is dropped", () => {
     expect(resolveKey(k("d", { ...cheat, pending: "d" })).action).toBeNull();
     expect(resolveKey(k("d", { ...cheat, pending: "d" })).pending).toBe("");
@@ -356,6 +362,13 @@ describe("resolveKey: confirm-delete overlay", () => {
     for (const key of ["j", "x", "d", "g", "o", "N", "?", " ", "Delete", "ArrowDown", "Tab"]) {
       expect(act(key, confirm)).toBeNull();
     }
+  });
+  test("Enter on a focused button leaves the button to act (Cancel must cancel)", () => {
+    expect(resolveKey(k("Enter", { ...confirm, target: "control" }))).toEqual({ action: null, pending: "", preventDefault: false });
+  });
+  test("y, n and Escape still answer from a focused button", () => {
+    expect(act("y", { ...confirm, target: "control" })).toEqual({ type: "confirm" });
+    expect(act("Escape", { ...confirm, target: "control" })).toEqual({ type: "cancel" });
   });
   test("a second d does not confirm the deletion", () => {
     expect(act("d", { ...confirm, pending: "d" })).toBeNull();

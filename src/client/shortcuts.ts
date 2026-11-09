@@ -1,11 +1,13 @@
 // Global keyboard shortcuts: undo and redo, and the pure key resolver of PRD 5.9.
+import type { CursorMove } from "./logic/cursor";
+import type { AddAt } from "./logic/insert";
 
 export type Pending = "" | "g" | "d";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
 export type Overlay = "none" | "cheatsheet" | "confirm-delete";
-export type CursorMove = "next" | "prev" | "first" | "last" | "next-header" | "prev-header";
-export type AddAt = "below" | "above" | "child-end-or-below" | "first-child" | "last-child" | "list-start" | "list-end";
+export type { CursorMove } from "./logic/cursor";
+export type { AddAt } from "./logic/insert";
 export type Action =
   | { type: "cursor"; to: CursorMove } | { type: "view"; dir: "next" | "prev" }
   | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
@@ -65,15 +67,21 @@ export function resolveKey(input: KeyInput): Resolution {
   const onHeader = target === "header";
 
   if (overlay === "cheatsheet") {
-    return key === "?" || key === "Escape" ? done({ type: "toggle-help" }) : NOTHING;
+    if (key === "?" || key === "Escape") return done({ type: "toggle-help" });
+    // The overlay holds no focus, so plain keys are swallowed to keep the page behind it still.
+    return { action: null, pending: "", preventDefault: !input.ctrlKey && !input.metaKey && !input.altKey };
   }
   if (overlay === "confirm-delete") {
-    if (key === "y" || key === "Enter") return done({ type: "confirm" });
+    if (key === "y" || (key === "Enter" && target !== "control")) return done({ type: "confirm" }); // Enter on a focused button acts as that button
     if (key === "n" || key === "Escape") return done({ type: "cancel" });
     return NOTHING;
   }
   if (target === "field") return NOTHING;
-  if (target === "control") return key === "Escape" ? done({ type: "focus-cursor" }) : NOTHING;
+  if (target === "control") {
+    if (key === "Escape") return done({ type: "focus-cursor" });
+    const undo = input.ctrlKey || input.metaKey ? undoActionFor(input) : null;
+    return undo ? done({ type: undo }) : NOTHING;
+  }
 
   if (input.ctrlKey || input.metaKey) {
     const undo = undoActionFor(input);
