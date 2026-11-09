@@ -1,10 +1,10 @@
 ## 1. Foundation
-- [ ] Remove `xit-parse` from the dependencies
-- [ ] Listen on `127.0.0.1` instead of `0.0.0.0` in `index.ts`
-- [ ] Read `TODO_FILE` (default `./todo.md`) and create the empty file if missing
-- [ ] Structure the project
-  - [ ] Split into `src/server`, `src/client` and `src/shared` (JSON types)
-  - [ ] Add the `dev`, `build` and `test` scripts to `package.json`
+- [x] Remove `xit-parse` from the dependencies
+- [x] Listen on `127.0.0.1` instead of `0.0.0.0` in `index.ts`
+- [x] Read `TODO_FILE` (default `./todo.md`) and create the empty file if missing
+- [x] Structure the project
+  - [x] Split into `src/server`, `src/client` and `src/shared` (JSON types)
+  - [x] Add the `dev`, `build` and `test` scripts to `package.json`
 
 ## 2. Parser and serializer
 - [ ] Define the JSON model types (list, task, subtask)

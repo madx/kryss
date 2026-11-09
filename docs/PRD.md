@@ -17,7 +17,7 @@ No virtualization needed.
   The server is the **only** component that parses and serializes Markdown.
 - **Front end**: vanilla TypeScript, built by Bun from `index.ts`.
   No framework.
-- **Configuration**: the file is set by the `TODO_FILE` environment variable (or a CLI argument), defaulting to `./todo.md`, and created empty if missing.
+- **Configuration**: the file is set by the `TODO_FILE` environment variable, defaulting to `./todo.md`, and created empty if missing.
   One instance manages one file.
 - **Network**: listens on `127.0.0.1` by default, **without authentication** (local machine use only).
   The current `0.0.0.0` binding in `index.ts` must be changed.
