@@ -37,6 +37,18 @@ describe("history", () => {
     let h = createHistory();
     for (let i = 0; i < MAX_HISTORY + 10; i++) h = push(h, doc(i));
     expect(h.past).toHaveLength(MAX_HISTORY);
-    expect(h.past[0]).toEqual(doc(10));
+    expect(h.past[0]?.doc).toEqual(doc(10));
+  });
+  test("undo and redo return the view the change was made in", () => {
+    const h = push(createHistory(), doc(0), 2);
+    const u = undo(h, doc(1))!;
+    expect(u.view).toBe(2);
+    expect(redo(u.history, u.doc)!.view).toBe(2);
+  });
+  test("the view defaults to All and is kept per change", () => {
+    const h = push(push(createHistory(), doc(0)), doc(1), 3);
+    const u = undo(h, doc(2))!;
+    expect(u.view).toBe(3);
+    expect(undo(u.history, u.doc)!.view).toBeNull();
   });
 });
