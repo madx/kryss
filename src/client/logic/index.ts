@@ -1,0 +1,8 @@
+export type { TaskPath, OpResult } from "./paths";
+export { getNode, samePath } from "./paths";
+export { toggleDone, addTask, addChild, addSibling, deleteTask, editText } from "./tasks";
+export { addList, renameList, deleteList } from "./lists";
+export { validateDrop, moveTask, indent, outdent, moveUp, moveDown } from "./move";
+export type { Drop, DropCheck, DropRefusal } from "./move";
+export { createHistory, push, undo, redo, clear, canUndo, canRedo, MAX_HISTORY } from "./history";
+export type { History } from "./history";

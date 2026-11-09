@@ -183,6 +183,17 @@ A task with an empty text after trimming is rejected.
 - Inside a task's editor, Ctrl+Z first undoes typing (CodeMirror), then the global stack once the task is left.
 - The stack is cleared on page reload and on any detected external change.
 
+### 5.7 Pure client logic decisions
+
+- The pure logic lives in `src/client/logic/`, is immutable, and addresses tasks by `{ list, task, child? }` paths.
+- An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
+- Keyboard move (Alt+↑ / Alt+↓) swaps with the previous or next sibling at the same level and parent, and does nothing at the edges, never crossing a list or a parent.
+- Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
+- Reordering under the same parent never changes a check state.
+- Moving a task out of a parent does not recompute that parent's state.
+- The undo stack is bounded to 200 snapshots.
+- Texts and list titles are trimmed, line breaks become spaces, and empty values are refused.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
