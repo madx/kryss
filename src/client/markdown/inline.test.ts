@@ -49,10 +49,15 @@ describe("parseInline", () => {
   test("raw HTML and images are literal text, escaped on output", () => {
     expect(html("<b>x</b>")).toBe("&lt;b&gt;x&lt;/b&gt;");
     expect(html('<img src=x onerror="a()">')).toBe("&lt;img src=x onerror=&quot;a()&quot;&gt;");
-    expect(html("![alt](http://x.y/i.png)")).toBe(
-      '!<a href="http://x.y/i.png" target="_blank" rel="noopener noreferrer">alt</a>',
-    );
     expect(html("# not a heading")).toBe("# not a heading");
+  });
+
+  test("images render as nothing", () => {
+    expect(parseInline("![alt](http://x.y/i.png)")).toEqual([]);
+    expect(parseInline("a ![alt](http://x.y/i.png) b")).toEqual([{ type: "text", value: "a  b" }]);
+    expect(parseInline("![alt](javascript:x)")).toEqual([]);
+    expect(html("**![a](http://x.y/i.png)b**")).toBe("<strong>b</strong>");
+    expect(html("wow! [a](http://x.y)")).toBe('wow! <a href="http://x.y" target="_blank" rel="noopener noreferrer">a</a>');
   });
 
   test("backslash escapes", () => {

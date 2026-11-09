@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { watch, type FSWatcher } from "node:fs";
 import { readFile, rename, writeFile, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
-import type { TodoDocument } from "../shared/types";
+import type { ChangeEvent, TodoDocument } from "../shared/types";
 import { parse, serialize } from "./markdown";
 
 const WATCH_DEBOUNCE_MS = 50;
@@ -121,8 +121,8 @@ export function createApp({ file }: { file: string }) {
     });
   }
 
-  function broadcast(etag: string) {
-    const message = encoder.encode(`event: change\ndata: ${etag}\n\n`);
+  function broadcast(event: ChangeEvent) {
+    const message = encoder.encode(`event: change\ndata: ${JSON.stringify(event)}\n\n`);
     for (const c of clients) {
       try {
         c.enqueue(message);
@@ -133,10 +133,12 @@ export function createApp({ file }: { file: string }) {
   }
 
   async function onFileEvent() {
-    const etag = etagOf(await readContent(file));
+    const content = await readContent(file);
+    const etag = etagOf(content);
     if (etag === knownEtag) return;
     knownEtag = etag;
-    broadcast(etag);
+    const result = parse(content);
+    broadcast(result.ok ? { etag, doc: result.doc } : { etag, error: result.error });
   }
 
   // Watch the directory so that rename-based saves (Vim, Obsidian) are caught.
@@ -148,6 +150,8 @@ export function createApp({ file }: { file: string }) {
     clearTimeout(timer);
     timer = setTimeout(() => void exclusive(onFileEvent).catch(() => {}), WATCH_DEBOUNCE_MS);
   });
+  // A deleted or unreadable directory must not crash the server: log and carry on.
+  watcher.on("error", (error) => console.error("File watcher error:", error));
 
   return {
     fetch(req: Request, server?: { timeout(req: Request, seconds: number): void }): Response | Promise<Response> {

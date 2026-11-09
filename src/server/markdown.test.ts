@@ -53,6 +53,12 @@ describe("parse", () => {
     expect(ok("## L\r\n- [x] a\r\n  - [ ] b\r\n")).toEqual(expected);
   });
 
+  test("strips a leading UTF-8 BOM", () => {
+    const doc = ok("\uFEFF## L\n- [ ] a\n");
+    expect(doc.lists[0]).toEqual({ title: "L", tasks: [{ text: "a", done: false }] });
+    expect(serialize(doc).startsWith("\uFEFF")).toBe(false);
+  });
+
   test("rejects frontmatter", () => {
     expect(err("---\ntitle: x\n---\n## L\n").line).toBe(1);
     expect(err("---\ntitle: x\n---\n## L\n").reason).toMatch(/frontmatter/i);
