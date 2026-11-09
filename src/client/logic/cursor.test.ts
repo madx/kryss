@@ -118,7 +118,7 @@ describe("moveCursor", () => {
   });
   test("does not mutate the stops", () => {
     const f = frozen([H(0), T(0, 0), T(0, 1)]);
-    expect(moveCursor(f, 2, "next")).toBe(3);
+    expect(moveCursor(f, 1, "next")).toBe(2);
   });
 });
 
