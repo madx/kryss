@@ -7,22 +7,22 @@
   - [x] Add the `dev`, `build` and `test` scripts to `package.json`
 
 ## 2. Parser and serializer
-- [ ] Define the JSON model types (list, task, subtask)
-- [ ] Write the Markdown → JSON parser
-  - [ ] `## Name` sections, empty lists and empty file
-  - [ ] `- [ ]` / `- [x]` tasks with 2 nesting levels
-  - [ ] Tolerance: `*` bullets, `[X]`, tabs and 4-space indentation
-  - [ ] `422` errors with line and reason (frontmatter, free text, `#` / `###`, empty name, 3 levels, multi-line)
-- [ ] Write the JSON → canonical Markdown serializer
-- [ ] Test the parser and serializer (edge cases and stable round-trip)
+- [x] Define the JSON model types (list, task, subtask)
+- [x] Write the Markdown → JSON parser
+  - [x] `## Name` sections, empty lists and empty file
+  - [x] `- [x]` / `- [x]` tasks with 2 nesting levels
+  - [x] Tolerance: `*` bullets, `[X]`, tabs and 4-space indentation
+  - [x] `422` errors with line and reason (frontmatter, free text, `#` / `###`, empty name, 3 levels, multi-line)
+- [x] Write the JSON → canonical Markdown serializer
+- [x] Test the parser and serializer (edge cases and stable round-trip)
 
 ## 3. Server API
-- [ ] Implement `GET /api/todos` with `ETag` (file hash) and `422` if invalid
-- [ ] Implement `PUT /api/todos` with `If-Match`, `409` and refusal if the file is invalid
-- [ ] Write the file atomically (temporary file then rename)
-- [ ] Watch the file (`fs.watch`) while ignoring the server's own writes
-- [ ] Implement the `GET /api/events` SSE stream
-- [ ] Test the API on a temporary file (ETag, `409`, `422`, SSE)
+- [x] Implement `GET /api/todos` with `ETag` (file hash) and `422` if invalid
+- [x] Implement `PUT /api/todos` with `If-Match`, `409` and refusal if the file is invalid
+- [x] Write the file atomically (temporary file then rename)
+- [x] Watch the file (`fs.watch`) while ignoring the server's own writes
+- [x] Implement the `GET /api/events` SSE stream
+- [x] Test the API on a temporary file (ETag, `409`, `422`, SSE)
 
 ## 4. Client: state and sync
 - [ ] Load the document and track the ETag
@@ -45,7 +45,7 @@
   - [ ] Checking a parent checks its children
   - [ ] Parent checked automatically when all children are
   - [ ] Parent unchecked when a child is unchecked, added or dropped unchecked
-- [ ] Test the pure logic (checking, depth, move validation)
+- [x] Test the pure logic (checking, depth, move validation)
 - [ ] Apply styles: background and color for completed tasks, system theme
 
 ## 6. Drag and drop
