@@ -67,6 +67,6 @@
 - [ ] Global undo / redo stack (Ctrl+Z / Ctrl+Shift+Z)
   - [ ] Clear the stack on reload and on external change
   - [ ] Coordinate with CodeMirror's own undo
-- [ ] Document how to run the app in `README.md`
+- [x] Document how to run the app in `README.md`
 - [ ] Verify alternating use with Obsidian on the same file
 - [ ] Validate the success criterion: one week of use without loss
