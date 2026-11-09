@@ -22,6 +22,11 @@
   border-left-color: var(--color-text) !important;
 }
 
+/* Without drawSelection the caret is the browser's own, colored by `caret-color` on the contenteditable. The base theme sets it to black (or white) through `&light` / `&dark` selectors, hence !important. */
+.task-text .cm-editor .cm-content {
+  caret-color: var(--color-text) !important;
+}
+
 .task-text .cm-content,
 .task-text .cm-line {
   padding: 0;
