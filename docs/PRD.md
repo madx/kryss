@@ -152,6 +152,12 @@ A task with an empty text after trimming is rejected.
   A moved task takes its children with it.
 - Dropping into another list is possible in the "All" view, including into an empty list.
 - Forbidden: dropping a task into one of its own descendants, and any drop that creates a third level.
+- The drop zone comes from the pointer position in the hovered row: top third is before, middle third is as child, bottom third is after.
+  When a child drop is refused for that row, the row is split in two halves (before, after) instead.
+- A refused zone shows no indicator and a drop on it does nothing.
+- The drag starts from the row's drag handle only, and the drop indicator is a line above or below the row, or a highlighted border for "as child".
+- Only an empty list is a drop target of its own (the task is appended), a non-empty list is reached through the zones of its rows.
+- The DOM is rebuilt on every change, so the drag and drop registrations are redone after each render.
 
 ### 5.5 Rendering and editing
 
