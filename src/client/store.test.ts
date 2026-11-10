@@ -302,6 +302,27 @@ describe("history", () => {
     expect(store.undo() && store.undo()).toBe(false);
   });
 
+  test("undo and redo switch back to the view the change was made in", () => {
+    store.replace(doc("A", "B", "C"), '"x"');
+    store.select(2);
+    store.commit(doc("D", "B", "C"));
+    store.select(null);
+    store.undo();
+    expect(store.getState().selected).toBe(2);
+    expect(mem.get(SELECTION_KEY)).toBe("2");
+    store.select(0);
+    store.redo();
+    expect(store.getState().selected).toBe(2);
+  });
+
+  test("a change made in the All view brings undo back to All", () => {
+    store.replace(doc("A", "B"), '"x"');
+    store.commit(doc("X", "B"));
+    store.select(1);
+    store.undo();
+    expect(store.getState().selected).toBeNull();
+  });
+
   test("replace clears the history", () => {
     edit("B");
     store.replace(doc("Z"), '"z"');

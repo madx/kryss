@@ -16,20 +16,30 @@ import {
   type OpResult,
   type TaskPath,
 } from "../logic";
+import { commitInsert, insertTarget, type AddAt, type Anchor } from "../logic/insert";
 import { getNode } from "../logic/paths";
+import { statusline } from "../logic/stats";
+import { visibleRange } from "../logic/views";
 import type { Store, StoreState } from "../store";
 import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnreachable } from "./banners";
-import { settleEditors } from "./edit-text";
+import { isEditing, settleEditors, type EditEnd } from "./edit-text";
+import { createCheatsheet } from "./cheatsheet";
+import { createCursor, focusAndReveal, reveal, rowSelector, stopSelector } from "./cursor";
+import { createFooter } from "./footer";
 import { renderHeader } from "./header";
+import { installKeyboard } from "./keyboard";
 import { setupDnd } from "./dnd";
 import { renderListSection, type ListContext } from "./list-section";
-import type { TaskActions } from "./task-row";
+import { BEGIN_EDIT, type TaskActions } from "./task-row";
+import { isTextField } from "../shortcuts";
 
-const rowSelector = (p: TaskPath) =>
-  `.task-row[data-list="${p.list}"][data-task="${p.task}"]` + (p.child === undefined ? ":not([data-child])" : `[data-child="${p.child}"]`);
-
-export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store): void {
-  const ctx: ListContext = { addingSubtaskTo: null, renaming: null, confirmingRemove: null, drafts: new Map() };
+export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage): void {
+  const ctx: ListContext = { addingSubtaskTo: null, renaming: null, confirmingRemove: null, drafts: new Map(), placeholder: null };
+  const footer = createFooter();
+  const cheatsheet = createCheatsheet();
+  document.body.append(footer.el, cheatsheet.el);
+  const cursor = createCursor(roots.main, store, storage);
+  let cursorRestored = false;
   /** Create-list input open in the header, with the text typed so far. */
   let creating: { draft: string } | null = null;
   /** CSS selector of the element to focus after the next render. */
@@ -42,17 +52,21 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const selected = store.getState().selected;
     return selected === null ? { first: 0, last: doc().lists.length - 1 } : { first: selected, last: selected };
   };
+  /** Commits with a focus request. The render is synchronous, so a request left over means nothing rendered and must not leak into a later render. */
+  const commitFocus = (next: TodoDocument, selector: string | null) => {
+    pendingFocus = selector;
+    store.commit(next);
+    pendingFocus = null;
+  };
   const apply = (result: OpResult | null, focus = true): boolean => {
     if (!result) return false;
-    if (focus) pendingFocus = rowSelector(result.path);
-    store.commit(result.doc);
+    commitFocus(result.doc, focus ? rowSelector(result.path) : null);
     return true;
   };
 
   const tasks: TaskActions = {
     toggle(path) {
-      pendingFocus = rowSelector(path);
-      store.commit(toggleDone(doc(), path));
+      commitFocus(toggleDone(doc(), path), rowSelector(path));
     },
     remove(path) {
       store.commit(deleteTask(doc(), path));
@@ -100,20 +114,27 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
         const next = addList(doc(), name);
         if (next !== doc()) {
           store.commit(next);
-          store.select(next.lists.length - 1);
+          const created = next.lists.length - 1;
+          if (store.getState().selected !== null) store.select(created); // a single-list view must show the new list
+          // The cursor goes to the new list and its first task is typed right away.
+          const target = insertTarget(doc(), "list-start", { kind: "header", list: created });
+          if (target) openPlaceholder(target, stopSelector({ kind: "header", list: created }));
+          reveal(roots.main.querySelector(`.list[data-list="${created}"]`)); // show the whole new list
           return;
         }
       } else if (rename) {
         const next = renameList(doc(), rename.list, name);
         if (next !== doc()) {
-          store.commit(next);
+          commitFocus(next, stopSelector({ kind: "header", list: rename.list }));
           return;
         }
+        pendingFocus = stopSelector({ kind: "header", list: rename.list });
       }
       renderAll(store.getState());
     },
     cancel() {
       if (!creating && !ctx.renaming) return;
+      if (ctx.renaming) pendingFocus = stopSelector({ kind: "header", list: ctx.renaming.list });
       creating = null;
       ctx.renaming = null;
       renderAll(store.getState());
@@ -149,14 +170,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       else if (selected !== null && selected > index) store.select(selected - 1);
     },
     addTask(index: number, text: string) {
-      pendingFocus = `[data-add="list-${index}"]`;
       const result = addTask(doc(), index, text);
-      if (result) store.commit(result.doc);
+      if (result) commitFocus(result.doc, `[data-add="list-${index}"]`);
     },
     addSubtask(list: number, task: number, text: string) {
-      pendingFocus = `[data-add="child-${list}-${task}"]`;
       const result = addChild(doc(), { list, task }, text);
-      if (result) store.commit(result.doc);
+      if (result) commitFocus(result.doc, `[data-add="child-${list}-${task}"]`);
     },
     cancelSubtask() {
       const from = ctx.addingSubtaskTo;
@@ -190,13 +209,40 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     dnd.refresh();
   }
 
-  function renderAll(state: StoreState) {
+  /** Opens the editor of the pending positional-add row, once it is in the DOM. */
+  function startPlaceholder() {
+    const row = ctx.placeholder ? roots.main.querySelector(".task-new") : null;
+    row?.dispatchEvent(new Event(BEGIN_EDIT));
+    reveal(row);
+  }
+
+  function updateFooter() {
+    const state = store.getState();
+    if (!state.doc) return;
+    const range = visibleRange(state.selected, state.doc.lists.length);
+    const stop = cursor.current() ?? cursor.stopAt(cursor.last()); // keeps the list number while a field has the focus
+    const insert = isEditing() || isTextField(document.activeElement);
+    footer.update({ mode: insert ? "insert" : "normal", ...statusline(state.doc, range, stop ? (stop.kind === "header" ? stop.list : stop.path.list) : null) });
+  }
+
+  function renderAll(state: StoreState, focus: string | null = null) {
+    if (focus) pendingFocus = focus;
     renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, creating, naming });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();
-    if (pendingFocus) document.querySelector<HTMLElement>(pendingFocus)?.focus();
+    const wanted = pendingFocus ? document.querySelector<HTMLElement>(pendingFocus) : null;
     pendingFocus = null;
+    if (wanted) focusAndReveal(wanted);
+    else if (cursor.last() >= 0 && (!document.activeElement || document.activeElement === document.body)) {
+      cursor.focusIndex(cursor.last()); // the rebuilt DOM lost the focus: back to the same position, clamped
+    }
+    if (!cursorRestored && state.doc && !state.invalid) {
+      cursorRestored = true;
+      if (!document.activeElement || document.activeElement === document.body) cursor.restore();
+    }
+    startPlaceholder();
+    updateFooter();
   }
 
   store.subscribe((state, kind) => {
@@ -204,12 +250,68 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
       creating = null;
       ctx.renaming = null;
+      ctx.placeholder = null;
     }
     if (kind !== "status") renderAll(state);
     else {
       renderStatus(state);
       renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     }
+  });
+  document.addEventListener("focusin", updateFooter);
+  document.addEventListener("focusout", () => setTimeout(updateFooter, 0));
+
+  /** A positional add: the empty row exists only in the client, it is committed (or dropped) when its editor ends. */
+  const beginAdd = (at: AddAt, anchor: Anchor) => {
+    const target = insertTarget(doc(), at, anchor);
+    if (!target) return;
+    const origin = cursor.current();
+    openPlaceholder(target, origin ? stopSelector(origin) : null);
+  };
+  type Target = NonNullable<ReturnType<typeof insertTarget>>;
+  /** Registers the empty row for `target`. The caller renders (directly, or through a commit). */
+  const setPlaceholder = (target: Target, originSelector: string | null) => {
+    const self: NonNullable<ListContext["placeholder"]> = {
+      target,
+      done(text: string | null, how: EditEnd) {
+        if (ctx.placeholder === self) ctx.placeholder = null; // a stale closure must not drop a newer placeholder
+        if (text === null) return; // discarded by a re-render
+        const result = text.trim() === "" ? null : commitInsert(doc(), target, text);
+        if (!result) {
+          // Nothing typed: the empty task is dropped and the cursor goes back where it started.
+          renderAll(store.getState(), how === "blur" ? null : originSelector);
+          return;
+        }
+        if (how === "enter") {
+          const next = insertTarget(result.doc, "below", { kind: "task", path: result.path });
+          if (next) setPlaceholder(next, rowSelector(result.path)); // rendered by the commit below
+        }
+        commitFocus(result.doc, how === "escape" ? rowSelector(result.path) : null);
+      },
+    };
+    ctx.placeholder = self;
+  };
+  const openPlaceholder = (target: Target, originSelector: string | null) => {
+    setPlaceholder(target, originSelector);
+    renderAll(store.getState());
+  };
+
+  installKeyboard({
+    store,
+    cursor,
+    cheatsheet,
+    apply: (result) => void apply(result),
+    commitFocus: (next, path) => commitFocus(next, rowSelector(path)),
+    renameList: lists.rename,
+    deleteList: lists.confirmRemove,
+    confirming: () => ctx.confirmingRemove,
+    confirmDelete(index) {
+      lists.remove(index);
+      cursor.focusIndex(cursor.last());
+    },
+    cancelDelete: lists.cancelRemove,
+    beginAdd,
+    newList: createList,
   });
   renderAll(store.getState());
 }

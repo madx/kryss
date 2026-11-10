@@ -29,7 +29,7 @@
 - [x] Show the conflict banner (keep my version / take the disk version)
 - [x] Show the invalid file error (line and reason)
 - [x] "All" / single list selector, stored in `localStorage` by index
-- [x] Create, rename and delete a list (confirmation if non-empty)
+- [x] Create, rename and delete a list (always with a confirmation)
 - [x] Offer to create the first list when the file is empty
 - [x] Add, delete and check a task
 - [x] Indent and outdent with Tab / Shift+Tab (2-level limit)
@@ -85,26 +85,26 @@
 - [x] Show the sync status as a colored Lucide symbol
 
 ## Modal keyboard editing
-- [ ] Pure key resolution in `src/client/shortcuts.ts` (mode, target kind, pending `g` / `d` prefix, key) with tests
-  - [ ] Merge the undo / redo handler and the Normal mode handler into one global `keydown` listener
-  - [ ] Ignore keys while a text field has focus, and on buttons and the selector (Escape puts the focus back on the cursor)
-- [ ] Cursor model: flat sequence of list headers and task rows over the visible lists, with tests
-  - [ ] `j` / `k`, ↓ / ↑, `gg` / `G` (no wrap)
-  - [ ] `h` / `l` between list headers in the "All" view
-  - [ ] Clamp the cursor after deletions, undo / redo and external changes
-  - [ ] Store the cursor index in `localStorage` next to the view index and restore it on load
-- [ ] Cycle the views with `H` / `L` (wrap around, focus on the first list header) with tests
-- [ ] Make list headers focusable as cursor stops
-- [ ] Task keys in Normal mode: `x` / Space, `i` / Enter / F2, `dd` / Delete, `>` / `<`, `J` / `K`, `u` / `U`
-- [ ] Remove Tab / Shift+Tab indentation and Backspace deletion
-- [ ] Positional add (`o`, `O`, `a`, `I`, `A`) with a client-only empty task and tests
-  - [ ] Pure positional insert in `src/client/logic/`
-  - [ ] Never autosave the empty placeholder task
-  - [ ] Enter commits and opens a new sibling below, Enter on empty text does nothing
-- [ ] Escape commits the editor: discard a new empty task, restore the previous text of an emptied task
-- [ ] List header keys: `i` / Enter rename, `dd` delete with `y` / Enter / `n` / Escape prompt, `o` / `a` / `I` / `A` add a task, `N` new list
-- [ ] Focus management after `dd`, move, indent, check, undo / redo and external change
-- [ ] Footer: fixed bar with the NORMAL / INSERT mode indicator
-- [ ] Statusline in the footer: done / total tasks for the view and the document, list index / list count, with tests of the counts
-- [ ] Cheat sheet overlay on `?`, closed with Escape or `?`
-- [ ] Verify the whole keymap by hand
+- [x] Pure key resolution in `src/client/shortcuts.ts` (mode, target kind, pending `g` / `d` prefix, key) with tests
+  - [x] Merge the undo / redo handler and the Normal mode handler into one global `keydown` listener
+  - [x] Ignore keys while a text field has focus, and on buttons and the selector (Escape puts the focus back on the cursor)
+- [x] Cursor model: flat sequence of list headers and task rows over the visible lists, with tests
+  - [x] `j` / `k`, ↓ / ↑, `gg` / `G` (no wrap)
+  - [x] `h` / `l` between list headers in the "All" view
+  - [x] Clamp the cursor after deletions, undo / redo and external changes
+  - [x] Store the cursor index in `localStorage` next to the view index and restore it on load
+- [x] Cycle the views with `H` / `L` (wrap around, focus on the first list header) with tests
+- [x] Make list headers focusable as cursor stops
+- [x] Task keys in Normal mode: `x` / Space, `i` / Enter / F2, `dd` / Delete, `>` / `<`, `J` / `K`, `u` / `U`
+- [x] Remove Tab / Shift+Tab indentation and Backspace deletion
+- [x] Positional add (`o`, `O`, `a`, `I`, `A`) with a client-only empty task and tests
+  - [x] Pure positional insert in `src/client/logic/`
+  - [x] Never autosave the empty placeholder task
+  - [x] Enter commits and opens a new sibling below, Enter on empty text does nothing
+- [x] Escape commits the editor: discard a new empty task, restore the previous text of an emptied task
+- [x] List header keys: `i` / Enter rename, `dd` delete with `y` / Enter / `n` / Escape prompt, `o` / `a` / `I` / `A` add a task, `N` new list
+- [x] Focus management after `dd`, move, indent, check, undo / redo and external change
+- [x] Footer: fixed bar with the NORMAL / INSERT mode indicator
+- [x] Statusline in the footer: done / total tasks for the view and the document, list index / list count, with tests of the counts
+- [x] Cheat sheet overlay on `?`, closed with Escape or `?`
+- [x] Verify the whole keymap by hand

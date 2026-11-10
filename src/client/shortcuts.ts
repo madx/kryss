@@ -1,4 +1,106 @@
-// Global keyboard shortcuts: undo and redo.
+// Global keyboard shortcuts: undo and redo, and the pure key resolver of PRD 5.9.
+import type { CursorMove } from "./logic/cursor";
+import type { AddAt } from "./logic/insert";
+
+export type Pending = "" | "g" | "d";
+/** field = text input or editor focused (Insert), control = button or selector. */
+export type TargetKind = "task" | "header" | "none" | "field" | "control";
+export type Overlay = "none" | "cheatsheet" | "confirm-delete";
+export type { CursorMove } from "./logic/cursor";
+export type { AddAt } from "./logic/insert";
+export type Action =
+  | { type: "cursor"; to: CursorMove } | { type: "view"; dir: "next" | "prev" }
+  | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
+  | { type: "move"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
+  | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
+  | { type: "focus-cursor" } | { type: "confirm" } | { type: "cancel" };
+export type KeyInput = {
+  key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
+  target: TargetKind; pending: Pending; overlay: Overlay;
+};
+export type Resolution = { action: Action | null; pending: Pending; preventDefault: boolean };
+
+const NOTHING: Resolution = { action: null, pending: "", preventDefault: false };
+const done = (action: Action | null, preventDefault = true): Resolution => ({ action, pending: "", preventDefault });
+
+/** Keys that act on both tasks and list headers. */
+function commonKey(key: string, onHeader: boolean): Action | null {
+  switch (key) {
+    case "j": case "ArrowDown": return { type: "cursor", to: "next" };
+    case "k": case "ArrowUp": return { type: "cursor", to: "prev" };
+    case "G": return { type: "cursor", to: "last" };
+    case "h": return { type: "cursor", to: "prev-header" };
+    case "l": return { type: "cursor", to: "next-header" };
+    case "H": return { type: "view", dir: "prev" };
+    case "L": return { type: "view", dir: "next" };
+    case "Delete": return { type: "delete" };
+    case "i": case "Enter": return { type: "edit" };
+    case "u": return { type: "undo" };
+    case "U": return { type: "redo" };
+    case "N": return { type: "new-list" };
+    case "?": return { type: "toggle-help" };
+    case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
+    case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
+    case "I": return { type: "add", at: onHeader ? "list-start" : "first-child" };
+    case "A": return { type: "add", at: onHeader ? "list-end" : "last-child" };
+    default: return null;
+  }
+}
+
+/** Keys that only make sense on a task. */
+function taskKey(key: string): Action | null {
+  switch (key) {
+    case "x": case " ": return { type: "toggle" };
+    case "F2": return { type: "edit" };
+    case ">": return { type: "indent" };
+    case "<": return { type: "outdent" };
+    case "J": return { type: "move", dir: "down" };
+    case "K": return { type: "move", dir: "up" };
+    case "O": return { type: "add", at: "above" };
+    default: return null;
+  }
+}
+
+/** Resolves a key press into an action, the next pending prefix and whether to prevent the default. */
+export function resolveKey(input: KeyInput): Resolution {
+  const { key, target, pending, overlay } = input;
+  const onHeader = target === "header";
+
+  if (overlay === "cheatsheet") {
+    if (key === "?" || key === "Escape") return done({ type: "toggle-help" });
+    // The overlay holds no focus, so plain keys are swallowed to keep the page behind it still.
+    return { action: null, pending: "", preventDefault: !input.ctrlKey && !input.metaKey && !input.altKey };
+  }
+  if (overlay === "confirm-delete") {
+    if (key === "y" || (key === "Enter" && target !== "control")) return done({ type: "confirm" }); // Enter on a focused button acts as that button
+    if (key === "n" || key === "Escape") return done({ type: "cancel" });
+    return NOTHING;
+  }
+  if (target === "field") return NOTHING;
+  if (target === "control") {
+    if (key === "Escape") return done({ type: "focus-cursor" });
+    const undo = input.ctrlKey || input.metaKey ? undoActionFor(input) : null;
+    return undo ? done({ type: undo }) : NOTHING;
+  }
+
+  if (input.ctrlKey || input.metaKey) {
+    const undo = undoActionFor(input);
+    return undo ? done({ type: undo }) : NOTHING;
+  }
+  if (input.altKey) {
+    if (onHeader || (key !== "ArrowDown" && key !== "ArrowUp")) return NOTHING;
+    return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
+  }
+
+  if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
+  if (pending === "d" && key === "d") return done({ type: "delete" });
+  if (pending) return NOTHING;
+  if (key === "g") return { action: null, pending: "g", preventDefault: true };
+  if (key === "d") return { action: null, pending: "d", preventDefault: true };
+
+  const action = commonKey(key, onHeader) ?? (onHeader ? null : taskKey(key));
+  return action ? done(action) : NOTHING;
+}
 
 export type UndoAction = "undo" | "redo";
 

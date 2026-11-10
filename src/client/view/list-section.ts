@@ -3,7 +3,9 @@ import type { TodoList } from "../../shared/types";
 import { renderAddInput } from "./add-input";
 import { el } from "./dom";
 import { renderNameInput, type NameInputActions } from "./name-input";
-import { renderTaskRow, type TaskActions } from "./task-row";
+import type { InsertTarget } from "../logic/insert";
+import type { EditEnd } from "./edit-text";
+import { renderNewTaskRow, renderTaskRow, type TaskActions } from "./task-row";
 
 export type ListActions = {
   rename(list: number): void;
@@ -25,6 +27,8 @@ export type ListContext = {
   confirmingRemove: number | null;
   /** Half-typed text of the add inputs, by `data-add` key. */
   drafts: Map<string, string>;
+  /** Client-only empty task being typed by a positional add (PRD 5.9). */
+  placeholder: { target: InsertTarget; done: (text: string | null, how: EditEnd) => void } | null;
 };
 
 export function renderListSection(
@@ -37,19 +41,22 @@ export function renderListSection(
   const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list" }, "✎");
   rename.addEventListener("click", () => actions.rename(index));
   const remove = el("button", { type: "button", class: "icon-button", title: "Delete list", "aria-label": "Delete list" }, "×");
-  remove.addEventListener("click", () => (list.tasks.length > 0 ? actions.confirmRemove(index) : actions.remove(index)));
+  remove.addEventListener("click", () => actions.confirmRemove(index));
 
   // `data-list` on the <ul> makes it a drop target for empty lists later on.
   const ul = el("ul", { class: "tasks", "data-list": String(index) });
+  const ph = ctx.placeholder;
   list.tasks.forEach((task, t) => {
     const item = el("li", { class: "task-item" });
     item.append(renderTaskRow(task, { list: index, task: t }, tasks));
     const adding = ctx.addingSubtaskTo?.list === index && ctx.addingSubtaskTo.task === t;
-    if (task.children?.length || adding) {
+    const newChild = ph && ph.target.list === index && ph.target.parent === t ? ph : null;
+    if (task.children?.length || adding || newChild) {
       const sub = el("ul", { class: "subtasks" });
       task.children?.forEach((child, c) => {
         sub.append(el("li", { class: "task-item" }, renderTaskRow(child, { list: index, task: t, child: c }, tasks)));
       });
+      if (newChild) sub.insertBefore(el("li", { class: "task-item" }, renderNewTaskRow(newChild.done)), sub.children[newChild.target.index] ?? null);
       if (adding) {
         sub.append(
           el(
@@ -64,21 +71,22 @@ export function renderListSection(
     ul.append(item);
   });
 
+  if (ph && ph.target.list === index && ph.target.parent === undefined) {
+    ul.insertBefore(el("li", { class: "task-item" }, renderNewTaskRow(ph.done)), ul.children[ph.target.index] ?? null);
+  }
+
   const renaming = ctx.renaming?.list === index ? ctx.renaming : null;
   const title = renaming
     ? renderNameInput(renaming.draft, "List name", actions.naming)
     : el("h2", { class: "list-title" }, list.title);
-  const header = el("header", { class: "list-header" }, title, el("span", { class: "list-actions" }, rename, remove));
+  const header = el("header", { class: "list-header", tabindex: "0", "data-list": String(index) }, title, el("span", { class: "list-actions" }, rename, remove));
   if (ctx.confirmingRemove === index) {
     const yes = el("button", { type: "button", class: "button button-danger", "data-confirm-remove": "" }, "Delete");
     yes.addEventListener("click", () => actions.remove(index));
     const no = el("button", { type: "button", class: "button", "data-cancel-remove": "" }, "Cancel");
     no.addEventListener("click", actions.cancelRemove);
-    header.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") actions.cancelRemove();
-    });
     header.append(
-      el("div", { class: "list-confirm", role: "alert" }, el("span", {}, `Delete this list and its ${list.tasks.length} task(s)?`), yes, no),
+      el("div", { class: "list-confirm", role: "alert" }, el("span", {}, list.tasks.length > 0 ? `Delete this list and its ${list.tasks.length} task(s)?` : "Delete this empty list?"), yes, no),
     );
   }
 

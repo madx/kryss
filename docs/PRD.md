@@ -129,7 +129,7 @@ A task with an empty text after trimming is rejected.
 - Create, rename and delete a list from the selector.
   Names are typed in an inline input (header for a new list, list title for a rename): Enter confirms, Escape cancels, and a blur commits a non-empty name (like the task editor) and cancels an empty one.
   An external change discards the name being typed and closes the input.
-  Deleting a non-empty list asks for confirmation with an inline Delete / Cancel prompt in the list header, and an empty list is deleted at once.
+  Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel prompt in the list header.
   A new list is appended at the end.
   The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
 - Lists cannot be reordered in the app (order is the file's order).
@@ -208,6 +208,7 @@ A task with an empty text after trimming is rejected.
   Each undo triggers a normal `PUT`.
 - No confirmation to delete a task (undo recovers it).
 - Inside a task's editor, Ctrl+Z first undoes typing (CodeMirror), then the global stack once the task is left.
+- Each entry remembers the view (All or a list) that was active when the change was made, and undo and redo switch back to it, so a change made in another view is never invisible.
 - The stack is cleared on page reload and on any detected external change.
 - The shortcut handler is global and does nothing while a task editor or a text input has focus, so that they keep their own undo.
   It is the same handler as the Normal mode handler of 5.9, so there is one global `keydown` listener and no second one.
@@ -312,13 +313,15 @@ The mouse keeps working as before.
 | Key | Action |
 |---|---|
 | `i`, Enter | rename the list in its inline name input |
-| `dd` | delete the list: at once if empty, otherwise with the inline prompt, answered by `y` or Enter (confirm) and `n` or Escape (cancel) |
+| `dd` | delete the list with the inline prompt, answered by `y` or Enter (confirm) and `n` or Escape (cancel) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
 - `x`, `>`, `<`, `J` and `K` do nothing on a header, since lists cannot be reordered.
 - `N` keeps the current view, except in a single-list view where it selects the new list so that the name input is visible.
+  Once the name is confirmed, the cursor goes to the new list and a first task is typed right away, as with `A` on its header.
+  This also applies to a list created with the plus button.
 
 **Positional add and Insert mode**
 
@@ -352,6 +355,14 @@ The mouse keeps working as before.
 - The key handling is a pure function in `src/client/shortcuts.ts` that takes the mode, the kind of focused target, the pending prefix and the key, and returns an action.
   The DOM layer only applies the action.
 - The positional add, the cursor movement and clamping, and the view cycling are pure functions in `src/client/logic/`, with the same immutable and `null` conventions as 5.7.
+- The empty task of a positional add is never put in the document.
+  The pure logic only computes where it goes (`insertTarget`) and commits it once it has text (`commitInsert`), and the view layer renders the empty row at that position.
+  A re-render while it is open (external change) drops it.
+- The editor reports how it ended (Enter, Escape, blur, or settled by a re-render) so that the app can chain, return to the origin row or keep the focus where the user clicked.
+  A blur that drops an empty new task does not move the focus.
+- The cursor is the DOM focus.
+  The app remembers the last cursor index, and a re-render that loses the focus puts it back on that index, clamped to the visible range.
+- Creating a list through the UI selects it only in a single-list view, in the "All" view the view is kept.
 
 ## 6. Tests
 

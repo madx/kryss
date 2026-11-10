@@ -127,7 +127,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   /** Applies a document produced by the UI. The single entry point for local changes. */
   function commit(next: TodoDocument) {
     if (!doc || next === doc) return;
-    history = push(history, doc);
+    history = push(history, doc, selected);
     doc = next;
     markDirty();
     emit("content");
@@ -263,6 +263,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (!result) return false;
       history = result.history;
       doc = result.doc;
+      if (result.view !== selected) storeSelection((selected = result.view)); // back to the view of the change
       markDirty();
       emit("content");
       return true;
@@ -272,6 +273,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (!result) return false;
       history = result.history;
       doc = result.doc;
+      if (result.view !== selected) storeSelection((selected = result.view)); // back to the view of the change
       markDirty();
       emit("content");
       return true;
