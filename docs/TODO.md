@@ -241,6 +241,6 @@
   - [x] The `confirm-delete` overlay, the `y` / `n` answers and their tests in `shortcuts.ts`
   - [x] The Delete / Cancel alert in the list header and its state and callbacks in `app.ts` and `list-section.ts`
   - [x] Update the PRD sections 5.1, 5.10 and 5.12
-- [ ] Check that the kept mouse features still work: click on a task text, on a row, on a checkbox and on a list title, the selector, the conflict banner buttons, the Markdown view buttons and the cheat sheet click-outside
+- [x] Check that the kept mouse features still work: click on a task text, on a row, on a checkbox and on a list title, the selector, the conflict banner buttons, the Markdown view buttons and the cheat sheet click-outside
 - [x] Run `bun test` and `bun run build`, and fix the tests that referred to the removed code
-- [ ] Verify by hand in light and dark, in a window from 240 to 720 px wide
+- [x] Verify by hand in light and dark, in a window from 240 to 720 px wide
