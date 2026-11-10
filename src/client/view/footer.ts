@@ -8,7 +8,8 @@ export function createFooter(): { el: HTMLElement; update(s: FooterState): void 
   const badge = el("span", { class: "mode-badge" });
   const status = el("span", { class: "statusline", role: "status" });
   const sync = el("span", { id: "sync-status", class: "sync-status", role: "status" });
-  const root = el("footer", { class: "app-footer" }, badge, status, sync);
+  const content = el("div", { class: "footer-content" }, status, sync);
+  const root = el("footer", { class: "app-footer" }, badge, content);
   return {
     el: root,
     update(s) {
