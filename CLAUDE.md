@@ -67,12 +67,12 @@ Work plan: `docs/TODO.md`.
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change.
-- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a different background or color, never by strikethrough.
+- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and row and list actions (delete, rename, add subtask) are mouse-only controls shown on hover or after a click, with the visual design rules of PRD 5.10.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, frontmatter, the `xit` format, automatic merging, list reordering, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests.
+Authentication, multi-user, Yjs / CRDT, offline mode, frontmatter, the `xit` format, automatic merging, list reordering, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests.
 
 ## Testing
 
