@@ -27,10 +27,6 @@ export type KeyboardEnv = {
   changeList(list: number): void;
   /** `J` / `K` on a header: moves the list down or up, in the "All" view only. */
   moveList(list: number, dir: "up" | "down"): void;
-  /** The list whose deletion awaits an answer, if any. */
-  confirming(): number | null;
-  confirmDelete(list: number): void;
-  cancelDelete(): void;
   beginAdd(at: AddAt, anchor: Anchor): void;
   newList(): void;
   markdown: { isOpen(): boolean; toggle(): void; copy(): void };
@@ -59,7 +55,7 @@ export function installKeyboard(env: KeyboardEnv): void {
   window.addEventListener("keydown", (e) => {
     if (e.defaultPrevented || e.isComposing) return; // already handled, e.g. by the editor that just closed
     const state = store.getState();
-    const overlay: Overlay = env.cheatsheet.isOpen() ? "cheatsheet" : env.confirming() !== null ? "confirm-delete" : "none";
+    const overlay: Overlay = env.cheatsheet.isOpen() ? "cheatsheet" : "none";
     const res = resolveKey({
       key: e.key,
       ctrlKey: e.ctrlKey,
@@ -90,17 +86,6 @@ export function installKeyboard(env: KeyboardEnv): void {
       case "copy-markdown":
         env.markdown.copy();
         return;
-      case "confirm": {
-        const list = env.confirming();
-        if (list !== null) env.confirmDelete(list);
-        return;
-      }
-      case "cancel": {
-        const list = env.confirming();
-        env.cancelDelete();
-        if (list !== null) cursor.focusStop({ kind: "header", list });
-        return;
-      }
       case "new-list":
         env.newList();
         return;

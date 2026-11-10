@@ -5,7 +5,7 @@ import type { AddAt } from "./logic/insert";
 export type Pending = "" | "g" | "d" | "y" | "c";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
-export type Overlay = "none" | "cheatsheet" | "confirm-delete";
+export type Overlay = "none" | "cheatsheet";
 export type { CursorMove } from "./logic/cursor";
 export type { AddAt } from "./logic/insert";
 export type Action =
@@ -13,7 +13,7 @@ export type Action =
   | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
   | { type: "move"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
-  | { type: "focus-cursor" } | { type: "confirm" } | { type: "cancel" }
+  | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
   | { type: "change" } | { type: "yank" } | { type: "paste" };
 export type KeyInput = {
@@ -90,11 +90,6 @@ export function resolveKey(input: KeyInput): Resolution {
     if (key === "?" || key === "Escape") return done({ type: "toggle-help" });
     // The overlay holds no focus, so plain keys are swallowed to keep the page behind it still.
     return { action: null, pending: "", preventDefault: !input.ctrlKey && !input.metaKey && !input.altKey };
-  }
-  if (overlay === "confirm-delete") {
-    if (key === "y" || (key === "Enter" && target !== "control")) return done({ type: "confirm" }); // Enter on a focused button acts as that button
-    if (key === "n" || key === "Escape") return done({ type: "cancel" });
-    return NOTHING;
   }
   if (target === "field") return NOTHING;
   if (target === "control") {

@@ -68,7 +68,6 @@
   /* Tints, as a share of a color mixed with transparent. */
   --tint-hover: 8%;
   --tint-cursor: 14%;
-  --opacity-dragging: 0.4;
 }
 
 /* Dark palette: Sonokai, as in the Obsidian vault (snippet sonokai.css). */

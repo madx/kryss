@@ -7,6 +7,10 @@
   min-width: 0;
 }
 
+.header-markdown {
+  margin-left: auto;
+}
+
 /* Icon buttons are 22 px squares holding a 14 px icon. */
 .icon-button {
   display: inline-flex;

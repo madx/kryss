@@ -1,13 +1,10 @@
 // Wires the store to the DOM: full render on content changes, light update on status changes.
 import type { TodoDocument } from "../../shared/types";
 import {
-  addChild,
   addList,
-  addTask,
   cutList,
   cutTask,
   deleteList,
-  deleteTask,
   editText,
   indent,
   listMoveTarget,
@@ -26,7 +23,6 @@ import { getNode } from "../logic/paths";
 import { paste, type PasteTarget } from "../logic/paste";
 import { copyList, copyTask, registerText, type Register } from "../logic/register";
 import type { Stop } from "../logic/cursor";
-import { revealAfterClick, revealAfterKey, revealOrNull, type ClickTarget, type Reveal } from "../logic/reveal";
 import { countTasks } from "../logic/stats";
 import { visibleRange } from "../logic/views";
 import type { Store, StoreState } from "../store";
@@ -40,15 +36,14 @@ import { createMarkdownView } from "./markdown-view";
 import { renderHeader } from "./header";
 import { el } from "./dom";
 import { installKeyboard } from "./keyboard";
-import { setupDnd } from "./dnd";
-import { renderListSection, renderSubtaskLine, type ListContext } from "./list-section";
+import { renderListSection, type ListContext } from "./list-section";
 import { BEGIN_EDIT, type TaskActions } from "./task-row";
 import { isTextField } from "../shortcuts";
 
 const NEW_LIST_NAME = "New list";
 
 export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage): void {
-  const ctx: ListContext = { reveal: null, renaming: null, confirmingRemove: null, drafts: new Map(), placeholder: null };
+  const ctx: ListContext = { renaming: null, placeholder: null };
   const footer = createFooter();
   const cheatsheet = createCheatsheet();
   document.body.append(footer.el, cheatsheet.el);
@@ -60,12 +55,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let pendingFocus: string | null = null;
 
   const doc = (): TodoDocument => store.getState().doc!;
-  const dnd = setupDnd(roots.main, {
-    getDoc: () => store.getState().doc,
-    commit: (next) => store.commit(next),
-    canDragLists: () => store.getState().selected === null,
-    moveList: (list, target, place) => void lists.move(list, target, place),
-  });
   /** Keyboard moves only cross the lists on screen. */
   const visibleBounds = () => {
     const selected = store.getState().selected;
@@ -87,9 +76,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     toggle(path) {
       commitFocus(toggleDone(doc(), path), rowSelector(path));
     },
-    remove(path) {
-      store.commit(deleteTask(doc(), path));
-    },
     edit(path, text) {
       pendingFocus = rowSelector(path);
       const before = doc();
@@ -109,7 +95,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   const createList = () => {
     const next = addList(doc(), NEW_LIST_NAME);
     const created = next.lists.length - 1;
-    ctx.confirmingRemove = null;
     ctx.renaming = { list: created, draft: NEW_LIST_NAME };
     pendingFocus = "[data-name-input]";
     store.commit(next);
@@ -155,28 +140,14 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     naming,
     /** Opens the name input. `empty` (`cc`) starts it with no text: Escape or an empty commit keeps the old name. */
     rename(index: number, empty = false) {
-      ctx.confirmingRemove = null;
-      ctx.renaming = { list: index, draft: empty ? "" : doc().lists[index]?.title ?? "" };
+        ctx.renaming = { list: index, draft: empty ? "" : doc().lists[index]?.title ?? "" };
       pendingFocus = "[data-name-input]";
-      renderAll(store.getState());
-    },
-    confirmRemove(index: number) {
-      ctx.confirmingRemove = index;
-      pendingFocus = "[data-cancel-remove]";
-      renderAll(store.getState());
-    },
-    cancelRemove() {
-      ctx.confirmingRemove = null;
       renderAll(store.getState());
     },
     /** Deletes a list. `next` is the document without it when the caller already computed it (`dd`). */
     remove(index: number, next?: TodoDocument) {
-      ctx.confirmingRemove = null;
-      ctx.reveal = null; // keyed by index, which shifts
-      if (!doc().lists[index]) return;
+        if (!doc().lists[index]) return;
       const selected = store.getState().selected;
-      // Add input drafts are keyed by list index, which shifts.
-      ctx.drafts.clear();
       store.commit(next ?? deleteList(doc(), index));
       if (selected === index) store.select(null);
       else if (selected !== null && selected > index) store.select(selected - 1);
@@ -186,10 +157,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       if (store.getState().selected !== null) return false;
       const result = moveList(doc(), list, target, place);
       if (!result) return false;
-      // Drafts, the revealed line, the rename and the delete confirmation are keyed by list index, which shifts.
-      ctx.drafts.clear();
-      ctx.reveal = null;
-      ctx.confirmingRemove = null;
+      // The rename is keyed by list index, which shifts.
       ctx.renaming = null;
       commitFocus(result.doc, stopSelector({ kind: "header", list: result.list }));
       return true;
@@ -198,60 +166,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       const step = listMoveTarget(list, dir, visibleBounds());
       if (step) lists.move(list, step.target, step.place);
     },
-    addTask(index: number, text: string) {
-      const result = addTask(doc(), index, text);
-      if (result) commitFocus(result.doc, `[data-add="list-${index}"]`);
-    },
-    addSubtask(list: number, task: number, text: string) {
-      const result = addChild(doc(), { list, task }, text);
-      if (result) commitFocus(result.doc, `[data-add="child-${list}-${task}"]`);
-    },
-    cancelSubtask() {
-      const from = ctx.reveal;
-      for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key);
-      ctx.reveal = null;
-      if (from) pendingFocus = rowSelector(from);
-      renderAll(store.getState());
-    },
   };
-
-  /** Shows or hides the revealed "Add a subtask" line without a render, which would close the editor a click just opened. */
-  function syncReveal(next: Reveal) {
-    if (next === ctx.reveal) return;
-    ctx.reveal = next;
-    for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key); // a stale draft must not reappear on another task
-    roots.main.querySelector("[data-reveal]")?.remove();
-    for (const ul of Array.from(roots.main.querySelectorAll(".subtasks:not(:has(li))"))) ul.remove();
-    if (!next) return;
-    const item = roots.main.querySelector(`.task-row[data-list="${next.list}"][data-task="${next.task}"]:not([data-child])`)?.parentElement;
-    if (!item) return;
-    let sub = item.querySelector(":scope > .subtasks");
-    if (!sub) item.append((sub = el("ul", { class: "subtasks" })));
-    sub.append(renderSubtaskLine(next.list, next.task, lists, ctx));
-    dnd.refresh(); // the DOM changed under the registered rows
-    for (const row of Array.from(roots.main.querySelectorAll<HTMLElement>(".task-row:has(.cm-editor)"))) row.draggable = false; // refresh made it draggable again
-  }
-
-  /** What a click landed on, for the reveal of PRD 5.10. */
-  function clickTarget(target: EventTarget | null): ClickTarget {
-    if (!(target instanceof Element) || !roots.main.contains(target)) return { kind: "other" };
-    if (target.closest(".add-line, .task-new, .task-check")) return { kind: "checkbox" }; // changes nothing
-    const row = target.closest<HTMLElement>(".task-row");
-    if (row && target.closest(".task-text") && row.dataset.list !== undefined) {
-      const { list, task, child } = row.dataset;
-      return { kind: "text", path: { list: Number(list), task: Number(task), ...(child === undefined ? {} : { child: Number(child) }) } };
-    }
-    return { kind: "other" };
-  }
-  document.addEventListener("click", (e) => syncReveal(revealAfterClick(ctx.reveal, clickTarget(e.target))));
-  // Capture phase, so that the editor's own Escape handling cannot hide it from here. The subtask line handles its own Escape.
-  document.addEventListener(
-    "keydown",
-    (e) => {
-      if (e.key === "Escape" && !(e.target instanceof Element && e.target.closest(".add-line"))) syncReveal(revealAfterKey(ctx.reveal, e.key));
-    },
-    true,
-  );
 
   /** The notice shown in place of the lists when the page holds no document: the invalid file, the unreachable server, or nothing while loading. */
   function noDocumentNotice(state: StoreState): Node {
@@ -269,7 +184,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       return getNode(d, { list: Number(row.dataset.list), task: Number(row.dataset.task), child: child === undefined ? undefined : Number(child) })?.text;
     });
     const state = store.getState();
-    ctx.reveal = state.doc ? revealOrNull(ctx.reveal, state.doc) : null;
     if (markdownOpen) {
       // Rebuilt on every render from the document of the page, unsaved edits included.
       if (state.doc) markdownView.show({ kind: "ok", text: exportView(state.doc, state.selected) });
@@ -283,7 +197,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       const shown = state.selected === null ? state.doc.lists.map((_, i) => i) : [state.selected];
       roots.main.replaceChildren(...shown.map((i) => renderListSection(state.doc!.lists[i]!, i, tasks, lists, ctx)));
     }
-    dnd.refresh();
   }
 
   /** Opens the editor of the pending positional-add row, once it is in the DOM. */
@@ -303,7 +216,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   function renderAll(state: StoreState, focus: string | null = null) {
     if (focus) pendingFocus = focus;
-    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, markdown: { open: markdownOpen, toggle: toggleMarkdown } });
+    renderHeader(roots.header, state, { select: (i) => store.select(i), markdown: { open: markdownOpen, toggle: toggleMarkdown } });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();
@@ -406,7 +319,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
     /** `dd`: deletes at once, a list included, and fills the register and the clipboard with what was removed. */
     cut(stop: Stop) {
-      ctx.reveal = null; // it is keyed by index, which shifts
       if (stop.kind === "header") {
         const cut = cutList(doc(), stop.list);
         if (!cut) return;
@@ -426,12 +338,9 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
         commitFocus(result.doc, rowSelector(result.path));
         return;
       }
-      // List indices shift: drafts, the revealed line, a rename and a delete confirmation are keyed by index.
-      ctx.drafts.clear();
-      ctx.reveal = null;
+      // List indices shift: a rename is keyed by index.
       ctx.renaming = null;
-      ctx.confirmingRemove = null;
-      const focus = stopSelector({ kind: "header", list: result.list });
+        const focus = stopSelector({ kind: "header", list: result.list });
       pendingFocus = focus;
       store.commit(result.doc); // before the view switch, so that undo goes back to the view of the paste
       pendingFocus = null;
@@ -453,12 +362,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     registerKeys,
     changeList: (list) => lists.rename(list, true),
     moveList: lists.moveByKey,
-    confirming: () => ctx.confirmingRemove,
-    confirmDelete(index) {
-      lists.remove(index);
-      cursor.focusIndex(cursor.last());
-    },
-    cancelDelete: lists.cancelRemove,
     beginAdd,
     newList: createList,
     markdown: { isOpen: () => markdownOpen, toggle: toggleMarkdown, copy: markdownView.copy },

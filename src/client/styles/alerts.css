@@ -1,4 +1,4 @@
-/* The single alert component: banners, notices and the list delete confirmation. */
+/* The single alert component: banners and notices. */
 .alert {
   display: flex;
   flex-wrap: wrap;
@@ -59,7 +59,3 @@
   flex: none;
 }
 
-/* The delete confirmation fills the list header. */
-.list-header > .alert {
-  padding: var(--space-2) var(--space-6);
-}

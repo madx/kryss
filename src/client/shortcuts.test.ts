@@ -352,39 +352,6 @@ describe("resolveKey: cheat sheet overlay", () => {
   });
 });
 
-describe("resolveKey: confirm-delete overlay", () => {
-  const confirm = { overlay: "confirm-delete", ...onHeader } as const;
-  test("y and Enter confirm", () => {
-    expect(act("y", confirm)).toEqual({ type: "confirm" });
-    expect(act("Enter", confirm)).toEqual({ type: "confirm" });
-  });
-  test("n and Escape cancel", () => {
-    expect(act("n", confirm)).toEqual({ type: "cancel" });
-    expect(act("Escape", confirm)).toEqual({ type: "cancel" });
-  });
-  test("answers prevent the default and leave no prefix", () => {
-    expect(resolveKey(k("y", confirm))).toEqual({ action: { type: "confirm" }, pending: "", preventDefault: true });
-  });
-  test("every other key resolves to nothing", () => {
-    for (const key of ["j", "x", "d", "g", "o", "N", "?", " ", "Delete", "ArrowDown", "Tab"]) {
-      expect(act(key, confirm)).toBeNull();
-    }
-  });
-  test("Enter on a focused button leaves the button to act (Cancel must cancel)", () => {
-    expect(resolveKey(k("Enter", { ...confirm, target: "control" }))).toEqual({ action: null, pending: "", preventDefault: false });
-  });
-  test("y, n and Escape still answer from a focused button", () => {
-    expect(act("y", { ...confirm, target: "control" })).toEqual({ type: "confirm" });
-    expect(act("Escape", { ...confirm, target: "control" })).toEqual({ type: "cancel" });
-  });
-  test("a second d does not confirm the deletion", () => {
-    expect(act("d", { ...confirm, pending: "d" })).toBeNull();
-  });
-  test("undo is blocked while the prompt is open", () => {
-    expect(act("z", { ...confirm, ctrlKey: true })).toBeNull();
-  });
-});
-
 describe("resolveKey: result shape", () => {
   test("every resolved action is a known Action type", () => {
     const a: Action | null = act("x");
@@ -489,12 +456,11 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     expect(act("p", onHeader)).toEqual({ type: "paste" });
   });
   test("these keys do nothing in a field, in a control, in an overlay or with a modifier", () => {
-    for (const o of [{ target: "field" }, { target: "control" }, { overlay: "cheatsheet" }, { overlay: "confirm-delete" }, { ctrlKey: true }, { altKey: true }] as const) {
+    for (const o of [{ target: "field" }, { target: "control" }, { overlay: "cheatsheet" }, { ctrlKey: true }, { altKey: true }] as const) {
       expect(act("p", o)).toBeNull();
       expect(act("c", { pending: "c", ...o })).toBeNull();
-      // y confirms in the delete overlay and Ctrl+Y redoes, so they are left out of the yank check.
-      const takesY = ("overlay" in o && o.overlay === "confirm-delete") || ("ctrlKey" in o && o.ctrlKey);
-      if (!takesY) expect(act("y", { pending: "y", ...o })).toBeNull();
+      // Ctrl+Y redoes, so it is left out of the yank check.
+      if (!("ctrlKey" in o && o.ctrlKey)) expect(act("y", { pending: "y", ...o })).toBeNull();
     }
   });
   test("with no focused element the keys still resolve, so that the caller can ignore them", () => {

@@ -1,12 +1,10 @@
-// One task or subtask row. Drag and drop and the editor plug in through the attributes and elements below:
+// One task or subtask row. The editor plugs in through the attributes and elements below:
 // - the row carries `data-list`, `data-task` and (subtasks only) `data-child`;
-// - the whole row is the drag source (see dnd.ts);
 // - `.task-text` holds the rendered text and is what the editor replaces while editing.
 import type { Task } from "../../shared/types";
 import type { TaskPath } from "../logic";
 import { renderInline } from "../markdown/inline";
 import { el } from "./dom";
-import { closeIcon } from "./icons";
 import { startEdit, type EditEnd } from "./edit-text";
 
 /** Dispatched on a row (by the keyboard layer) to open its editor. */
@@ -17,7 +15,6 @@ export const CHANGE_EDIT = "change-edit";
 /** Action callbacks. Those returning a boolean return false when the action was refused. */
 export type TaskActions = {
   toggle(path: TaskPath): void;
-  remove(path: TaskPath): void;
   edit(path: TaskPath, text: string): void;
   indent(path: TaskPath): boolean;
   outdent(path: TaskPath): boolean;
@@ -45,14 +42,12 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   const text = el("span", { class: "task-text" });
   text.append(renderInline(task.text));
   const beginEdit = (at?: { x: number; y: number }, empty = false) => {
-    row.draggable = false; // a draggable row would drag instead of selecting text in the editor
     startEdit(
       text,
       empty ? "" : task.text,
       (result) => {
         if (result === null || result.trim() === "" || result === task.text) {
           text.replaceChildren(renderInline(task.text));
-          row.draggable = true;
           actions.focusRow(path);
         } else {
           actions.edit(path, result); // the store re-renders the row
@@ -66,15 +61,10 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
     beginEdit({ x: e.clientX, y: e.clientY });
   });
 
-  // Mouse only: shown on hover, out of the tab order.
-  const remove = el("button", { type: "button", class: "icon-button", title: "Delete", "aria-label": "Delete task", tabindex: "-1" }, closeIcon());
-  remove.addEventListener("click", () => actions.remove(path));
-  const buttons = el("span", { class: "task-actions" }, remove);
-
   row.addEventListener(BEGIN_EDIT, () => beginEdit());
   row.addEventListener(CHANGE_EDIT, () => beginEdit(undefined, true));
 
-  row.append(checkbox, text, buttons);
+  row.append(checkbox, text);
   return row;
 }
 

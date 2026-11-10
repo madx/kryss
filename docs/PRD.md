@@ -140,7 +140,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 - Create, rename and delete a list from the selector.
   Names are typed in an inline input that replaces the list title: Enter, Escape and a blur commit a non-empty name (like the task editor) and cancel an empty one.
   An external change discards the name being typed and closes the input.
-  Deleting a list with the mouse, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
+  Deleting a list is immediate, with `dd` (5.9, 5.12), and undo recovers it.
   A new list is created at once, appended at the end and called "New list", as one undoable change.
   A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
   The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
@@ -435,11 +435,11 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Alerts**
 
-- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 14 px text (the body token, larger than the 12 px tasks), no border and a tinted background.
-  Amber is for warnings (the conflict banner, the empty file and the unreachable server), and red is for errors (the invalid file and rejected requests) and for the delete confirmation.
+- Banners and notices are one component: a full-width strip with a 6 px radius, small padding, 14 px text (the body token, larger than the 12 px tasks), no border and a tinted background.
+  Amber is for warnings (the conflict banner, the empty file and the unreachable server), and red is for errors (the invalid file and rejected requests).
 - Its actions are text buttons on the same line, and they wrap below the message when the window is narrow.
 - Banners sit between the header and the scroll area and never scroll away.
-  The delete confirmation replaces the content of the list header, and the invalid file, empty file and unreachable server notices use the same strip in place of the lists.
+  The invalid file, empty file and unreachable server notices use the same strip in place of the lists.
 
 **List selector**
 
@@ -519,7 +519,6 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 
 - `dd` and `Delete` delete the element under the cursor and put it in the register.
   On a list header the deletion is immediate, with no prompt, because the register and undo recover the list.
-  The mouse delete button keeps its prompt (5.1).
 - `yy` puts the element in the register without changing the document.
 - `cc` opens the editor of a task with an empty text, or the name input of a list with an empty name.
   The subtasks and the check state are kept, the register is not touched, and `cc` is one undoable change once committed.
