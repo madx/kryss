@@ -135,10 +135,12 @@ A task with an empty text after trimming is rejected.
 - A **selector** shows a single list or "All" (default on first launch).
 - The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All" and forget the stale index, so a list appearing later at that position is not selected.
 - Create, rename and delete a list from the selector.
-  Names are typed in an inline input (the header selector is replaced by the input for a new list, the list title for a rename): Enter, Escape and a blur commit a non-empty name (like the task editor) and cancel an empty one.
+  Names are typed in an inline input that replaces the list title: Enter, Escape and a blur commit a non-empty name (like the task editor) and cancel an empty one.
   An external change discards the name being typed and closes the input.
   Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
-  A new list is appended at the end.
+  A new list is created at once, appended at the end and called "New list", as one undoable change.
+  A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
+  The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
   The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
   The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
 - Lists cannot be reordered in the app (order is the file's order).
@@ -331,8 +333,8 @@ The mouse keeps working as before.
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
 - `x`, `>`, `<`, `J` and `K` do nothing on a header, since lists cannot be reordered.
-- `N` keeps the current view, except in a single-list view where it selects the new list so that the name input is visible.
-  Once the name is confirmed, the cursor goes to the new list and a first task is typed right away, as with `A` on its header.
+- `N` creates the list as in 5.1, keeps the "All" view, and switches a single-list view to the new list.
+  Once the name is confirmed, the cursor stays on the new list header.
   This also applies to a list created with the plus button.
 
 **Positional add and Insert mode**
@@ -418,7 +420,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
   This applies to the task editor, to the add lines (which turn into an empty editing row) and to the list name input (which edits the title in place).
-- The name input of a new list replaces the selector in the header while it is open, and an empty name cancels it, while Escape commits a non-empty name.
+- The name input of a new list is the title of its section, with the same look as a rename.
 
 **Drag feedback**
 

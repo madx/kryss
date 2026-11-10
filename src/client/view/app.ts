@@ -35,6 +35,8 @@ import { renderListSection, renderSubtaskLine, type ListContext } from "./list-s
 import { BEGIN_EDIT, type TaskActions } from "./task-row";
 import { isTextField } from "../shortcuts";
 
+const NEW_LIST_NAME = "New list";
+
 export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage): void {
   const ctx: ListContext = { reveal: null, renaming: null, confirmingRemove: null, drafts: new Map(), placeholder: null };
   const footer = createFooter();
@@ -42,8 +44,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   document.body.append(footer.el, cheatsheet.el);
   const cursor = createCursor(roots.main, store, storage);
   let cursorRestored = false;
-  /** Create-list input open in the header, with the text typed so far. */
-  let creating: { draft: string } | null = null;
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
 
@@ -88,59 +88,55 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
   };
 
+  /** Adds a list called "New list" at once, switches a single-list view to it and opens its name input with the name selected. */
   const createList = () => {
-    creating = { draft: "" };
+    const next = addList(doc(), NEW_LIST_NAME);
+    const created = next.lists.length - 1;
+    ctx.confirmingRemove = null;
+    ctx.renaming = { list: created, draft: NEW_LIST_NAME };
     pendingFocus = "[data-name-input]";
-    renderAll(store.getState());
+    store.commit(next);
+    if (store.getState().selected !== null) {
+      pendingFocus = "[data-name-input]"; // the commit may have used the request while the old list was shown
+      store.select(created); // the selector must show the new list
+    }
+    const input = document.querySelector<HTMLInputElement>("[data-name-input]");
+    input?.select();
+    reveal(roots.main.querySelector(`.list[data-list="${created}"]`)); // show the whole new list
   };
 
-  /** Callbacks shared by the create and rename inputs (only one of them is open at a time). */
+  /** Callbacks of the name input of a rename, or of the list just created. */
   const naming = {
     input(draft: string) {
-      if (creating) creating.draft = draft;
-      else if (ctx.renaming) ctx.renaming.draft = draft;
+      if (!ctx.renaming) return;
+      ctx.renaming.draft = draft;
+      // The selector shows the title of the selected list, so it follows what is typed.
+      const label = document.querySelector(".selector-label");
+      if (label && store.getState().selected === ctx.renaming.list) label.textContent = draft.trim() !== "" ? draft : doc().lists[ctx.renaming.list]?.title ?? "";
     },
     submit(name: string) {
       const rename = ctx.renaming;
-      const create = creating;
-      if (!rename && !create) return; // the input was discarded (e.g. by an external change)
-      creating = null;
+      if (!rename) return; // the input was discarded (e.g. by an external change)
       ctx.renaming = null;
-      if (create) {
-        const next = addList(doc(), name);
-        if (next !== doc()) {
-          store.commit(next);
-          const created = next.lists.length - 1;
-          if (store.getState().selected !== null) store.select(created); // a single-list view must show the new list
-          // The cursor goes to the new list and its first task is typed right away.
-          const target = insertTarget(doc(), "list-start", { kind: "header", list: created });
-          if (target) openPlaceholder(target, stopSelector({ kind: "header", list: created }));
-          reveal(roots.main.querySelector(`.list[data-list="${created}"]`)); // show the whole new list
-          return;
-        }
-      } else if (rename) {
-        const next = renameList(doc(), rename.list, name);
-        if (next !== doc()) {
-          commitFocus(next, stopSelector({ kind: "header", list: rename.list }));
-          return;
-        }
-        pendingFocus = stopSelector({ kind: "header", list: rename.list });
+      const next = renameList(doc(), rename.list, name);
+      if (next !== doc()) {
+        commitFocus(next, stopSelector({ kind: "header", list: rename.list }));
+        return;
       }
+      pendingFocus = stopSelector({ kind: "header", list: rename.list });
       renderAll(store.getState());
     },
     cancel() {
-      if (!creating && !ctx.renaming) return;
-      if (ctx.renaming) pendingFocus = stopSelector({ kind: "header", list: ctx.renaming.list });
-      creating = null;
+      if (!ctx.renaming) return;
+      pendingFocus = stopSelector({ kind: "header", list: ctx.renaming.list });
       ctx.renaming = null;
-      renderAll(store.getState());
+      renderAll(store.getState()); // the selector goes back to the stored title
     },
   };
 
   const lists = {
     naming,
     rename(index: number) {
-      creating = null;
       ctx.confirmingRemove = null;
       ctx.renaming = { list: index, draft: doc().lists[index]?.title ?? "" };
       pendingFocus = "[data-name-input]";
@@ -262,7 +258,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   function renderAll(state: StoreState, focus: string | null = null) {
     if (focus) pendingFocus = focus;
-    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, creating, naming });
+    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();
@@ -283,7 +279,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   store.subscribe((state, kind) => {
     if (kind === "external") {
       // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
-      creating = null;
       ctx.renaming = null;
       ctx.placeholder = null;
     }
