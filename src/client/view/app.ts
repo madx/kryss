@@ -119,6 +119,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
           // The cursor goes to the new list and its first task is typed right away.
           const target = insertTarget(doc(), "list-start", { kind: "header", list: created });
           if (target) openPlaceholder(target, stopSelector({ kind: "header", list: created }));
+          roots.main.querySelector(`.list[data-list="${created}"]`)?.scrollIntoView?.({ block: "nearest" }); // show the whole new list
           return;
         }
       } else if (rename) {
@@ -210,7 +211,9 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   /** Opens the editor of the pending positional-add row, once it is in the DOM. */
   function startPlaceholder() {
-    if (ctx.placeholder) roots.main.querySelector(".task-new")?.dispatchEvent(new Event(BEGIN_EDIT));
+    const row = ctx.placeholder ? roots.main.querySelector(".task-new") : null;
+    row?.dispatchEvent(new Event(BEGIN_EDIT));
+    row?.scrollIntoView?.({ block: "nearest" });
   }
 
   function updateFooter() {
