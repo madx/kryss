@@ -41,19 +41,3 @@
   background: transparent;
   color: var(--color-muted);
 }
-
-.copied-popover {
-  position: absolute;
-  z-index: 1;
-  top: calc(var(--panel-padding) + var(--icon-button-size) + var(--space-4));
-  right: var(--row-padding);
-  padding: var(--space-2) var(--space-6);
-  background: var(--color-text);
-  color: var(--color-surface);
-  border-radius: var(--radius-chip);
-  font-size: var(--font-size-sm);
-}
-
-.copied-popover[hidden] {
-  display: none;
-}

@@ -1,6 +1,6 @@
 // The single global keydown listener: resolves the key with the pure `resolveKey`, then applies the action to the focused stop.
 import type { TodoDocument } from "../../shared/types";
-import { deleteTask, indent, moveDown, moveUp, outdent, toggleDone, type OpResult, type TaskPath } from "../logic";
+import { indent, moveDown, moveUp, outdent, toggleDone, type OpResult, type TaskPath } from "../logic";
 import { firstChanged, moveCursor, stops as stopsOf, type Stop } from "../logic/cursor";
 import type { AddAt, Anchor } from "../logic/insert";
 import { cycleView, visibleRange } from "../logic/views";
@@ -9,7 +9,7 @@ import type { Store } from "../store";
 import type { Cursor } from "./cursor";
 import { stopOf } from "./cursor";
 import { isEditing } from "./edit-text";
-import { BEGIN_EDIT } from "./task-row";
+import { BEGIN_EDIT, CHANGE_EDIT } from "./task-row";
 
 /** What the keyboard layer needs from the app: operations that touch its render state. */
 export type KeyboardEnv = {
@@ -21,8 +21,10 @@ export type KeyboardEnv = {
   /** Commits a document and focuses the given path. */
   commitFocus(doc: TodoDocument, path: TaskPath): void;
   renameList(list: number): void;
-  /** `dd` on a header: deletes an empty list at once, asks for confirmation otherwise. */
-  deleteList(list: number): void;
+  /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
+  registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
+  /** `cc` on a header: opens the name input with no text. */
+  changeList(list: number): void;
   /** `J` / `K` on a header: moves the list down or up, in the "All" view only. */
   moveList(list: number, dir: "up" | "down"): void;
   /** The list whose deletion awaits an answer, if any. */
@@ -141,10 +143,15 @@ export function installKeyboard(env: KeyboardEnv): void {
       env.beginAdd(action.at, current.kind === "header" ? { kind: "header", list: current.list } : { kind: "task", path: current.path });
       return;
     }
+    if (action.type === "yank") return env.registerKeys.yank(current);
+    if (action.type === "paste") return env.registerKeys.paste(current);
     if (current.kind === "header") {
       if (action.type === "edit") env.renameList(current.list);
-      else if (action.type === "delete") env.deleteList(current.list);
-      else if (action.type === "move") env.moveList(current.list, action.dir);
+      else if (action.type === "change") env.changeList(current.list);
+      else if (action.type === "delete") {
+        env.registerKeys.cut(current);
+        cursor.focusIndex(index); // same position, clamped
+      } else if (action.type === "move") env.moveList(current.list, action.dir);
       return;
     }
 
@@ -156,8 +163,11 @@ export function installKeyboard(env: KeyboardEnv): void {
       case "edit":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(BEGIN_EDIT));
         return;
+      case "change":
+        document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(CHANGE_EDIT));
+        return;
       case "delete":
-        store.commit(deleteTask(doc, path));
+        env.registerKeys.cut(current);
         cursor.focusIndex(index); // same position: the next stop, or the previous one when the last was deleted
         return;
       case "indent":

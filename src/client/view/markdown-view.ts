@@ -5,37 +5,19 @@ import { copyIcon } from "./icons";
 /** What the view shows: the Markdown of the page's document, or the notice of the task UI when the page holds no document. */
 export type MarkdownContent = { kind: "ok"; text: string } | { kind: "notice"; node: Node };
 
-const POPOVER_MS = 1000;
-
-export function createMarkdownView() {
+/** `onCopy` receives the text to copy, and the app writes it to the clipboard and shows the footer feedback (PRD 5.12). */
+export function createMarkdownView(onCopy: (text: string) => void) {
   const copyButton = el("button", { type: "button", class: "icon-button copy-button", title: "Copy as Markdown", "aria-label": "Copy as Markdown", disabled: true }, copyIcon());
   const body = el("div", { class: "markdown-body" });
-  const popover = el("span", { class: "copied-popover", role: "status", hidden: true }, "Copied");
-  const root = el("div", { class: "markdown-view" }, body, copyButton, popover);
+  const root = el("div", { class: "markdown-view" }, body, copyButton);
 
   let shown: MarkdownContent | null = null;
-  let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
   const text = () => (shown?.kind === "ok" && shown.text !== "" ? shown.text : null);
 
-  function hidePopover() {
-    clearTimeout(hideTimer);
-    popover.hidden = true;
-    document.removeEventListener("click", hidePopover);
-  }
-
   function copy() {
     const content = text();
-    if (content === null) return;
-    navigator.clipboard.writeText(content).then(
-      () => {
-        hidePopover();
-        popover.hidden = false;
-        hideTimer = setTimeout(hidePopover, POPOVER_MS);
-        document.addEventListener("click", hidePopover);
-      },
-      () => {}, // clipboard refused: nothing to announce
-    );
+    if (content !== null) onCopy(content);
   }
   copyButton.addEventListener("click", copy);
 
@@ -50,7 +32,6 @@ export function createMarkdownView() {
       else if (result.text === "") body.replaceChildren(el("p", { class: "markdown-empty" }, "Nothing to export"));
       else body.replaceChildren(el("pre", { class: "markdown-block" }, result.text));
       copyButton.disabled = text() === null;
-      if (text() === null) hidePopover();
     },
   };
 }

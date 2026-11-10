@@ -18,7 +18,10 @@ const GROUPS: Group[] = [
     rows: [
       ["x, Space", "toggle done"],
       ["i, Enter, F2", "edit the task"],
-      ["dd, Delete", "delete with its subtasks"],
+      ["dd, Delete", "delete with its subtasks (fills the register)"],
+      ["yy", "copy into the register, without deleting"],
+      ["cc", "clear the text to retype it (Escape restores it)"],
+      ["p", "paste the register below, after the subtasks"],
       ["> / <", "indent / outdent"],
       ["J / K, Alt+↓ / Alt+↑", "move down / up"],
       ["u / U, Ctrl+Z / Ctrl+Shift+Z", "undo / redo"],
@@ -28,7 +31,10 @@ const GROUPS: Group[] = [
     title: "List header keys",
     rows: [
       ["i, Enter", "rename the list"],
-      ["dd", "delete the list (y / Enter confirm, n / Escape cancel)"],
+      ["dd", "delete the list at once (fills the register)"],
+      ["yy", "copy the list into the register"],
+      ["cc", "clear the name to retype it"],
+      ["p", "paste a task first, or a list after this one"],
       ["J / K, Alt+↓ / Alt+↑", "move the list down / up (All view)"],
       ["N", "new list, from anywhere"],
     ],
