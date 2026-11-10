@@ -492,7 +492,7 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     for (const o of [{ target: "field" }, { target: "control" }, { overlay: "cheatsheet" }, { overlay: "confirm-delete" }, { ctrlKey: true }, { altKey: true }] as const) {
       expect(act("p", o)).toBeNull();
       expect(act("c", { pending: "c", ...o })).toBeNull();
-      expect(act("y", { pending: "y", ...o })).toBeNull();
+      if (!("overlay" in o && o.overlay === "confirm-delete")) expect(act("y", { pending: "y", ...o })).toBeNull(); // y confirms in that overlay
     }
   });
   test("with no focused element the keys still resolve, so that the caller can ignore them", () => {

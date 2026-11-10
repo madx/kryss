@@ -1,6 +1,6 @@
 import type { TodoDocument } from "../../shared/types";
 import type { Range } from "./cursor";
-import type { Register } from "./register";
+import { copyList, type Register } from "./register";
 import { cloneDoc, normalizeText } from "./paths";
 
 /** Appends an empty list (its index is `lists.length - 1`). Empty title: same document returned. */
@@ -52,6 +52,7 @@ export function listMoveTarget(list: number, dir: "up" | "down", range: Range): 
 }
 
 /** Like `deleteList`, and also returns the removed list as a register. Unknown list: `null`. */
-export function cutList(_doc: TodoDocument, _list: number): { doc: TodoDocument; register: Register } | null {
-  return null;
+export function cutList(doc: TodoDocument, list: number): { doc: TodoDocument; register: Register } | null {
+  const register = copyList(doc, list);
+  return register ? { doc: deleteList(doc, list), register } : null;
 }

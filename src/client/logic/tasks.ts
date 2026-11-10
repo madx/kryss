@@ -1,5 +1,5 @@
 import type { TodoDocument } from "../../shared/types";
-import type { Register } from "./register";
+import { copyTask, type Register } from "./register";
 import {
   cloneDoc,
   getNode,
@@ -90,6 +90,7 @@ export function editText(doc: TodoDocument, path: TaskPath, text: string): TodoD
 
 
 /** Like `deleteTask`, and also returns the removed task as a register. Unknown path: `null`. */
-export function cutTask(_doc: TodoDocument, _path: TaskPath): { doc: TodoDocument; register: Register } | null {
-  return null;
+export function cutTask(doc: TodoDocument, path: TaskPath): { doc: TodoDocument; register: Register } | null {
+  const register = copyTask(doc, path);
+  return register ? { doc: deleteTask(doc, path), register } : null;
 }
