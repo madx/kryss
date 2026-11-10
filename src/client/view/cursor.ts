@@ -7,16 +7,25 @@ import type { Store } from "../store";
 export const CURSOR_KEY = "todoapp.cursor";
 
 /** Scrolls an element into view only if it is off screen, smoothly unless the user prefers reduced motion. */
-export function reveal(el: Element | null | undefined): void {
+export function reveal(el: Element | null | undefined, block: ScrollLogicalPosition = "nearest"): void {
   const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-  el?.scrollIntoView?.({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+  el?.scrollIntoView?.({ block, behavior: reduced ? "auto" : "smooth" });
+}
+
+/** A list header brings its whole list on screen, or just its top edge when the list is taller than the scroll area. */
+function revealStop(el: HTMLElement): void {
+  const list = el.classList.contains("list-header") ? el.closest<HTMLElement>(".list") : null;
+  if (!list) return reveal(el);
+  const area = list.closest<HTMLElement>(".app-scroll");
+  if (area && list.offsetHeight > area.clientHeight) reveal(el, "start");
+  else reveal(list);
 }
 
 /** Focuses an element without the browser's instant jump, then reveals it smoothly. */
 export function focusAndReveal(el: HTMLElement | null | undefined): void {
   if (!el) return;
   el.focus({ preventScroll: true });
-  reveal(el);
+  revealStop(el);
 }
 
 export const rowSelector = (p: TaskPath) =>
