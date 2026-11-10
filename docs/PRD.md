@@ -24,7 +24,7 @@ No virtualization needed.
   The `HOST` environment variable overrides the listening address, for example `HOST=0.0.0.0` when the app runs inside a container.
   Exposing the app beyond the loopback interface is an explicit opt-in.
 - **Dependencies**: `xit-parse` is removed.
-  `lucide` provides the icons (new list button, sync status), and only the icons in use are bundled.
+  `lucide` provides the icons (Markdown view toggle, sync status), and only the icons in use are bundled.
 
 ### 2.1 API
 
@@ -144,10 +144,11 @@ A whole document is its lists joined by a blank line, followed by that final new
   A new list is created at once, appended at the end and called "New list", as one undoable change.
   A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
   The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
-  The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the Markdown view toggle of 5.11.
+  The header has no title: it holds the selector on the left and the Markdown view toggle of 5.11 aligned on the right.
+  There is no button to create a list: `N` does it (5.9).
   The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
-- Lists are reordered in the "All" view only, with the keyboard (5.2, 5.9) or by drag and drop (5.4).
-  In a single-list view the move keys and the drag do nothing.
+- Lists are reordered in the "All" view only, with the keyboard only (5.2, 5.9).
+  In a single-list view the move keys do nothing.
   This restriction is temporary: later list modes, search and filters are meant to reuse the same move on the visible lists, so the logic must not depend on it (5.7).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
@@ -178,38 +179,19 @@ A whole document is its lists joined by a blank line, followed by that final new
 - Checking a parent checks all its children.
   Unchecking a parent only changes the parent.
 - When all children are checked, the parent is checked automatically.
-- Unchecking a child, adding a child, or dropping an unchecked task under a checked parent unchecks the parent.
+- Unchecking a child, adding a child, or moving or indenting an unchecked task under a checked parent unchecks the parent.
 - When a subtask leaves a parent (move, outdent or delete) and the parent still has subtasks that are all checked, the parent becomes checked.
   A parent left with no subtask keeps its state.
 - These rules only apply to UI actions: the server does not normalize states.
 - A completed task stays in place.
   It is distinguished by its checked box and a muted text color, with no background (not by strikethrough text, to avoid confusion with `~~strikethrough~~`).
 
-### 5.4 Drag and drop (Pragmatic drag and drop)
+### 5.4 Drag and drop (removed)
 
-- Three drop zones per task: **before**, **after** and **as child**.
-  A moved task takes its children with it.
-- Dropping **after** a parent that has subtasks inserts the task as its **first subtask**, since the subtasks are displayed right below the parent row.
-  If the moved task has subtasks itself, it cannot become a subtask and goes after the whole parent instead.
-  Dropping before or after a subtask inserts the task at that position among the subtasks.
-- Dropping into another list is possible in the "All" view, including into an empty list.
-- Forbidden: dropping a task into one of its own descendants, and any drop that creates a third level.
-- The drop zone comes from the pointer position in the hovered row: top quarter is before, middle half is as child, bottom quarter is after.
-  When a child drop is refused for that row, the row is split in two halves (before, after) instead.
-- A refused zone shows no indicator and a drop on it does nothing.
-- There is no drag handle: the drag starts from anywhere on the row, a click on the text still starts an edit, and a drag moves the task.
-  The drop indicator is a single 2 px accent line (5.10): above or below the row, indented to the subtask level for "as child".
-- Only an empty list is a drop target of its own (the task is appended), a non-empty list is reached through the zones of its rows.
-- The DOM is rebuilt on every change, so the drag and drop registrations are redone after each render.
-- Lists are dragged by their header, in the "All" view only (5.1).
-  The whole header row is the drag source, except its icon buttons, and it is not draggable while the name input or the delete alert is open.
-  A click on the header still places the cursor, and the drag starts only once the pointer has moved.
-  There is no drag handle.
-- Every visible list panel is a drop target for a dragged list, with two zones: the top half is before the list and the bottom half is after it.
-  The indicator is the same single 2 px accent line, above or below the panel.
-  Dragging a list onto itself, or next to itself without changing the order, does nothing.
-- List drags and task drags are separate drag types: a list is never dropped into a task row and a task never reorders lists.
-- After a drop, the cursor goes to the moved list header, as after a keyboard move.
+- The app has no drag and drop, for tasks or for lists, and no drag library.
+  The app is keyboard first, and every move has a key: `J` / `K` and Alt+↑ / Alt+↓ (5.2), `>` and `<` for the depth, and `dd` then `p` to carry a task or a list across lists.
+- Nothing starts a drag, no row or header is a drop target, and there is no drop indicator or dimmed row.
+- This section keeps its number so that the references to the other sections stay valid.
 
 ### 5.5 Rendering and editing
 
@@ -252,7 +234,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 - An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
 - Keyboard move (`J` / `K`, Alt+↑ / Alt+↓) follows 5.2: it crosses parent and visible list boundaries, takes the visible list range as a parameter (default: the whole document), and returns `null` at the edges of that range and for a subtask with no task to join.
 - List move takes the list to move, a target list and `before` or `after`, and returns `null` when the order would not change.
-  Drag calls it with the hovered list and the zone, and the keyboard calls it with the previous or next visible list, so that later list modes and filters only change which list is the target.
+  The keyboard calls it with the previous or next visible list, so that later list modes and filters only change which list is the target.
   Like the task move, the keyboard resolution takes the visible list range as a parameter (default: the whole document).
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
@@ -278,9 +260,8 @@ A whole document is its lists joined by a blank line, followed by that final new
 - "Keep my version" re-sends the local document with the ETag of the disk version, and "take the disk version" reloads and discards local changes.
 - Rows and list headers are focusable, and the keyboard shortcuts of 5.9 act on the focused row or header.
   Tab and Shift+Tab are plain focus keys and are never intercepted.
-- Tasks are also added from the "+ Add a task" line at the end of each list and, for subtasks, from the "+ Add a subtask" line that a click on a top-level task's text reveals (5.10), which stay for mouse use.
-  The keyboard adds tasks with the positional keys of 5.9.
-- The text typed in an add input is kept per list (or per parent task for subtasks), so it survives a re-render.
+- Tasks are added with the positional keys of 5.9 only.
+  There is no "+ Add a task" or "+ Add a subtask" line.
 - Backspace no longer deletes a row.
 - Lists are created, renamed and deleted with inline UI, never with `window.prompt` or `window.confirm`.
 - Text editing goes through `view/edit-text.ts`, which delegates to the CodeMirror editor in `src/client/editor/`.
@@ -298,7 +279,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 ### 5.9 Modal keyboard editing
 
 The app is fully usable from the keyboard, with a Vim-like modal model.
-The mouse keeps working as before.
+The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a row, a click on a checkbox, a click on a list title, the buttons of the alerts, the selector and the Markdown view, and the click-outside close of the cheat sheet.
 
 **Modes**
 
@@ -309,7 +290,6 @@ The mouse keeps working as before.
 - Insert is active while a text field has focus (the task editor or a list name input).
   It only ever edits the one focused task or name.
 - A click on a task's text enters Insert mode on it, and a click on a row moves the cursor to it.
-  Escape leaving Insert mode also hides the "+ Add a subtask" line revealed by that click (5.10).
 
 **Cursor and navigation**
 
@@ -369,7 +349,6 @@ The mouse keeps working as before.
 - `x`, `>` and `<` do nothing on a header.
 - `N` creates the list as in 5.1, keeps the "All" view, and switches a single-list view to the new list.
   Once the name is confirmed, the cursor stays on the new list header.
-  This also applies to a list created with the plus button.
 
 **Positional add and Insert mode**
 
@@ -439,17 +418,11 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - A row is a checkbox (a 12 px chip with a 1 px border) and the task text.
   A completed task has a checked box and a muted text color, with no background.
-- There is no drag handle (5.4).
-- A delete "×" appears on mouse hover only, on top of the end of the text with a solid background, so it reserves no width.
-  There is no hover "+" on rows.
-- The delete icon of a list header appears when the mouse is over that header only.
-  There is no rename icon: a click on the list title opens the name input, like a click on the text of a task opens its editor.
-  No delete icon appears for the keyboard cursor, since the keyboard has its own keys.
-- Each list ends with a quiet "+ Add a task" line.
-- A click with the mouse on the text of a task reveals a "+ Add a subtask" line right below it, indented to the subtask level and placed after the last subtask if there are some.
-  A click on a subtask reveals the line of its parent, since a subtask cannot have subtasks.
-  A click on a checkbox neither shows nor hides the line, and a click anywhere else hides it, as does Escape (5.9).
-  Keyboard focus never reveals it.
+- Hovering a row with the mouse slightly highlights it.
+- A row and a list header have no button: no delete "×", no hover "+", no rename icon and no drag handle.
+  Deleting, adding and moving are keys only (5.9).
+- A click on the list title opens the name input, like a click on the text of a task opens its editor.
+- A list ends with its last task: there is no "+ Add a task" line and no "+ Add a subtask" line.
 
 **Cursor and inputs**
 
@@ -457,14 +430,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
   The mode color is accent blue in Normal mode and green in Insert mode, the same as the footer badge.
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
-  This applies to the task editor, to the add lines (which turn into an empty editing row) and to the list name input (which edits the title in place).
+  This applies to the task editor and to the list name input (which edits the title in place).
 - The name input of a new list is the title of its section, with the same look as a rename.
-
-**Drag feedback**
-
-- The dragged row is dimmed to 40%.
-- The drop position is a single 2 px accent line above or below the target row, indented to the subtask level for "as child", and inside the panel for an empty list.
-  There is no border or tint on the target row.
 
 **Alerts**
 
@@ -598,8 +565,8 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, view cycling and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text).
-- No e2e in v1: drag and drop and CodeMirror are verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
+- No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette.

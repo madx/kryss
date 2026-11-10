@@ -41,7 +41,7 @@ Work plan: `docs/TODO.md`.
 - **API**: `GET /api/todos` (JSON + `ETag`), `PUT /api/todos` (`If-Match`, `409` on conflict), `GET /api/events` (SSE for external file changes).
   Invalid file: `422` with line and reason; the server never writes to an invalid file.
 - **File location**: `TODO_FILE` environment variable, default `./todo.md`.
-- **Libraries**: Pragmatic drag and drop for drag and drop, CodeMirror 6 (single line, live preview) for task editing, a sanitized inline Markdown renderer.
+- **Libraries**: CodeMirror 6 (single line, live preview) for task editing, a sanitized inline Markdown renderer.
   `xit-parse` is to be removed.
 
 ## Markdown file format
@@ -63,23 +63,22 @@ Work plan: `docs/TODO.md`.
 
 ## Key behaviors
 
-- **Checking**: checking a parent checks its children; when all children are checked, the parent is checked; unchecking a child, adding a child or dropping an unchecked task under a parent unchecks the parent.
+- **Checking**: checking a parent checks its children; when all children are checked, the parent is checked; unchecking a child, adding a child or moving an unchecked task under a parent unchecks the parent.
   The server never normalizes states.
-- **Drag and drop**: drop before, after or as child; the subtree moves with the task; no drop into a descendant, none that creates a third level.
-  Lists are reordered in the "All" view only, by dragging the header row (no handle) onto the top or bottom half of another list, or with `J` / `K` and Alt+↑ / Alt+↓ on a header (PRD 5.1, 5.4).
+- **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and lists are reordered in the "All" view only (PRD 5.1, 5.4).
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
 - **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
 - **Register**: `dd` and `yy` put a task subtree or a list in an in-memory register and write its Markdown to the clipboard, `p` pastes it, and `cc` clears the text of a task or the name of a list to retype it (PRD 5.12).
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change.
-- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and row and list actions (delete, add subtask) are mouse-only controls shown on hover or after a click, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
+- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and rows and list headers have no action buttons (delete, add, move are keys only), hovering a row highlights it slightly, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, reordering lists outside the "All" view, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, reordering lists outside the "All" view, drag and drop, add lines and buttons, hover action buttons, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 
 `bun test` for the parser and the shared serializer (including round-trip), the API (temporary file, ETag, `409`, `422`, SSE) and the pure client logic.
-Drag and drop and CodeMirror are verified by hand.
+CodeMirror is verified by hand.
