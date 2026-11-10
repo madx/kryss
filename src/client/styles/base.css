@@ -84,17 +84,14 @@ code {
   outline-offset: var(--hairline);
 }
 
-/* One centered column, one shared left edge.
- * The header and the footer are wider than the content by the scrollbar width and carry it as extra right padding,
- * so their edges line up with the panels, which sit in a scroll area that reserves that width on one edge only. */
+/* One centered column, one shared left edge for the header, the panels and the footer. */
 .app-header,
 .app-footer {
   flex: none;
   width: 100%; /* auto margins stop a flex item from stretching */
-  max-width: calc(var(--content-width) + var(--scrollbar-width));
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding-left: var(--gutter);
-  padding-right: calc(var(--gutter) + var(--scrollbar-width));
+  padding: 0 var(--gutter);
 }
 
 .app-header {
@@ -113,21 +110,20 @@ code {
 #banners {
   flex: none;
   width: 100%;
-  max-width: calc(var(--content-width) + var(--scrollbar-width));
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 0 calc(var(--gutter) + var(--scrollbar-width)) 0 var(--gutter);
+  padding: 0 var(--gutter);
 }
 
 #banners:empty {
   display: none;
 }
 
-/* Only the lists scroll. The gutter is reserved on one edge only, so the content never shifts when the scrollbar appears. */
+/* Only the lists scroll, and the scrollbar shows only when the content overflows. */
 .app-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-gutter: stable;
 }
 
 .app-main {

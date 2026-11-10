@@ -394,9 +394,9 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
   The page gutter goes from 6 to 16 px, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
 - The header is fixed and about 32 px tall, the footer is fixed and about 24 px tall, and neither has a border or a separator.
-- The scroll area keeps a stable scrollbar gutter on one edge only, so the content never shifts when the scrollbar appears.
-  The scrollbar is 10 px wide (an 8 px thumb with 1 px of padding), and the header and the footer get the same extra padding on that side so that their edges stay aligned with the panels.
-  The content is therefore about 5 px off center in a wide window, which is accepted.
+- The scrollbar of the scroll area appears only when the content overflows, and no space is reserved for it, so the layout stays centered and balanced.
+  It is 10 px wide (an 8 px thumb with 1 px of padding).
+  When it appears, the panels shrink by its width and their edges move a few pixels away from those of the header and the footer, which is accepted.
 
 **Rows and actions**
 

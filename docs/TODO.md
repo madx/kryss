@@ -117,7 +117,7 @@
 - [ ] Compact rows: 12 px text, line height 20 px, 3 px vertical padding, no gap between rows
 - [ ] Single centered column with one shared left edge for the header, the panels and the footer
 - [ ] Fixed header of about 32 px and footer of about 24 px, with no border or separator
-- [ ] Scroll area with a stable one-edge gutter and a 10 px scrollbar, with matching padding on the header and the footer
+- [ ] Scroll area with a 10 px scrollbar that appears only when the content overflows, with no reserved gutter
 - [ ] Replace the text glyphs (`✎`, `×`, `+`, `⋮⋮`) with Lucide SVG icons of one size and stroke
 - [ ] Remove the drag handle and make the whole row the drag source, keeping click on the text to edit
 - [ ] Drag feedback: dimmed row, one 2 px accent line, indented for "as child", inside the panel for an empty list
