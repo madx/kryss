@@ -28,7 +28,7 @@ describe("undoActionFor", () => {
 
 const k = (key: string, o: Partial<KeyInput> = {}): KeyInput => ({
   key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
-  target: "task", pending: "", overlay: "none", ...o,
+  target: "task", pending: "", overlay: "none", markdownView: false, ...o,
 });
 const act = (key: string, o: Partial<KeyInput> = {}) => resolveKey(k(key, o)).action;
 const onHeader = { target: "header" } as const;
@@ -382,5 +382,64 @@ describe("resolveKey: result shape", () => {
   test("every resolved action is a known Action type", () => {
     const a: Action | null = act("x");
     expect(a?.type).toBe("toggle");
+  });
+});
+
+describe("resolveKey: Markdown view (PRD 5.11)", () => {
+  const open = { markdownView: true } as const;
+  test("gm toggles the view, whether it is open or not", () => {
+    expect(resolveKey(k("g")).pending).toBe("g");
+    expect(act("m", { pending: "g" })).toEqual({ type: "toggle-markdown" });
+    expect(act("m", { pending: "g", ...open })).toEqual({ type: "toggle-markdown" });
+  });
+  test("gm works on a header and with no focus", () => {
+    expect(act("m", { pending: "g", ...onHeader })).toEqual({ type: "toggle-markdown" });
+    expect(act("m", { pending: "g", target: "none" })).toEqual({ type: "toggle-markdown" });
+  });
+  test("a lone m does nothing", () => {
+    expect(act("m")).toBeNull();
+  });
+  test("yy copies the view when it is open", () => {
+    expect(resolveKey(k("y", open))).toEqual({ action: null, pending: "y", preventDefault: true });
+    expect(resolveKey(k("y", { pending: "y", ...open }))).toEqual({
+      action: { type: "copy-markdown" }, pending: "", preventDefault: true,
+    });
+  });
+  test("y does nothing when the view is closed", () => {
+    expect(resolveKey(k("y"))).toEqual({ action: null, pending: "", preventDefault: false });
+  });
+  test("y then another key cancels the prefix without an action", () => {
+    const r = resolveKey(k("j", { pending: "y", ...open }));
+    expect(r.action).toBeNull();
+    expect(r.pending).toBe("");
+  });
+  test("task keys are ignored while the view is open", () => {
+    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "h", "l", "G", "ArrowDown"]) {
+      expect(act(key, open)).toBeNull();
+    }
+  });
+  test("dd and gg are ignored while the view is open", () => {
+    expect(act("d", open)).toBeNull();
+    expect(resolveKey(k("d", open)).pending).toBe("");
+    expect(act("g", { pending: "g", ...open })).toBeNull();
+  });
+  test("Alt+arrows and Ctrl+Z are ignored while the view is open", () => {
+    expect(act("ArrowDown", { altKey: true, ...open })).toBeNull();
+    expect(act("z", { ctrlKey: true, ...open })).toBeNull();
+  });
+  test("H, L and ? keep working while the view is open", () => {
+    expect(act("H", { shiftKey: true, ...open })).toEqual({ type: "view", dir: "prev" });
+    expect(act("L", { shiftKey: true, ...open })).toEqual({ type: "view", dir: "next" });
+    expect(act("?", open)).toEqual({ type: "toggle-help" });
+  });
+  test("Escape closes the view, also from a focused button", () => {
+    expect(act("Escape", open)).toEqual({ type: "toggle-markdown" });
+    expect(act("Escape", { target: "control", ...open })).toEqual({ type: "toggle-markdown" });
+  });
+  test("Escape does nothing in Normal mode when the view is closed", () => {
+    expect(act("Escape")).toBeNull();
+  });
+  test("the cheat sheet overlay still takes precedence over the view", () => {
+    expect(act("Escape", { overlay: "cheatsheet", ...open })).toEqual({ type: "toggle-help" });
   });
 });
