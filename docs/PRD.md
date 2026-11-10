@@ -428,7 +428,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Alerts**
 
-- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 13 px text, no border and a tinted background (amber for warnings, red for errors and for the delete confirmation).
+- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 14 px text (the body token), no border and a tinted background.
+  Amber is for warnings (the conflict banner, the empty file and the unreachable server), and red is for errors (the invalid file and rejected requests) and for the delete confirmation.
 - Its actions are text buttons on the same line, and they wrap below the message when the window is narrow.
 - Banners sit between the header and the scroll area and never scroll away.
   The delete confirmation replaces the content of the list header, and the invalid file, empty file and unreachable server notices use the same strip in place of the lists.
@@ -443,7 +444,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The overlay is inset by the page gutter and uses the panel look, with a fixed title and a vertical scroll limited to the window height.
 - In a wide window the entries are two columns, keys then description.
-  In a narrow window each entry is stacked, with the keys in `kbd` style above the muted description, the breakpoint being chosen at implementation time.
+  In a narrow window each entry is stacked, with the keys in `kbd` style above the muted description, the breakpoint being 520 px (a literal in the media query, since a media query cannot read a token).
 
 **Tokens**
 

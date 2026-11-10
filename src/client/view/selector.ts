@@ -11,7 +11,7 @@ export function renderSelector(doc: TodoDocument, view: View, onSelect: (view: V
   const current = menuStart(view, count);
 
   const label = el("span", { class: "selector-label" }, titles[current]!);
-  const button = el("button", { type: "button", class: "selector-button", "aria-haspopup": "listbox", "aria-expanded": "false", "aria-label": "List" }, label, caretIcon());
+  const button = el("button", { type: "button", class: "selector-button", "aria-haspopup": "listbox", "aria-expanded": "false" }, label, caretIcon());
   const menu = el("div", { class: "selector-menu", role: "listbox", tabindex: "0", "aria-label": "List" });
   menu.hidden = true;
   const wrap = el("div", { class: "selector" }, button, menu);
@@ -71,6 +71,9 @@ export function renderSelector(doc: TodoDocument, view: View, onSelect: (view: V
     if ("highlight" in res) highlight(res.highlight);
     else if ("pick" in res) pick(res.pick);
     else close(true);
+  });
+  wrap.addEventListener("focusout", (e) => {
+    if (!menu.hidden && !wrap.contains(e.relatedTarget as Node | null)) close(false); // Tab leaves the menu
   });
   return wrap;
 }

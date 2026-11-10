@@ -186,6 +186,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   function syncReveal(next: Reveal) {
     if (next === ctx.reveal) return;
     ctx.reveal = next;
+    for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key); // a stale draft must not reappear on another task
     roots.main.querySelector("[data-reveal]")?.remove();
     for (const ul of Array.from(roots.main.querySelectorAll(".subtasks:not(:has(li))"))) ul.remove();
     if (!next) return;
@@ -195,6 +196,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     if (!sub) item.append((sub = el("ul", { class: "subtasks" })));
     sub.append(renderSubtaskLine(next.list, next.task, lists, ctx));
     dnd.refresh(); // the DOM changed under the registered rows
+    for (const row of Array.from(roots.main.querySelectorAll<HTMLElement>(".task-row:has(.cm-editor)"))) row.draggable = false; // refresh made it draggable again
   }
 
   /** What a click landed on, for the reveal of PRD 5.10. */

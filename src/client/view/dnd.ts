@@ -28,7 +28,7 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
   function shownZone(over: NonNullable<Over>, source: TaskPath): string {
     if (over.zone !== "after" || over.element.dataset.child !== undefined) return over.zone;
     if (getNode(deps.getDoc()!, source)?.children?.length) return "after"; // a task with subtasks goes after the whole parent
-    return over.element.parentElement?.querySelector(":scope > .subtasks > li") ? "child" : "after";
+    return over.element.parentElement?.querySelector(":scope > .subtasks > li:not([data-reveal]):not(:has(.task-new))") ? "child" : "after";
   }
 
   /** The drop under the pointer, or null when there is none or when it is refused. */
