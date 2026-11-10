@@ -210,7 +210,13 @@ describe("file watcher", () => {
   });
 });
 
-describe("GET /api/export", () => {
+describe("removed export route", () => {
+  test("GET /api/export is not served", async () => {
+    expect((await fetch(`${base}/api/export`)).status).toBe(404);
+  });
+});
+
+describe("GET /api/export (to delete)", () => {
   const exportOf = (query = "") => fetch(`${base}/api/export${query}`);
 
   test("returns the canonical Markdown of the whole document as text/plain", async () => {
