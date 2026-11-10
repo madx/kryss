@@ -3,11 +3,21 @@
   gap: var(--space-12);
   font-size: var(--font-size-sm);
   color: var(--color-muted);
+  padding-left: max(var(--gutter), calc(8ch + 2 * var(--space-8) + var(--space-8)));
 }
 
+/* The badge is a corner block: it reaches the left and bottom edges of the window. */
 .mode-badge {
-  padding: 0 var(--space-6);
-  border-radius: var(--radius-chip);
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  height: var(--footer-height);
+  min-width: 8ch;
+  justify-content: center;
+  padding: 0 var(--space-8);
+  border-top-right-radius: var(--radius-chip);
   font-family: var(--font-mono);
   font-weight: 600;
   background: var(--color-accent);
@@ -21,4 +31,23 @@
 
 .statusline {
   font-family: var(--font-mono);
+}
+
+.sync-status {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+  color: var(--color-success);
+}
+
+.sync-status[data-status="unsaved"],
+.sync-status[data-status="saving"] {
+  color: var(--color-warning-text);
+}
+
+.sync-status[data-status="offline"],
+.sync-status[data-status="conflict"],
+.sync-status[data-status="invalid"],
+.sync-status[data-status="error"] {
+  color: var(--color-danger);
 }

@@ -141,7 +141,7 @@ A task with an empty text after trimming is rejected.
   A new list is created at once, appended at the end and called "New list", as one undoable change.
   A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
   The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
-  The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
+  The header has no title: it holds the selector on the left and a Lucide plus icon button to create a list.
   The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
 - Lists cannot be reordered in the app (order is the file's order).
   Empty file: the app offers to create the first list.
@@ -358,8 +358,9 @@ The mouse keeps working as before.
 
 **Footer, statusline and cheat sheet**
 
-- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green, as in 5.10) and a short statusline.
-- The statusline shows the done / total task counts of the current view and of the whole document, then the index of the list that holds the cursor over the total number of lists.
+- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
+  The mode badge is a corner block that reaches the left and bottom edges of the window.
+- The counts are those of the lists in the current view, and each list also shows its own done / total counts at the top right of its header.
   Subtasks count as tasks.
 - `?` opens a static cheat sheet overlay that lists every key, closed with Escape or `?`.
   It is not configurable.

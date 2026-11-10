@@ -8,7 +8,7 @@ import { statusIcon } from "./icons";
 
 export type BannerActions = { keepMine(): void; takeDisk(): void };
 
-/** Updates the status symbol in the header (it exists after `renderHeader`). */
+/** Updates the status symbol in the footer. */
 export function renderStatus(state: StoreState): void {
   const badge = document.getElementById("sync-status");
   if (!badge) return;
