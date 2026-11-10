@@ -183,3 +183,38 @@
   - [x] Cursor goes to the moved header after the drop
   - [x] Verify by hand, in the "All" view and in a single-list view, in light and dark
 - [x] Check that undo and redo of a list move return to the "All" view
+
+## Shared serializer
+- [ ] Move `serialize` to `src/shared/` and add the serialization of one list and of one task
+  - [ ] The server uses the shared function for `PUT`, with the frontmatter handling left on the server
+  - [ ] Tests: whole document, one list, one task with and without subtasks, empty list
+- [ ] Remove `GET /api/export`, `fetchExport` and their tests
+- [ ] Rebuild the Markdown view from the page's document
+  - [ ] Pure export function for the current view, with tests: whole document, one list, empty document, empty list
+  - [ ] Open without flush, rebuild on every document or view change, and keep the DOM when the text is the same
+  - [ ] Show the notice of the task UI when the page holds no document, with copy disabled
+  - [ ] Remove `store.flush()`, its tests and the flush-related code of the view
+- [ ] Update `CLAUDE.md` and check the PRD sections 2, 2.1, 3.4, 5.11 and 6
+- [ ] Verify by hand that the Markdown view follows unsaved edits, a conflict and a view switch
+
+## Register, change and paste
+- [ ] Pure logic
+  - [ ] Register content: a task with its subtree or a list, as a copy
+  - [ ] Paste a task below a task or a subtask, as the first task of a list, with the depth rule
+  - [ ] Paste a list after the list of the cursor
+  - [ ] Delete returns the removed element so that it can fill the register
+  - [ ] Tests: every paste placement, the depth rule, check states, list paste, copy independence, empty register
+- [ ] Keys
+  - [ ] `c` as a pending prefix, `cc`, `yy` and `p` in the pure key function, and `yy` in the Markdown view
+  - [ ] `dd` and Delete fill the register, and `dd` on a header deletes at once
+  - [ ] Cursor goes to the pasted element, scrolled into view
+  - [ ] A single-list view switches to a pasted list
+  - [ ] Tests of the key resolution
+- [ ] Clipboard and feedback
+  - [ ] Write the Markdown text of the element with `navigator.clipboard`, without blocking the edit when it is refused
+  - [ ] Transient "Copied" or "Copy failed" text in the footer statusline for 2 seconds
+  - [ ] Replace the popover of the Markdown view copy button with the footer text
+  - [ ] Tests of the clipboard text, and of the feedback timer if it is a pure function
+- [ ] Undo and redo of `p`, `dd` and `cc`, and of a list paste back to its view
+- [ ] Add `cc`, `yy` and `p` to the cheat sheet, and update `CLAUDE.md`
+- [ ] Verify by hand: `dd` then `p` to move a task and a list, `cc` with Escape, paste in a single-list view, and paste of the copied text into an external editor
