@@ -13,8 +13,9 @@ No virtualization needed.
 
 - A **Bun server** owns the file.
   The browser never accesses it directly, which makes the app browser-independent (Safari included).
-- Client and server exchange **JSON**, except for the read-only Markdown export of 2.1, which is plain text.
-  The server is the **only** component that parses and serializes Markdown.
+- Client and server exchange **JSON** only.
+  The server is the **only** component that parses Markdown.
+  The serializer is a pure function in `src/shared/`, used by the server to write the file and by the client to build the Markdown view and the clipboard text.
 - **Front end**: vanilla TypeScript, built by Bun from `index.ts`.
   No framework.
 - **Configuration**: the file is set by the `TODO_FILE` environment variable, defaulting to `./todo.md`, and created empty if missing.
@@ -32,13 +33,7 @@ No virtualization needed.
 | `GET /api/todos` | Returns the JSON document and an `ETag` header (hash of the file contents). Returns `422` if the file is invalid. |
 | `PUT /api/todos` | Replaces the whole document. Requires `If-Match` with the known ETag. Returns `200` and the new ETag, `409` if the file changed, `422` if the file on disk is invalid. |
 | `GET /api/events` | SSE stream: an event is emitted whenever the file changes and the change was not caused by the server itself. |
-| `GET /api/export` | Returns the canonical Markdown of the document as `text/plain`, without frontmatter. The optional `list` query parameter is a 0-based list index and restricts the export to that list. Returns `422` if the file is invalid. |
 
-The `GET /api/export` route is read-only and has no `ETag` handling.
-Without `list`, it returns exactly the canonical serialization of 3.4 minus the frontmatter, which is an empty body for an empty document.
-With `list`, it returns the same serialization of that one list, so an empty list gives just its `## Name` line.
-A `list` that is not a non-negative integer gives `400`, and one that is out of range gives `404`.
-The `422` body contains the line number and the reason.
 `GET` and `PUT` return the JSON document as the body and the `ETag` header, so the client always holds the canonical state.
 The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
 `PUT` returns `400` when the body is not a valid document, `428` when `If-Match` is missing, and `409` with the current ETag in the header when it does not match.
@@ -121,6 +116,7 @@ A task with an empty text after trimming is rejected.
 ### 3.4 Canonical serialization
 
 2-space indentation, one blank line between lists, trailing newline, `\n` line endings, `-` bullets.
+The serializer is shared by the server and the client (2), and it serializes a whole document, a list or a task, so that the Markdown view and the clipboard text use the same canonical form.
 
 ## 4. Synchronization
 
@@ -142,7 +138,7 @@ A task with an empty text after trimming is rejected.
 - Create, rename and delete a list from the selector.
   Names are typed in an inline input that replaces the list title: Enter, Escape and a blur commit a non-empty name (like the task editor) and cancel an empty one.
   An external change discards the name being typed and closes the input.
-  Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
+  Deleting a list with the mouse, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
   A new list is created at once, appended at the end and called "New list", as one undoable change.
   A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
   The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
@@ -330,8 +326,9 @@ The mouse keeps working as before.
   Buttons and the selector keep their native behavior, Enter or Space activates them, and Escape on any of them puts the focus back on the cursor.
   While the selector menu is open, Escape closes it first and then puts the focus back on the cursor.
   The conflict banner is the first Tab stop and has no dedicated key.
-- `gm` toggles the Markdown view of 5.11, and `yy` copies its content.
-- A pending first key (`g`, `d` or `y`) is cancelled by any other key or by a blur, with no timeout.
+- `gm` toggles the Markdown view of 5.11.
+  `yy`, `dd`, `cc` and `p` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
+- A pending first key (`g`, `d`, `y` or `c`) is cancelled by any other key or by a blur, with no timeout.
 - Escape in Normal mode does nothing.
 
 **Keys on a task**
@@ -340,7 +337,10 @@ The mouse keeps working as before.
 |---|---|
 | `x`, Space | toggle the check state (rules of 5.3) |
 | `i`, Enter, F2 | edit the task, caret at the end |
-| `dd`, Delete | delete the task with its subtree |
+| `dd`, Delete | delete the task with its subtree, into the register (5.12) |
+| `yy` | copy the task with its subtree into the register (5.12) |
+| `cc` | change the task: open the editor with an empty text (5.12) |
+| `p` | paste the register below the task (5.12) |
 | `>` / `<` | indent / outdent |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2) |
 | `u` / `U`, Ctrl+Z / Ctrl+Shift+Z | undo / redo |
@@ -354,7 +354,10 @@ The mouse keeps working as before.
 | Key | Action |
 |---|---|
 | `i`, Enter | rename the list in its inline name input (a click on the title does the same) |
-| `dd` | delete the list with the inline prompt, answered by `y` or Enter (confirm) and `n` or Escape (cancel) |
+| `dd`, Delete | delete the list at once, into the register (5.12), with no prompt since the register and undo recover it |
+| `yy` | copy the list into the register (5.12) |
+| `cc` | change the list: open the name input with an empty name (5.12) |
+| `p` | paste the register as the first task of the list, or after the list if it holds a list (5.12) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
 | `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up ("All" view only) |
@@ -380,6 +383,7 @@ The mouse keeps working as before.
 
 **Focus after an action**
 
+- After `p`, the cursor goes to the pasted element (5.12).
 - After `dd`, the cursor goes to the next stop at the same position, or to the previous stop if the deleted one was last.
 - After a move, indent, outdent, check, or leaving Insert mode, the cursor stays on the same task, following it to its new position.
 - After an undo or a redo, the cursor goes to the first task that changed, or to the same position clamped to the visible range if it cannot be determined.
@@ -391,6 +395,7 @@ The mouse keeps working as before.
   The mode badge is a corner block that reaches the left and bottom edges of the window.
 - The counts are those of the lists in the current view, and each list also shows its own done / total counts at the top right of its header.
   Subtasks count as tasks.
+- The statusline also shows a short transient text after a copy, as described in 5.12.
 - `?` opens a static cheat sheet overlay that lists every key, closed with Escape or `?`.
   It is not configurable.
 
@@ -490,7 +495,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 ### 5.11 Markdown view
 
-The Markdown view shows the Markdown equivalent of the current view, to inspect it and to copy it in full or in part.
+The Markdown view shows the Markdown equivalent of the current view, as the app holds it, to inspect it and to copy it in full or in part.
 It is read-only: there is no editing and no text `PUT`, and the file stays editable from an external editor.
 
 **Opening and closing**
@@ -504,40 +509,95 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 
 **Content**
 
-- It shows the response of `GET /api/export`, with `list` set to the index of the selected list in a single-list view and absent in the "All" view.
+- It shows the canonical Markdown of the document held by the page, unsaved edits included: all the lists in the "All" view, and the selected list in a single-list view.
+  The client builds it with the shared serializer of 3.4, without the frontmatter, which never reaches the client.
 - It is a monospace block of selectable text, so the native selection and Ctrl+C copy any part of it.
-- Opening the view first flushes the pending autosave and waits for the in-flight `PUT`, then fetches the export.
-  If the flush does not succeed (`409`, network error or `422`), the view does not open and the task UI stays, with the existing banner or sync symbol showing why.
-- `H` / `L` still switch views and fetch the export again.
-  An SSE `change` event fetches it again silently, which drops any text selection.
+- Opening the view needs no save and no request, so it also works during a conflict or when the server cannot be reached.
+- `H` / `L` still switch views, and the view is rebuilt whenever the document or the selected view changes, including after an SSE `change` event.
+  A rebuild that gives the same text leaves the DOM alone, so a text selection survives.
 - An empty export shows a muted "Nothing to export" placeholder.
-  A `422` shows the line and the reason, as the task UI does, in place of the block.
+  When the page holds no document, the view shows the same notice as the task UI in place of the block: the `422` line and reason, or the unreachable server.
   In both cases the copy button and `yy` are disabled.
 
 **Copying**
 
 - A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
-- Both show a "Copied" popover anchored to the copy button.
-  It disappears after 1 second, or at once on a click.
+- Both show the transient footer text of 5.12.
 - While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
   `H` / `L`, `gm`, `yy`, Escape and `?` keep working.
 
 **Implementation decisions**
 
-- The server builds the export with the same serializer as the file, restricted to the requested list and without the frontmatter, so the client never serializes Markdown.
+- The export is a pure function in `src/client/logic/` that applies the shared serializer to the lists of the current view.
 - The `gm` and `yy` resolution belongs to the pure key function of 5.9, and its output depends on whether the view is open.
-- The store exposes `flush()`, which sends the pending changes at once, waits for the `PUT` in flight and resolves to `false` when the save does not succeed.
-- When the server cannot be reached, the view shows a "Cannot reach the server." alert in place of the block, with copy disabled.
 - Escape closes the view even when the focus is on a button, and undo and redo are ignored while it is open.
 - The `square-m` icon is called `SquareLetterM` in the installed Lucide package.
 
+### 5.12 Register, change and paste
+
+`dd`, `yy`, `cc` and `p` work on a register, in Normal mode only.
+They are keyboard keys with no mouse equivalent, and the mouse controls neither fill the register nor write the clipboard.
+
+**Register**
+
+- The register is one in-memory slot that holds either a task with its subtree or a list with its tasks, as a self-contained copy of the JSON model.
+  It is never stored in `localStorage`, so a reload empties it.
+- An external change of the file and a switch of view leave it alone, since it refers to no document state, unlike the undo stack of 5.6.
+- `p` does not consume it, so the same element can be pasted several times.
+  With an empty register, `p` does nothing.
+
+**Keys**
+
+- `dd` and `Delete` delete the element under the cursor and put it in the register.
+  On a list header the deletion is immediate, with no prompt, because the register and undo recover the list.
+  The mouse delete button keeps its prompt (5.1).
+- `yy` puts the element in the register without changing the document.
+- `cc` opens the editor of a task with an empty text, or the name input of a list with an empty name.
+  The subtasks and the check state are kept, the register is not touched, and `cc` is one undoable change once committed.
+  Escape on an empty editor restores the previous text, as in 5.9.
+- `c` is a pending prefix like `g`, `d` and `y`: a lone `c` does nothing and any other key cancels it.
+- `p` on a task pastes right below it, after its whole subtree, at the cursor's own level.
+  A subtask pasted at the top level becomes a top-level task.
+  A task that has children, pasted onto a subtask, goes to the top level right after the cursor's parent, so that its subtree survives and no third level appears.
+- `p` on a header pastes a task as the first task of the list.
+- When the register holds a list, `p` pastes it after the list the cursor is in, whether the cursor is on its header or on one of its tasks.
+  A copied list keeps its title, since list names are not unique.
+  It works in every view, and in a single-list view the view switches to the pasted list, as for `N` (5.9).
+- The pasted element keeps its own check states and those of its children.
+  The rules of 5.3 apply at the destination: an unchecked task pasted under a checked parent unchecks that parent.
+- After `p`, the cursor goes to the pasted element, scrolled into view.
+- `p`, `dd` and `cc` are each one undoable change, and `yy` is not one.
+  Undoing the paste of a list goes back to the view that was active when it was pasted, as in 5.6.
+- While the Markdown view is open, `cc`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
+- With no list there is no cursor, so the keys do nothing, and `N` creates the first list.
+
+**Clipboard**
+
+- `dd` and `yy` also write the Markdown of the element to the system clipboard with `navigator.clipboard`.
+  It is write-only: `p` never reads the clipboard.
+  Markdown coming from another application is pasted in Insert mode, with the native paste of the editor, which replaces line breaks by spaces (5.5).
+- The text comes from the shared serializer of 3.4: a task is `- [ ] text` followed by its indented subtasks, and a list is its `## Title` line and its tasks.
+- A refused clipboard write never blocks the edit, and the register is filled in every case.
+
+**Feedback**
+
+- A copy (`yy`, `dd`, the copy button and `yy` of the Markdown view) shows a short text in the footer statusline, after the counts: "Copied" once the clipboard write succeeds, and "Copy failed" in the danger color when it is refused.
+  It disappears after 2 seconds, and a new copy restarts the timer.
+- It is plain text, in the 12 px mono style of the statusline, with no icon and no popover.
+
+**Implementation decisions**
+
+- The register content, the paste placement and the depth rule are pure functions in `src/client/logic/`, with the immutable and `null` conventions of 5.7.
+- The `cc`, `yy` and `p` resolution belongs to the pure key function of 5.9, with `c` as one more pending prefix.
+- The task-to-text and list-to-text functions are the shared serializer, so the register never builds Markdown by hand.
+
 ## 6. Tests
 
-- **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
-- **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422`, SSE after external modification, and `GET /api/export` (whole document, `list` index, empty document, empty list, frontmatter left out, `400`, `404`, `422`).
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view), positional add, cursor clamping, view cycling and statusline counts.
+- **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
+- **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, view cycling and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text).
 - No e2e in v1: drag and drop and CodeMirror are verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
