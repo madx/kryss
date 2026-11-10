@@ -1,0 +1,52 @@
+/* Header: layout and height come from base.css. */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+}
+
+.sync-status {
+  display: inline-flex;
+  flex: none;
+  margin-left: var(--space-8);
+  color: var(--color-success);
+}
+
+.sync-status[data-status="unsaved"],
+.sync-status[data-status="saving"] {
+  color: var(--color-warning-text);
+}
+
+.sync-status[data-status="offline"],
+.sync-status[data-status="conflict"],
+.sync-status[data-status="invalid"],
+.sync-status[data-status="error"] {
+  color: var(--color-danger);
+}
+
+/* Icon buttons are 22 px squares holding a 14 px icon. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  color: var(--color-muted);
+}
+
+.icon-button:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.icon-button svg {
+  display: block;
+}

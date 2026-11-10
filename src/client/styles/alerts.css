@@ -1,0 +1,65 @@
+/* The single alert component: banners, notices and the list delete confirmation. */
+.alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-12);
+  width: 100%;
+  padding: var(--space-6) var(--row-padding);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size);
+}
+
+.alert-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+}
+
+.alert-error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
+/* The message takes the line and pushes the buttons below it when there is no room. */
+.alert-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.alert-actions {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.alert-button {
+  padding: var(--space-2) var(--space-6);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.alert-button:hover {
+  background: color-mix(in srgb, currentcolor var(--tint-hover), transparent);
+}
+
+/* Banners sit between the header and the scroll area (the layout is in base.css). */
+#banners .alert {
+  margin-bottom: var(--space-8);
+}
+
+/* The notices that replace the lists have no panel around them. */
+.app-main > .alert {
+  flex: none;
+}
+
+/* The delete confirmation fills the list header. */
+.list-header > .alert {
+  padding: var(--space-2) var(--space-6);
+}

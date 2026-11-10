@@ -1,21 +1,13 @@
-/* Footer: a flex item at the bottom of the body column, so it never hides the scrolling lists. */
+/* Footer: layout (size, edges, padding) is in base.css. No border or separator. */
 .app-footer {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  width: 100%;
-  max-width: var(--content-width);
-  margin: 0 auto;
-  padding: var(--space-2) var(--space-1);
-  border-top: 1px solid var(--color-border);
-  font-size: var(--font-size-small);
+  gap: var(--space-12);
+  font-size: var(--font-size-sm);
   color: var(--color-muted);
 }
 
 .mode-badge {
-  padding: 0 var(--space-2);
-  border-radius: var(--space-1);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-chip);
   font-family: var(--font-mono);
   font-weight: 600;
   background: var(--color-accent);
@@ -29,64 +21,4 @@
 
 .statusline {
   font-family: var(--font-mono);
-}
-
-/* Cheat sheet overlay. The `hidden` attribute must win over display: flex. */
-.cheatsheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-3);
-  background: rgb(0 0 0 / 45%);
-}
-
-.cheatsheet-backdrop[hidden] {
-  display: none;
-}
-
-.cheatsheet-panel {
-  max-width: 640px;
-  max-height: 100%;
-  overflow-y: auto;
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  font-size: var(--font-size-small);
-}
-
-.cheatsheet-title {
-  margin-bottom: var(--space-2);
-  font-size: var(--font-size);
-}
-
-.cheatsheet-group h3 {
-  margin: var(--space-3) 0 var(--space-1);
-  font-size: var(--font-size-small);
-  color: var(--color-muted);
-  text-transform: uppercase;
-}
-
-.cheatsheet-list {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-1) var(--space-3);
-  margin: 0;
-}
-
-.cheatsheet-list dd {
-  margin: 0;
-}
-
-.cheatsheet-list kbd {
-  font-family: var(--font-mono);
-  padding: 0 var(--space-1);
-  background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  border-radius: var(--space-1);
 }

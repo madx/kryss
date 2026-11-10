@@ -18,6 +18,7 @@ import {
 } from "../logic";
 import { commitInsert, insertTarget, type AddAt, type Anchor } from "../logic/insert";
 import { getNode } from "../logic/paths";
+import { revealAfterClick, revealAfterKey, revealOrNull, type ClickTarget, type Reveal } from "../logic/reveal";
 import { statusline } from "../logic/stats";
 import { visibleRange } from "../logic/views";
 import type { Store, StoreState } from "../store";
@@ -27,21 +28,22 @@ import { createCheatsheet } from "./cheatsheet";
 import { createCursor, focusAndReveal, reveal, rowSelector, stopSelector } from "./cursor";
 import { createFooter } from "./footer";
 import { renderHeader } from "./header";
+import { el } from "./dom";
 import { installKeyboard } from "./keyboard";
 import { setupDnd } from "./dnd";
-import { renderListSection, type ListContext } from "./list-section";
+import { renderListSection, renderSubtaskLine, type ListContext } from "./list-section";
 import { BEGIN_EDIT, type TaskActions } from "./task-row";
 import { isTextField } from "../shortcuts";
 
+const NEW_LIST_NAME = "New list";
+
 export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage): void {
-  const ctx: ListContext = { addingSubtaskTo: null, renaming: null, confirmingRemove: null, drafts: new Map(), placeholder: null };
+  const ctx: ListContext = { reveal: null, renaming: null, confirmingRemove: null, drafts: new Map(), placeholder: null };
   const footer = createFooter();
   const cheatsheet = createCheatsheet();
   document.body.append(footer.el, cheatsheet.el);
   const cursor = createCursor(roots.main, store, storage);
   let cursorRestored = false;
-  /** Create-list input open in the header, with the text typed so far. */
-  let creating: { draft: string } | null = null;
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
 
@@ -81,70 +83,60 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     outdent: (path) => apply(outdent(doc(), path)),
     moveUp: (path) => apply(moveUp(doc(), path, visibleBounds())),
     moveDown: (path) => apply(moveDown(doc(), path, visibleBounds())),
-    addSubtask(path) {
-      ctx.addingSubtaskTo = { list: path.list, task: path.task };
-      for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key); // keyed by parent, which may have shifted
-      pendingFocus = `[data-add="child-${path.list}-${path.task}"]`;
-      renderAll(store.getState());
-    },
     focusRow(path) {
       document.querySelector<HTMLElement>(rowSelector(path))?.focus();
     },
   };
 
+  /** Adds a list called "New list" at once, switches a single-list view to it and opens its name input with the name selected. */
   const createList = () => {
-    creating = { draft: "" };
+    const next = addList(doc(), NEW_LIST_NAME);
+    const created = next.lists.length - 1;
+    ctx.confirmingRemove = null;
+    ctx.renaming = { list: created, draft: NEW_LIST_NAME };
     pendingFocus = "[data-name-input]";
-    renderAll(store.getState());
+    store.commit(next);
+    if (store.getState().selected !== null) {
+      pendingFocus = "[data-name-input]"; // the commit may have used the request while the old list was shown
+      store.select(created); // the selector must show the new list
+    }
+    const input = document.querySelector<HTMLInputElement>("[data-name-input]");
+    input?.select();
+    reveal(roots.main.querySelector(`.list[data-list="${created}"]`)); // show the whole new list
   };
 
-  /** Callbacks shared by the create and rename inputs (only one of them is open at a time). */
+  /** Callbacks of the name input of a rename, or of the list just created. */
   const naming = {
     input(draft: string) {
-      if (creating) creating.draft = draft;
-      else if (ctx.renaming) ctx.renaming.draft = draft;
+      if (!ctx.renaming) return;
+      ctx.renaming.draft = draft;
+      // The selector shows the title of the selected list, so it follows what is typed.
+      const label = document.querySelector(".selector-label");
+      if (label && store.getState().selected === ctx.renaming.list) label.textContent = draft.trim() !== "" ? draft : doc().lists[ctx.renaming.list]?.title ?? "";
     },
     submit(name: string) {
       const rename = ctx.renaming;
-      const create = creating;
-      if (!rename && !create) return; // the input was discarded (e.g. by an external change)
-      creating = null;
+      if (!rename) return; // the input was discarded (e.g. by an external change)
       ctx.renaming = null;
-      if (create) {
-        const next = addList(doc(), name);
-        if (next !== doc()) {
-          store.commit(next);
-          const created = next.lists.length - 1;
-          if (store.getState().selected !== null) store.select(created); // a single-list view must show the new list
-          // The cursor goes to the new list and its first task is typed right away.
-          const target = insertTarget(doc(), "list-start", { kind: "header", list: created });
-          if (target) openPlaceholder(target, stopSelector({ kind: "header", list: created }));
-          reveal(roots.main.querySelector(`.list[data-list="${created}"]`)); // show the whole new list
-          return;
-        }
-      } else if (rename) {
-        const next = renameList(doc(), rename.list, name);
-        if (next !== doc()) {
-          commitFocus(next, stopSelector({ kind: "header", list: rename.list }));
-          return;
-        }
-        pendingFocus = stopSelector({ kind: "header", list: rename.list });
+      const next = renameList(doc(), rename.list, name);
+      if (next !== doc()) {
+        commitFocus(next, stopSelector({ kind: "header", list: rename.list }));
+        return;
       }
+      pendingFocus = stopSelector({ kind: "header", list: rename.list });
       renderAll(store.getState());
     },
     cancel() {
-      if (!creating && !ctx.renaming) return;
-      if (ctx.renaming) pendingFocus = stopSelector({ kind: "header", list: ctx.renaming.list });
-      creating = null;
+      if (!ctx.renaming) return;
+      pendingFocus = stopSelector({ kind: "header", list: ctx.renaming.list });
       ctx.renaming = null;
-      renderAll(store.getState());
+      renderAll(store.getState()); // the selector goes back to the stored title
     },
   };
 
   const lists = {
     naming,
     rename(index: number) {
-      creating = null;
       ctx.confirmingRemove = null;
       ctx.renaming = { list: index, draft: doc().lists[index]?.title ?? "" };
       pendingFocus = "[data-name-input]";
@@ -178,13 +170,51 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       if (result) commitFocus(result.doc, `[data-add="child-${list}-${task}"]`);
     },
     cancelSubtask() {
-      const from = ctx.addingSubtaskTo;
-      ctx.addingSubtaskTo = null;
+      const from = ctx.reveal;
       for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key);
+      ctx.reveal = null;
       if (from) pendingFocus = rowSelector(from);
       renderAll(store.getState());
     },
   };
+
+  /** Shows or hides the revealed "Add a subtask" line without a render, which would close the editor a click just opened. */
+  function syncReveal(next: Reveal) {
+    if (next === ctx.reveal) return;
+    ctx.reveal = next;
+    for (const key of ctx.drafts.keys()) if (key.startsWith("child-")) ctx.drafts.delete(key); // a stale draft must not reappear on another task
+    roots.main.querySelector("[data-reveal]")?.remove();
+    for (const ul of Array.from(roots.main.querySelectorAll(".subtasks:not(:has(li))"))) ul.remove();
+    if (!next) return;
+    const item = roots.main.querySelector(`.task-row[data-list="${next.list}"][data-task="${next.task}"]:not([data-child])`)?.parentElement;
+    if (!item) return;
+    let sub = item.querySelector(":scope > .subtasks");
+    if (!sub) item.append((sub = el("ul", { class: "subtasks" })));
+    sub.append(renderSubtaskLine(next.list, next.task, lists, ctx));
+    dnd.refresh(); // the DOM changed under the registered rows
+    for (const row of Array.from(roots.main.querySelectorAll<HTMLElement>(".task-row:has(.cm-editor)"))) row.draggable = false; // refresh made it draggable again
+  }
+
+  /** What a click landed on, for the reveal of PRD 5.10. */
+  function clickTarget(target: EventTarget | null): ClickTarget {
+    if (!(target instanceof Element) || !roots.main.contains(target)) return { kind: "other" };
+    if (target.closest(".add-line, .task-new, .task-check")) return { kind: "checkbox" }; // changes nothing
+    const row = target.closest<HTMLElement>(".task-row");
+    if (row && target.closest(".task-text") && row.dataset.list !== undefined) {
+      const { list, task, child } = row.dataset;
+      return { kind: "text", path: { list: Number(list), task: Number(task), ...(child === undefined ? {} : { child: Number(child) }) } };
+    }
+    return { kind: "other" };
+  }
+  document.addEventListener("click", (e) => syncReveal(revealAfterClick(ctx.reveal, clickTarget(e.target))));
+  // Capture phase, so that the editor's own Escape handling cannot hide it from here. The subtask line handles its own Escape.
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key === "Escape" && !(e.target instanceof Element && e.target.closest(".add-line"))) syncReveal(revealAfterKey(ctx.reveal, e.key));
+    },
+    true,
+  );
 
   /** Settles the open editors first (their commit may change the document), then renders from the up-to-date state. */
   function renderMain() {
@@ -196,6 +226,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       return getNode(d, { list: Number(row.dataset.list), task: Number(row.dataset.task), child: child === undefined ? undefined : Number(child) })?.text;
     });
     const state = store.getState();
+    ctx.reveal = state.doc ? revealOrNull(ctx.reveal, state.doc) : null;
     if (state.invalid) {
       roots.main.replaceChildren(renderInvalid(state.invalid, store.hasPendingChanges()));
     } else if (!state.doc) {
@@ -227,7 +258,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   function renderAll(state: StoreState, focus: string | null = null) {
     if (focus) pendingFocus = focus;
-    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, creating, naming });
+    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();
@@ -248,7 +279,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   store.subscribe((state, kind) => {
     if (kind === "external") {
       // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
-      creating = null;
       ctx.renaming = null;
       ctx.placeholder = null;
     }

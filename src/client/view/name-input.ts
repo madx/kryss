@@ -1,4 +1,4 @@
-// Inline list name input: Enter submits, Escape cancels, a blur commits a non-empty name (and cancels otherwise). Used to create and rename lists.
+// Inline list name input: Enter, Escape and a blur commit a non-empty name and cancel an empty one, like the task editor. Used to create and rename lists.
 import { el } from "./dom";
 
 export type NameInputActions = { submit(name: string): void; cancel(): void; input(draft: string): void };
@@ -13,15 +13,13 @@ export function renderNameInput(initial: string, label: string, actions: NameInp
     run();
   };
   input.addEventListener("input", () => actions.input(input.value));
+  const commit = () => finish(input.value.trim() !== "" ? () => actions.submit(input.value) : actions.cancel);
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && input.value.trim() !== "") {
+    if (e.key === "Escape" || (e.key === "Enter" && input.value.trim() !== "")) {
       e.preventDefault();
-      finish(() => actions.submit(input.value));
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      finish(actions.cancel);
+      commit();
     }
   });
-  input.addEventListener("blur", () => finish(input.value.trim() !== "" ? () => actions.submit(input.value) : actions.cancel));
+  input.addEventListener("blur", commit);
   return input;
 }

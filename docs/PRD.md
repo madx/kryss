@@ -135,10 +135,12 @@ A task with an empty text after trimming is rejected.
 - A **selector** shows a single list or "All" (default on first launch).
 - The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All" and forget the stale index, so a list appearing later at that position is not selected.
 - Create, rename and delete a list from the selector.
-  Names are typed in an inline input (the header selector is replaced by the input for a new list, the list title for a rename): Enter confirms, Escape cancels, and a blur commits a non-empty name (like the task editor) and cancels an empty one.
+  Names are typed in an inline input that replaces the list title: Enter, Escape and a blur commit a non-empty name (like the task editor) and cancel an empty one.
   An external change discards the name being typed and closes the input.
   Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
-  A new list is appended at the end.
+  A new list is created at once, appended at the end and called "New list", as one undoable change.
+  A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
+  The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
   The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
   The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
 - Lists cannot be reordered in the app (order is the file's order).
@@ -331,8 +333,8 @@ The mouse keeps working as before.
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
 - `x`, `>`, `<`, `J` and `K` do nothing on a header, since lists cannot be reordered.
-- `N` keeps the current view, except in a single-list view where it selects the new list so that the name input is visible.
-  Once the name is confirmed, the cursor goes to the new list and a first task is typed right away, as with `A` on its header.
+- `N` creates the list as in 5.1, keeps the "All" view, and switches a single-list view to the new list.
+  Once the name is confirmed, the cursor stays on the new list header.
   This also applies to a list created with the plus button.
 
 **Positional add and Insert mode**
@@ -345,7 +347,7 @@ The mouse keeps working as before.
   A new task with an empty text is discarded, and the cursor returns to the row it started from.
   An existing task whose text was emptied gets its previous text back, and it is never deleted this way.
 - A blur commits, as in 5.8.
-- The list name input keeps its own rule: Enter confirms and Escape cancels.
+- The list name input follows the same rule as the task editor: Enter, Escape and a blur commit a non-empty name and cancel an empty one.
 
 **Focus after an action**
 
@@ -387,18 +389,18 @@ The static prototype that settled these decisions was a throwaway and is not kep
   The header, the list panels and the footer share the same left edge.
 - A list is a flat panel: surface background, 8 px radius, no border and no shadow, with 8 px between panels.
   Panels are distinguished from the page by their background only.
-- Task text is 14 px with a line height of 1.4, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
+- Task text is 12 px (the same as in Obsidian) with a line height of 20 px, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
   Text size and row height are the same at every window width.
 - Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
   The page gutter goes from 6 to 16 px, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
 - The header is fixed and about 32 px tall, the footer is fixed and about 24 px tall, and neither has a border or a separator.
-- The scroll area keeps a stable scrollbar gutter on one edge only, so the content never shifts when the scrollbar appears.
-  The scrollbar is 10 px wide (an 8 px thumb with 1 px of padding), and the header and the footer get the same extra padding on that side so that their edges stay aligned with the panels.
-  The content is therefore about 5 px off center in a wide window, which is accepted.
+- The scrollbar of the scroll area appears only when the content overflows, and no space is reserved for it, so the layout stays centered and balanced.
+  It is 10 px wide (an 8 px thumb with 1 px of padding).
+  When it appears, the panels shrink by its width and their edges move a few pixels away from those of the header and the footer, which is accepted.
 
 **Rows and actions**
 
-- A row is a checkbox and the task text.
+- A row is a checkbox (a 12 px chip with a 1 px border) and the task text.
   A completed task has a checked box and a muted text color, with no background.
 - There is no drag handle (5.4).
 - A delete "×" appears on mouse hover only, on top of the end of the text with a solid background, so it reserves no width.
@@ -418,7 +420,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
   This applies to the task editor, to the add lines (which turn into an empty editing row) and to the list name input (which edits the title in place).
-- The name input of a new list replaces the selector in the header while it is open, and Escape or an empty name cancels it.
+- The name input of a new list is the title of its section, with the same look as a rename.
 
 **Drag feedback**
 
@@ -428,7 +430,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Alerts**
 
-- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 13 px text, no border and a tinted background (amber for warnings, red for errors and for the delete confirmation).
+- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 14 px text (the body token, larger than the 12 px tasks), no border and a tinted background.
+  Amber is for warnings (the conflict banner, the empty file and the unreachable server), and red is for errors (the invalid file and rejected requests) and for the delete confirmation.
 - Its actions are text buttons on the same line, and they wrap below the message when the window is narrow.
 - Banners sit between the header and the scroll area and never scroll away.
   The delete confirmation replaces the content of the list header, and the invalid file, empty file and unreachable server notices use the same strip in place of the lists.
@@ -443,11 +446,11 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The overlay is inset by the page gutter and uses the panel look, with a fixed title and a vertical scroll limited to the window height.
 - In a wide window the entries are two columns, keys then description.
-  In a narrow window each entry is stacked, with the keys in `kbd` style above the muted description, the breakpoint being chosen at implementation time.
+  In a narrow window each entry is stacked, with the keys in `kbd` style above the muted description, the breakpoint being 520 px (a literal in the media query, since a media query cannot read a token).
 
 **Tokens**
 
-- Font sizes are 16 px (list selector only), 14 px (body and tasks) and 12 px (list titles, counts, footer, cheat sheet, `kbd`).
+- Font sizes are 16 px (list selector only), 14 px (body and alerts) and 12 px (tasks, list titles, counts, footer, cheat sheet, `kbd`).
 - Radii are 8 px (panels), 6 px (rows, buttons, alerts, inputs) and 4 px (chips: `code`, `kbd`, mode badge, checkbox).
 - Spacing steps are 2, 4, 6, 8, 12 and 16 px, plus the responsive `clamp()` tokens above.
 - Icons are Lucide SVG at 14 px with a stroke of 2, never text glyphs, and icon buttons are 22 px squares.

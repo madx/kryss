@@ -4,27 +4,27 @@
   box-sizing: border-box;
 }
 
-/* Safari and Chrome: custom scrollbar: 8px thumb with 4px of padding around it. The standard scrollbar-* properties are not set there, as they would override it. */
+/* Safari and Chrome: 10px scrollbar, an 8px thumb with 1px of padding. The standard scrollbar-* properties are not set there, as they would override it. */
 ::-webkit-scrollbar {
-  width: 16px;
-  height: 16px;
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-faint);
-  border: 4px solid transparent;
+  border: var(--scrollbar-padding) solid transparent;
   background-clip: content-box;
-  border-radius: 8px;
+  border-radius: var(--radius-panel);
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* Firefox only knows the standard properties; its default width is a few pixels above "thin". */
+/* Firefox only knows the standard properties; its "thin" width is the closest to 10px. */
 @supports not selector(::-webkit-scrollbar) {
-  html {
-    scrollbar-width: auto;
+  .app-scroll {
+    scrollbar-width: thin;
     scrollbar-color: var(--color-faint) transparent;
   }
 }
@@ -41,6 +41,7 @@ body {
 
 h1,
 h2,
+h3,
 p,
 ul {
   margin: 0;
@@ -52,8 +53,7 @@ ul {
 }
 
 button,
-input,
-select {
+input {
   font: inherit;
   color: inherit;
 }
@@ -72,53 +72,68 @@ del {
 
 code {
   font-family: var(--font-mono);
-  font-size: 0.9em;
+  font-size: var(--font-size-sm);
   color: var(--color-muted);
   background: var(--color-hover);
-  border: 1px solid var(--color-border);
-  padding: 0 var(--space-1);
-  border-radius: var(--space-1);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-chip);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+  outline: var(--bar-width) solid var(--color-focus);
+  outline-offset: var(--hairline);
 }
 
+/* One centered column, one shared left edge for the header, the panels and the footer. */
 .app-header,
-#banners,
-.app-main {
-  max-width: var(--content-width);
-  margin: 0 auto;
-}
-
-/* The header sets its own padding in components.css: the dev server may load that file before this one. */
-#banners,
-.app-main {
-  padding: 0 var(--space-1);
-}
-
-.app-header,
-#banners {
+.app-footer {
   flex: none;
   width: 100%; /* auto margins stop a flex item from stretching */
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
 }
 
-/* Only the lists scroll, the header and the banners stay in place.
- * The gutter is reserved on both edges so that the content stays centered under the header. */
+.app-header {
+  display: flex;
+  align-items: center;
+  height: var(--header-height);
+}
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  height: var(--footer-height);
+}
+
+/* Banners sit between the header and the scroll area and never scroll away. */
+#banners {
+  flex: none;
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+#banners:empty {
+  display: none;
+}
+
+/* Only the lists scroll, and the scrollbar shows only when the content overflows. */
 .app-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-gutter: stable both-edges;
 }
 
 .app-main {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding-top: var(--space-2);
-  padding-bottom: var(--space-4);
+  gap: var(--space-8);
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--gutter) var(--space-16);
 }
 
 .muted {
