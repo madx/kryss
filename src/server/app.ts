@@ -3,7 +3,7 @@ import { watch, type FSWatcher } from "node:fs";
 import { readFile, rename, writeFile, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import type { ChangeEvent, TodoDocument } from "../shared/types";
-import { parse, serialize } from "./markdown";
+import { parse, serialize, withFrontmatter } from "./markdown";
 
 const WATCH_DEBOUNCE_MS = 50;
 
@@ -84,7 +84,7 @@ export function createApp({ file }: { file: string }) {
       const currentEtag = etagOf(current);
       if (ifMatch.replace(/^W\//, "") !== currentEtag) return json({ error: "The file changed on disk" }, 409, { ETag: currentEtag });
 
-      const markdown = serialize(body);
+      const markdown = withFrontmatter(current, serialize(body));
       const next = etagOf(markdown);
       // Recorded before the rename so that the watcher ignores this write.
       knownEtag = next;

@@ -51,8 +51,9 @@ Work plan: `docs/TODO.md`.
   - [x] Subtask
 ```
 
-- Only `## List` sections containing tasks.
-  Anything else is rejected (`422`): frontmatter, free text, `#` / `###` headings, empty list name, a third nesting level, multi-line tasks.
+- Only `## List` sections containing tasks, after an optional leading frontmatter block.
+  The frontmatter (`---` … `---`) is ignored on read and kept byte for byte on write, and never reaches the client.
+  Anything else is rejected (`422`): an unclosed frontmatter, free text, `#` / `###` headings, empty list name, a third nesting level, multi-line tasks.
 - A task is exactly one line, with non-empty text that may contain inline Markdown, stored as-is.
 - Lists are identified by position, not by name (names are not unique).
   Empty lists and an empty file are valid.
@@ -72,7 +73,7 @@ Work plan: `docs/TODO.md`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, frontmatter, the `xit` format, automatic merging, list reordering, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, list reordering, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests.
 
 ## Testing
 
