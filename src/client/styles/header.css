@@ -1,22 +1,16 @@
-/* Header */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  padding: calc(var(--space-16) * 1.5) var(--space-4) var(--space-12);
-}
-
+/* Header: layout and height come from base.css. */
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-4);
+  flex: 1;
   min-width: 0;
 }
 
 .sync-status {
   display: inline-flex;
   flex: none;
+  margin-left: var(--space-8);
   color: var(--color-success);
 }
 
@@ -32,76 +26,18 @@
   color: var(--color-danger);
 }
 
-.icon-button svg {
-  display: block;
-}
-
-.app-header .icon-button {
-  padding: var(--space-4) var(--space-8);
-}
-
-/* Controls */
-.button {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  padding: var(--space-4) var(--space-12);
-  cursor: pointer;
-}
-
-/* The list selector looks like a level 2 heading, with a caret that opens the native select. */
-.list-select-wrap {
-  position: relative;
+/* Icon buttons are 22 px squares holding a 14 px icon. */
+.icon-button {
   display: inline-flex;
   align-items: center;
-  min-width: 0;
-  color: var(--color-muted);
-}
-
-.list-select-wrap:hover {
-  color: var(--color-text);
-}
-
-.list-select-wrap svg {
-  position: absolute;
-  right: var(--space-4);
-  pointer-events: none; /* clicks reach the select */
-}
-
-.list-select {
-  appearance: none;
+  justify-content: center;
+  flex: none;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  padding: 0;
   background: transparent;
   border: 0;
   border-radius: var(--radius-control);
-  padding: var(--space-4) calc(var(--space-16) + var(--space-4)) var(--space-4) var(--space-8);
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--color-text);
-  cursor: pointer;
-  max-width: 100%;
-  text-overflow: ellipsis;
-}
-
-.button:hover {
-  background: var(--color-hover);
-}
-
-.button-primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-accent-text);
-}
-
-.button-primary:hover {
-  background: var(--color-accent);
-  opacity: 0.9;
-}
-
-.icon-button {
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-control);
-  padding: 0 var(--space-8);
   cursor: pointer;
   color: var(--color-muted);
 }
@@ -111,3 +47,23 @@
   color: var(--color-text);
 }
 
+.icon-button svg {
+  display: block;
+}
+
+/* The name input of a new list replaces the selector: same font as the selector, no box, Insert cursor look. */
+.app-header .name-input {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+  height: var(--header-height);
+  padding: 0 var(--space-8);
+  background: color-mix(in srgb, var(--color-success) var(--tint-cursor), transparent);
+  border: 0;
+  border-radius: var(--radius-control);
+  box-shadow: inset var(--bar-width) 0 0 var(--color-success);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  outline: none;
+}

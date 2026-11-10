@@ -1,10 +1,8 @@
-/* Lists */
+/* Lists: flat panels, distinguished from the page by their background only. */
 .list {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  box-shadow: var(--shadow);
-  padding: var(--space-12);
+  border-radius: var(--radius-panel);
+  padding: var(--panel-padding);
 }
 
 .list-header {
@@ -12,23 +10,45 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
-  margin-bottom: var(--space-8);
+  min-height: var(--icon-button-size);
+  padding: var(--space-2) var(--row-padding);
+  border-radius: var(--radius-control);
+  font-size: var(--font-size-sm);
 }
 
 .list-title {
-  font-size: 17px;
+  min-width: 0;
   margin-right: auto;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
 }
 
-.list-actions {
+/* Rename and delete: mouse only, shown while the pointer is over the header. They are out of the tab order. */
+.list-actions,
+.task-actions {
+  display: none;
+}
+
+.list-header:hover .list-actions,
+.task-row:hover .task-actions {
   display: flex;
+}
+
+.list-actions .icon-button:hover,
+.task-actions .icon-button:hover {
+  background: var(--color-hover);
 }
 
 .tasks,
 .subtasks {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+}
+
+.tasks {
+  position: relative;
 }
 
 .tasks:empty {
@@ -36,34 +56,26 @@
 }
 
 .subtasks {
-  margin: var(--space-4) 0 0 var(--space-16);
+  margin-left: var(--subtask-indent);
 }
 
-/* Task row */
+/* Task row: a checkbox and the text. The whole row is the drag source. */
 .task-row {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  padding: var(--space-4) var(--space-8);
+  align-items: flex-start;
+  gap: var(--checkbox-gap);
+  padding: var(--row-padding-y) var(--row-padding);
   border-radius: var(--radius-control);
-  border: 1px solid transparent;
 }
 
 .task-row:hover {
   background: var(--color-hover);
 }
 
-/* Completed: checked box plus another background and color, never a line-through. */
-.task-row[data-done="true"] {
-  background: var(--color-done-bg);
+/* Completed: checked box and muted text, with no background and never a line-through. */
+.task-row[data-done="true"] .task-text {
   color: var(--color-done-text);
-}
-
-.drag-handle {
-  color: var(--color-muted);
-  cursor: grab;
-  user-select: none;
-  opacity: 0.5;
 }
 
 .task-text {
@@ -73,48 +85,121 @@
   cursor: text;
 }
 
-.task-actions {
-  display: flex;
-  opacity: 0;
+/* The empty row of a positional add has no checkbox: its text lines up with the others. */
+.task-new .task-text {
+  margin-left: calc(var(--icon-size) + var(--checkbox-gap));
 }
 
-.task-row:hover .task-actions,
-.task-row:focus-within .task-actions {
+/* Checkbox: a 14 px chip, centered on the first line of text. */
+.task-check {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin: calc((var(--font-size) * var(--line-height) - var(--icon-size)) / 2) 0 0;
+  border: var(--bar-width) solid var(--color-faint);
+  border-radius: var(--radius-chip);
+  background: transparent;
+  cursor: pointer;
+}
+
+.task-check:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.task-check:checked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent-text);
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center / contain no-repeat;
+}
+
+/* Row delete "×": on top of the end of the text with a solid background, so it reserves no width. */
+.task-actions {
+  position: absolute;
+  top: 50%;
+  right: var(--row-padding);
+  transform: translateY(-50%);
+  background: var(--color-hover);
+  border-radius: var(--radius-control);
+}
+
+/* Add lines: a quiet plus and a borderless input, which becomes the editing row. */
+.add-line {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--checkbox-gap);
+  padding: var(--row-padding-y) var(--row-padding);
+  border-radius: var(--radius-control);
+  color: var(--color-faint);
+}
+
+.add-line svg {
+  flex: none;
+  margin-top: calc((var(--font-size) * var(--line-height) - var(--icon-size)) / 2);
+}
+
+.add-line:hover {
+  color: var(--color-muted);
+}
+
+/* Inputs never look like a box: same font and size as the text they stand for, nothing of their own. */
+.add-input,
+.list-header .name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  line-height: var(--line-height);
+}
+
+.add-input::placeholder {
+  color: var(--color-faint);
   opacity: 1;
 }
 
-.name-input,
-.add-input {
-  width: 100%;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  padding: var(--space-4) var(--space-8);
+.add-input:hover::placeholder {
+  color: var(--color-muted);
 }
 
 .add-input {
-  margin-top: var(--space-8);
+  color: var(--color-text);
 }
 
-.subtasks .add-input {
-  margin-top: 0;
+.list-header .name-input {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-.list-confirm {
-  flex-basis: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  color: var(--color-danger);
+/* Cursor: a tint and a bar on the left, accent blue in Normal mode and green in Insert mode.
+ * Normal is the focused row or list header (also its checkbox). Insert is an open editor, name input or add line. */
+.task-row:focus-visible,
+.list-header:focus-visible {
+  outline: none;
 }
 
-.button-danger {
-  color: var(--color-danger);
-  border-color: var(--color-danger);
+.task-row:is(:focus, :has(.task-check:focus)),
+.list-header:focus {
+  --cursor-color: var(--color-accent);
 }
 
-.app-header .name-input {
-  width: auto;
-  flex: 1;
-  max-width: 240px;
+.task-row:has(.cm-focused),
+.list-header:has(.name-input:focus),
+.add-line:focus-within {
+  --cursor-color: var(--color-success);
+}
+
+.task-row:is(:focus, :has(.task-check:focus, .cm-focused)),
+.list-header:is(:focus, :has(.name-input:focus)),
+.add-line:focus-within {
+  background: color-mix(in srgb, var(--cursor-color) var(--tint-cursor), transparent);
+  box-shadow: inset var(--bar-width) 0 0 0 var(--cursor-color);
 }

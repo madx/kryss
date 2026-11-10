@@ -1,0 +1,82 @@
+/* Cheat sheet overlay, in the panel look. The `hidden` attribute must win over display: flex. */
+.cheatsheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--gutter);
+  background: color-mix(in srgb, var(--color-bg) calc(100% - var(--tint-cursor)), transparent);
+}
+
+.cheatsheet-backdrop[hidden] {
+  display: none;
+}
+
+/* The title stays fixed, the groups scroll, and the panel never grows past the window height. */
+.cheatsheet-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--content-width);
+  max-height: 100%;
+  padding: var(--panel-padding) var(--row-padding);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-radius: var(--radius-panel);
+  font-size: var(--font-size-sm);
+}
+
+.cheatsheet-title {
+  flex: none;
+  padding: var(--space-4) 0;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.cheatsheet-groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.cheatsheet-group h3 {
+  margin: var(--space-12) 0 var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+}
+
+/* Wide window: two columns, keys then description. */
+.cheatsheet-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-4) var(--space-12);
+  margin: 0;
+}
+
+.cheatsheet-list dd {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.cheatsheet-list kbd {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-4);
+  background: var(--color-hover);
+  border-radius: var(--radius-chip);
+}
+
+/* Narrow window (breakpoint chosen at implementation time, PRD 5.10): each entry is stacked, keys above the description. */
+@media (max-width: 520px) {
+  .cheatsheet-list {
+    display: block;
+  }
+
+  .cheatsheet-list dt {
+    margin-top: var(--space-6);
+  }
+}

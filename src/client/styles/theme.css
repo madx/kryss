@@ -11,7 +11,6 @@
   --color-accent: #2f6fed;
   --color-accent-text: #ffffff;
   --color-hover: #ecece8;
-  --color-done-bg: #e6f2e6;
   --color-done-text: #5b6b5b;
   --color-success: #2e7d32;
   --color-danger: #c0392b;
@@ -65,7 +64,6 @@
   /* Tints, as a share of a color mixed with transparent. */
   --tint-hover: 8%;
   --tint-cursor: 14%;
-  --tint-alert: 100%;
   --opacity-dragging: 0.4;
 }
 
@@ -81,7 +79,6 @@
     --color-accent: #508bf1;
     --color-accent-text: #181a1c;
     --color-hover: #2b2d3a;
-    --color-done-bg: #313736;
     --color-done-text: #7e8284;
     --color-success: #9ed06c;
     --color-danger: #fb617e;
