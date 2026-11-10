@@ -1,10 +1,10 @@
 // Drag and drop with Pragmatic drag and drop.
-// The rows are dragged by their `.drag-handle` and are drop targets, an empty list (`ul.tasks`) is a drop target too.
+// The whole row is the drag source (no handle) and a drop target, an empty list (`ul.tasks`) is a drop target too.
 // The DOM is rebuilt on every change, so `refresh` is called after each render: it drops the old registrations and registers the new elements.
 // The drop zone is derived from the pointer position in the row (see dnd-zone.ts) and checked with `validateDrop`: a refused zone shows no indicator and does nothing.
 import { draggable, dropTargetForElements, monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { TodoDocument } from "../../shared/types";
-import { moveTask, validateDrop, type Drop, type TaskPath } from "../logic";
+import { getNode, moveTask, validateDrop, type Drop, type TaskPath } from "../logic";
 import { zoneFromPointer, type Zone } from "./dnd-zone";
 
 type Source = { path: TaskPath };
@@ -23,6 +23,13 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
     indicated?.removeAttribute("data-drop");
     indicated = null;
   };
+
+  /** "After" a parent that has subtasks inserts the task as its first child (see moveTask), so the line is drawn at the subtask level. */
+  function shownZone(over: NonNullable<Over>, source: TaskPath): string {
+    if (over.zone !== "after" || over.element.dataset.child !== undefined) return over.zone;
+    if (getNode(deps.getDoc()!, source)?.children?.length) return "after"; // a task with subtasks goes after the whole parent
+    return over.element.parentElement?.querySelector(":scope > .subtasks > li") ? "child" : "after";
+  }
 
   /** The drop under the pointer, or null when there is none or when it is refused. */
   function resolve(source: Source, target: { element: Element; data: Record<string | symbol, unknown> }, y: number): Over {
@@ -52,7 +59,7 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
       const over = currentOver(args);
       clearIndicator();
       if (over) {
-        over.element.setAttribute("data-drop", over.zone);
+        over.element.setAttribute("data-drop", shownZone(over, (args.source.data as unknown as Source).path));
         indicated = over.element;
       }
     },
@@ -71,12 +78,11 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
     cleanups = [];
     clearIndicator();
     for (const row of Array.from(main.querySelectorAll<HTMLElement>(".task-row"))) {
-      const handle = row.querySelector<HTMLElement>(".drag-handle");
-      if (!handle) continue;
+      if (row.dataset.list === undefined) continue; // the empty row of a positional add is not part of the document
       cleanups.push(
         draggable({
           element: row,
-          dragHandle: handle,
+          canDrag: () => row.querySelector(".cm-editor") === null, // never drag from an open editor
           getInitialData: () => ({ path: rowPath(row) }),
           onDragStart: () => row.setAttribute("data-dragging", "true"),
           onDrop: () => row.removeAttribute("data-dragging"),

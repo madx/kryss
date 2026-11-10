@@ -1,9 +1,12 @@
-// One list: title with rename / delete, its tasks with their subtasks, and the add input.
+// One list: title with rename / delete, its tasks with their subtasks, and the add line.
 import type { TodoList } from "../../shared/types";
 import { renderAddInput } from "./add-input";
+import { renderAlert } from "./alert";
 import { el } from "./dom";
+import { closeIcon, editIcon } from "./icons";
 import { renderNameInput, type NameInputActions } from "./name-input";
 import type { InsertTarget } from "../logic/insert";
+import type { Reveal } from "../logic/reveal";
 import type { EditEnd } from "./edit-text";
 import { renderNewTaskRow, renderTaskRow, type TaskActions } from "./task-row";
 
@@ -12,6 +15,7 @@ export type ListActions = {
   remove(list: number): void;
   addTask(list: number, text: string): void;
   addSubtask(list: number, task: number, text: string): void;
+  /** Escape in the subtask line: hides it. */
   cancelSubtask(): void;
   /** Delete confirmation for a non-empty list. */
   confirmRemove(list: number): void;
@@ -20,7 +24,8 @@ export type ListActions = {
 };
 
 export type ListContext = {
-  addingSubtaskTo: { list: number; task: number } | null;
+  /** Top-level task whose "Add a subtask" line a mouse click revealed (PRD 5.10). */
+  reveal: Reveal;
   /** List being renamed, with the text typed so far. */
   renaming: { list: number; draft: string } | null;
   /** List whose deletion awaits confirmation. */
@@ -38,9 +43,9 @@ export function renderListSection(
   actions: ListActions,
   ctx: ListContext,
 ): HTMLElement {
-  const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list" }, "✎");
+  const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list", tabindex: "-1" }, editIcon());
   rename.addEventListener("click", () => actions.rename(index));
-  const remove = el("button", { type: "button", class: "icon-button", title: "Delete list", "aria-label": "Delete list" }, "×");
+  const remove = el("button", { type: "button", class: "icon-button", title: "Delete list", "aria-label": "Delete list", tabindex: "-1" }, closeIcon());
   remove.addEventListener("click", () => actions.confirmRemove(index));
 
   // `data-list` on the <ul> makes it a drop target for empty lists later on.
@@ -49,7 +54,7 @@ export function renderListSection(
   list.tasks.forEach((task, t) => {
     const item = el("li", { class: "task-item" });
     item.append(renderTaskRow(task, { list: index, task: t }, tasks));
-    const adding = ctx.addingSubtaskTo?.list === index && ctx.addingSubtaskTo.task === t;
+    const adding = ctx.reveal?.list === index && ctx.reveal.task === t;
     const newChild = ph && ph.target.list === index && ph.target.parent === t ? ph : null;
     if (task.children?.length || adding || newChild) {
       const sub = el("ul", { class: "subtasks" });
@@ -57,15 +62,7 @@ export function renderListSection(
         sub.append(el("li", { class: "task-item" }, renderTaskRow(child, { list: index, task: t, child: c }, tasks)));
       });
       if (newChild) sub.insertBefore(el("li", { class: "task-item" }, renderNewTaskRow(newChild.done)), sub.children[newChild.target.index] ?? null);
-      if (adding) {
-        sub.append(
-          el(
-            "li",
-            { class: "task-item" },
-            renderAddInput(`child-${index}-${t}`, "Add a subtask", ctx.drafts, (text) => actions.addSubtask(index, t, text), actions.cancelSubtask),
-          ),
-        );
-      }
+      if (adding) sub.append(renderSubtaskLine(index, t, actions, ctx));
       item.append(sub);
     }
     ul.append(item);
@@ -79,15 +76,21 @@ export function renderListSection(
   const title = renaming
     ? renderNameInput(renaming.draft, "List name", actions.naming)
     : el("h2", { class: "list-title" }, list.title);
-  const header = el("header", { class: "list-header", tabindex: "0", "data-list": String(index) }, title, el("span", { class: "list-actions" }, rename, remove));
+  const header = el("header", { class: "list-header", tabindex: "0", "data-list": String(index) });
   if (ctx.confirmingRemove === index) {
-    const yes = el("button", { type: "button", class: "button button-danger", "data-confirm-remove": "" }, "Delete");
-    yes.addEventListener("click", () => actions.remove(index));
-    const no = el("button", { type: "button", class: "button", "data-cancel-remove": "" }, "Cancel");
-    no.addEventListener("click", actions.cancelRemove);
+    const message = list.tasks.length > 0 ? `Delete this list and its ${list.tasks.length} task(s)?` : "Delete this empty list?";
     header.append(
-      el("div", { class: "list-confirm", role: "alert" }, el("span", {}, list.tasks.length > 0 ? `Delete this list and its ${list.tasks.length} task(s)?` : "Delete this empty list?"), yes, no),
+      renderAlert(
+        "error",
+        [message],
+        [
+          { label: "Delete", onClick: () => actions.remove(index), attrs: { "data-confirm-remove": "" } },
+          { label: "Cancel", onClick: actions.cancelRemove, attrs: { "data-cancel-remove": "" } },
+        ],
+      ),
     );
+  } else {
+    header.append(title, el("span", { class: "list-actions" }, rename, remove));
   }
 
   return el(
@@ -96,5 +99,14 @@ export function renderListSection(
     header,
     ul,
     renderAddInput(`list-${index}`, "Add a task", ctx.drafts, (text) => actions.addTask(index, text)),
+  );
+}
+
+/** The revealed "Add a subtask" line of a top-level task, as a list item. */
+export function renderSubtaskLine(list: number, task: number, actions: ListActions, ctx: ListContext): HTMLElement {
+  return el(
+    "li",
+    { class: "task-item", "data-reveal": "" },
+    renderAddInput(`child-${list}-${task}`, "Add a subtask", ctx.drafts, (text) => actions.addSubtask(list, task, text), actions.cancelSubtask),
   );
 }

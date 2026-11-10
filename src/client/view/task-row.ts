@@ -1,11 +1,12 @@
 // One task or subtask row. Drag and drop and the editor plug in through the attributes and elements below:
 // - the row carries `data-list`, `data-task` and (subtasks only) `data-child`;
-// - `.drag-handle` is the drag handle spot;
+// - the whole row is the drag source (see dnd.ts);
 // - `.task-text` holds the rendered text and is what the editor replaces while editing.
 import type { Task } from "../../shared/types";
 import type { TaskPath } from "../logic";
 import { renderInline } from "../markdown/inline";
 import { el } from "./dom";
+import { closeIcon } from "./icons";
 import { startEdit, type EditEnd } from "./edit-text";
 
 /** Dispatched on a row (by the keyboard layer) to open its editor. */
@@ -20,8 +21,6 @@ export type TaskActions = {
   outdent(path: TaskPath): boolean;
   moveUp(path: TaskPath): boolean;
   moveDown(path: TaskPath): boolean;
-  /** Only offered on top-level tasks. */
-  addSubtask(path: TaskPath): void;
   /** Called when an edit ends without a change, to put the focus back on the row. */
   focusRow(path: TaskPath): void;
 };
@@ -37,20 +36,21 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
     "data-done": task.done ? "true" : "false",
   });
 
-  const handle = el("span", { class: "drag-handle", "aria-hidden": "true", title: "Drag to move" }, "⋮⋮");
   const checkbox = el("input", { type: "checkbox", class: "task-check", "aria-label": "Done" });
   checkbox.checked = task.done;
   checkbox.addEventListener("change", () => actions.toggle(path));
 
   const text = el("span", { class: "task-text" });
   text.append(renderInline(task.text));
-  const beginEdit = (at?: { x: number; y: number }) =>
+  const beginEdit = (at?: { x: number; y: number }) => {
+    row.draggable = false; // a draggable row would drag instead of selecting text in the editor
     startEdit(
       text,
       task.text,
       (result) => {
         if (result === null || result.trim() === "" || result === task.text) {
           text.replaceChildren(renderInline(task.text));
+          row.draggable = true;
           actions.focusRow(path);
         } else {
           actions.edit(path, result); // the store re-renders the row
@@ -58,24 +58,20 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
       },
       { at },
     );
+  };
   text.addEventListener("click", (e) => {
     if ((e.target as Element).closest("a")) return; // links open, they do not start an edit
     beginEdit({ x: e.clientX, y: e.clientY });
   });
 
-  const buttons = el("span", { class: "task-actions" });
-  if (!isSubtask) {
-    const add = el("button", { type: "button", class: "icon-button", title: "Add a subtask", "aria-label": "Add a subtask" }, "+");
-    add.addEventListener("click", () => actions.addSubtask(path));
-    buttons.append(add);
-  }
-  const remove = el("button", { type: "button", class: "icon-button", title: "Delete", "aria-label": "Delete task" }, "×");
+  // Mouse only: shown on hover, out of the tab order.
+  const remove = el("button", { type: "button", class: "icon-button", title: "Delete", "aria-label": "Delete task", tabindex: "-1" }, closeIcon());
   remove.addEventListener("click", () => actions.remove(path));
-  buttons.append(remove);
+  const buttons = el("span", { class: "task-actions" }, remove);
 
   row.addEventListener(BEGIN_EDIT, () => beginEdit());
 
-  row.append(handle, checkbox, text, buttons);
+  row.append(checkbox, text, buttons);
   return row;
 }
 
