@@ -146,6 +146,7 @@ A task with an empty text after trimming is rejected.
 - Lists cannot be reordered in the app (order is the file's order).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
+- When the page is installed as an app, the titlebar uses the list card background, set with two `theme-color` meta tags (light and dark) that must stay equal to `--color-surface`.
 
 ### 5.2 Tasks
 
