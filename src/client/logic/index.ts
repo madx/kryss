@@ -1,7 +1,7 @@
 export type { TaskPath, OpResult } from "./paths";
 export { getNode, samePath } from "./paths";
-export { toggleDone, addTask, addChild, addSibling, deleteTask, editText } from "./tasks";
-export { addList, renameList, deleteList, moveList, listMoveTarget } from "./lists";
+export { toggleDone, addTask, addChild, addSibling, deleteTask, cutTask, editText } from "./tasks";
+export { addList, renameList, deleteList, cutList, moveList, listMoveTarget } from "./lists";
 export type { ListPlace } from "./lists";
 export { validateDrop, moveTask, indent, outdent, moveUp, moveDown } from "./move";
 export type { Drop, DropCheck, DropRefusal } from "./move";
@@ -11,3 +11,7 @@ export { revealAfterClick, revealAfterKey, revealOrNull } from "./reveal";
 export type { Reveal, ClickTarget } from "./reveal";
 export { menuStart, menuView, menuKey } from "./menu";
 export type { MenuResult } from "./menu";
+export { copyTask, copyList, registerText } from "./register";
+export type { Register } from "./register";
+export { paste, pasteTask, pasteList } from "./paste";
+export type { PasteTarget, PasteResult } from "./paste";

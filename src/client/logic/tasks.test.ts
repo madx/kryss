@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { addChild, addSibling, addTask, deleteTask, editText, toggleDone } from "./index";
+import { addChild, addSibling, addTask, cutTask, deleteTask, editText, toggleDone } from "./index";
 import { frozen, sample } from "./helpers.test-util";
 
 describe("toggleDone", () => {
@@ -79,5 +79,30 @@ describe("add / edit / delete", () => {
     expect(editText(s, { list: 0, task: 0 }, " hi\nthere ").lists[0]!.tasks[0]!.text).toBe("hi there");
     expect(editText(s, { list: 0, task: 1, child: 1 }, "z").lists[0]!.tasks[1]!.children![1]!.text).toBe("z");
     expect(editText(s, { list: 0, task: 0 }, " ")).toBe(s);
+  });
+});
+
+describe("cutTask", () => {
+  test("removes a task with its subtasks and returns it as the register", () => {
+    const r = cutTask(frozen(sample()), { list: 0, task: 1 })!;
+    expect(r.doc.lists[0]!.tasks.map((t) => t.text)).toEqual(["a0", "a2"]);
+    expect(r.register).toEqual({
+      kind: "task",
+      task: { text: "a1", done: false, children: [{ text: "a1x", done: false }, { text: "a1y", done: false }] },
+    });
+  });
+  test("removes a subtask and returns it, and the parent is recomputed as in deleteTask", () => {
+    const base = sample();
+    base.lists[0]!.tasks[1]!.children![1]!.done = true;
+    const r = cutTask(frozen(base), { list: 0, task: 1, child: 0 })!;
+    expect(r.register).toEqual({ kind: "task", task: { text: "a1x", done: false } });
+    expect(r.doc.lists[0]!.tasks[1]).toEqual({ text: "a1", done: true, children: [{ text: "a1y", done: true }] });
+  });
+  test("gives the same document as deleteTask", () => {
+    const d = sample();
+    expect(cutTask(d, { list: 0, task: 1, child: 1 })!.doc).toEqual(deleteTask(d, { list: 0, task: 1, child: 1 }));
+  });
+  test("an unknown path gives null", () => {
+    expect(cutTask(sample(), { list: 0, task: 9 })).toBeNull();
   });
 });

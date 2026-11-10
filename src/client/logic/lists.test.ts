@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { TodoDocument } from "../../shared/types";
-import { addList, deleteList, listMoveTarget, moveList, renameList } from "./index";
+import { addList, cutList, deleteList, listMoveTarget, moveList, renameList } from "./index";
 import { frozen, sample } from "./helpers.test-util";
 
 describe("lists", () => {
@@ -97,5 +97,16 @@ describe("listMoveTarget", () => {
   test("a single visible list never moves", () => {
     expect(listMoveTarget(1, "up", { first: 1, last: 1 })).toBeNull();
     expect(listMoveTarget(1, "down", { first: 1, last: 1 })).toBeNull();
+  });
+});
+
+describe("cutList", () => {
+  test("removes the list and returns it with its tasks as the register", () => {
+    const r = cutList(frozen(sample()), 0)!;
+    expect(r.doc.lists.map((l) => l.title)).toEqual(["Empty"]);
+    expect(r.register).toEqual({ kind: "list", list: sample().lists[0]! });
+  });
+  test("an unknown list gives null", () => {
+    expect(cutList(sample(), 5)).toBeNull();
   });
 });
