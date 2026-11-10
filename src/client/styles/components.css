@@ -12,7 +12,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
-  /* Room for the icon buttons shown on hover, so that the header never changes height. */
+  /* One height for the title and the name input that replaces it. */
   min-height: calc(var(--icon-button-size) + 2 * var(--space-2));
   padding: var(--space-2) var(--row-padding);
   border-radius: var(--radius-control);
@@ -34,22 +34,6 @@
   color: var(--color-muted);
 }
 
-/* Rename and delete: mouse only, shown while the pointer is over the header. They are out of the tab order. */
-.list-actions,
-.task-actions {
-  display: none;
-}
-
-.list-header:hover .list-actions,
-.task-row:hover .task-actions {
-  display: flex;
-}
-
-.list-actions .icon-button:hover,
-.task-actions .icon-button:hover {
-  background: var(--color-hover);
-}
-
 .tasks,
 .subtasks {
   display: flex;
@@ -61,7 +45,7 @@
 }
 
 .tasks:empty {
-  min-height: var(--space-12); /* keeps an empty list a visible drop target */
+  min-height: var(--space-12); /* keeps an empty list visible */
 }
 
 .subtasks {
@@ -126,38 +110,7 @@
   mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center / contain no-repeat;
 }
 
-/* Row delete "×": on top of the end of the text with a solid background, so it reserves no width. */
-.task-actions {
-  position: absolute;
-  top: 50%;
-  right: var(--row-padding);
-  transform: translateY(-50%);
-  background: var(--color-hover);
-  border-radius: var(--radius-control);
-}
-
-/* Add lines: a quiet plus and a borderless input, which becomes the editing row. */
-.add-line {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--checkbox-gap);
-  padding: var(--row-padding-y) var(--row-padding);
-  border-radius: var(--radius-control);
-  color: var(--color-faint);
-}
-
-.add-line svg {
-  flex: none;
-  margin: calc((var(--line-height-task) - var(--icon-size)) / 2) calc(var(--checkbox-size) - var(--icon-size)) 0 0; /* the text lines up with the task text, whose checkbox is narrower than the icon */
-}
-
-.add-line:hover {
-  color: var(--color-muted);
-}
-
 /* Inputs never look like a box: same font and size as the text they stand for, nothing of their own. */
-.add-input,
 .list-header .name-input {
   flex: 1;
   min-width: 0;
@@ -169,19 +122,6 @@
   line-height: var(--line-height-task);
 }
 
-.add-input::placeholder {
-  color: var(--color-faint);
-  opacity: 1;
-}
-
-.add-input:hover::placeholder {
-  color: var(--color-muted);
-}
-
-.add-input {
-  color: var(--color-text);
-}
-
 .list-header .name-input {
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -189,7 +129,7 @@
 }
 
 /* Cursor: a tint and a bar on the left, accent blue in Normal mode and green in Insert mode.
- * Normal is the focused row or list header (also its checkbox). Insert is an open editor, name input or add line. */
+ * Normal is the focused row or list header (also its checkbox). Insert is an open editor or name input. */
 .task-row:focus-visible,
 .list-header:focus-visible {
   outline: none;
@@ -201,14 +141,12 @@
 }
 
 .task-row:has(.cm-focused),
-.list-header:has(.name-input:focus),
-.add-line:focus-within {
+.list-header:has(.name-input:focus) {
   --cursor-color: var(--color-success);
 }
 
 .task-row:is(:focus, :has(.task-check:focus, .cm-focused)),
-.list-header:is(:focus, :has(.name-input:focus)),
-.add-line:focus-within {
+.list-header:is(:focus, :has(.name-input:focus)) {
   background: color-mix(in srgb, var(--cursor-color) var(--tint-cursor), transparent);
   box-shadow: inset var(--bar-width) 0 0 0 var(--cursor-color);
 }

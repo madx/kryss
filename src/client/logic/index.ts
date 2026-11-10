@@ -7,8 +7,6 @@ export { validateDrop, moveTask, indent, outdent, moveUp, moveDown } from "./mov
 export type { Drop, DropCheck, DropRefusal } from "./move";
 export { createHistory, push, undo, redo, clear, canUndo, canRedo, MAX_HISTORY } from "./history";
 export type { History } from "./history";
-export { revealAfterClick, revealAfterKey, revealOrNull } from "./reveal";
-export type { Reveal, ClickTarget } from "./reveal";
 export { menuStart, menuView, menuKey } from "./menu";
 export type { MenuResult } from "./menu";
 export { copyTask, copyList, registerText } from "./register";

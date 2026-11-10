@@ -218,3 +218,29 @@
 - [x] Undo and redo of `p`, `dd` and `cc`, and of a list paste back to its view
 - [x] Add `cc`, `yy` and `p` to the cheat sheet, and update `CLAUDE.md`
 - [x] Verify by hand: `dd` then `p` to move a task and a list, `cc` with Escape, paste in a single-list view, and paste of the copied text into an external editor
+
+## Mouseless
+- [x] Update the PRD, `CLAUDE.md` and this file for the mouseless version
+- [x] Remove drag and drop
+  - [x] Delete `dnd.ts`, `dnd-zone.ts` and `dnd-zone.test.ts`, and the calls in `app.ts`
+  - [x] Remove the drag feedback styles (dimmed row, drop line)
+  - [x] Remove `@atlaskit/pragmatic-drag-and-drop` from `package.json` and the lockfile
+  - [x] Keep the pure list move and task move logic used by the keyboard
+- [x] Remove the add lines
+  - [x] Delete the "+ Add a task" and "+ Add a subtask" lines and `add-input.ts`
+  - [x] Delete `reveal.ts`, its tests, and the reveal wiring in `app.ts`, `cursor.ts` and `list-section.ts`
+  - [x] Remove the per-list add-input text kept across re-renders
+- [x] Remove the hover buttons
+  - [x] Task row delete "×"
+  - [x] List header delete icon
+  - [x] Keep the slight hover highlight on rows
+- [x] Header
+  - [x] Remove the "New list" plus button and the unused plus icon
+  - [x] Align the Markdown view toggle to the right
+- [x] Remove the list delete confirmation, which only the removed delete icon opened
+  - [x] The `confirm-delete` overlay, the `y` / `n` answers and their tests in `shortcuts.ts`
+  - [x] The Delete / Cancel alert in the list header and its state and callbacks in `app.ts` and `list-section.ts`
+  - [x] Update the PRD sections 5.1, 5.10 and 5.12
+- [ ] Check that the kept mouse features still work: click on a task text, on a row, on a checkbox and on a list title, the selector, the conflict banner buttons, the Markdown view buttons and the cheat sheet click-outside
+- [x] Run `bun test` and `bun run build`, and fix the tests that referred to the removed code
+- [ ] Verify by hand in light and dark, in a window from 240 to 720 px wide
