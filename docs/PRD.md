@@ -135,7 +135,7 @@ A task with an empty text after trimming is rejected.
 - A **selector** shows a single list or "All" (default on first launch).
 - The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All" and forget the stale index, so a list appearing later at that position is not selected.
 - Create, rename and delete a list from the selector.
-  Names are typed in an inline input (the header selector is replaced by the input for a new list, the list title for a rename): Enter confirms, Escape cancels, and a blur commits a non-empty name (like the task editor) and cancels an empty one.
+  Names are typed in an inline input (the header selector is replaced by the input for a new list, the list title for a rename): Enter, Escape and a blur commit a non-empty name (like the task editor) and cancel an empty one.
   An external change discards the name being typed and closes the input.
   Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
   A new list is appended at the end.
@@ -345,7 +345,7 @@ The mouse keeps working as before.
   A new task with an empty text is discarded, and the cursor returns to the row it started from.
   An existing task whose text was emptied gets its previous text back, and it is never deleted this way.
 - A blur commits, as in 5.8.
-- The list name input keeps its own rule: Enter confirms and Escape cancels.
+- The list name input follows the same rule as the task editor: Enter, Escape and a blur commit a non-empty name and cancel an empty one.
 
 **Focus after an action**
 
@@ -418,7 +418,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
   This applies to the task editor, to the add lines (which turn into an empty editing row) and to the list name input (which edits the title in place).
-- The name input of a new list replaces the selector in the header while it is open, and Escape or an empty name cancels it.
+- The name input of a new list replaces the selector in the header while it is open, and an empty name cancels it, while Escape commits a non-empty name.
 
 **Drag feedback**
 

@@ -130,7 +130,7 @@
   - [ ] A click elsewhere and Escape hide it, and keyboard focus never shows it
 - [ ] Cursor look on rows and list headers: tint and 2 px left bar in blue (Normal) or green (Insert)
 - [ ] Borderless inputs for the editor, the add lines and the list name input
-- [ ] New list name input replaces the selector in the header, and Escape or an empty name cancels it
+- [ ] New list name input replaces the selector in the header, and an empty name cancels it while Escape commits a non-empty name
 - [ ] Single alert component for banners, notices and the list delete confirmation
   - [ ] Amber and red tints, text buttons on the same line, wrapping on narrow windows
   - [ ] Banners between the header and the scroll area, delete confirmation in place of the list header content
