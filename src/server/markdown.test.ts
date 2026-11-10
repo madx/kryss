@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { frontmatterOf, parse, serialize, withFrontmatter } from "./markdown";
+import { serialize } from "../shared/serializer";
+import { frontmatterOf, parse, withFrontmatter } from "./markdown";
 
 function ok(md: string) {
   const r = parse(md);
@@ -131,11 +132,7 @@ describe("parse", () => {
   });
 });
 
-describe("serialize", () => {
-  test("empty document is an empty file", () => {
-    expect(serialize({ lists: [] })).toBe("");
-  });
-
+describe("serialize after parse", () => {
   test("canonical output", () => {
     const md = "## A\n- [ ] x\n  - [x] y\n\n## B\n\n## C\n- [x] z\n";
     expect(serialize(ok(md))).toBe(md);

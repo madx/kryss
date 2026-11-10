@@ -93,17 +93,3 @@ export function parse(md: string): ParseResult {
   }
   return { ok: true, doc: { lists } };
 }
-
-export function serialize(doc: TodoDocument): string {
-  const box = (done: boolean) => (done ? "[x]" : "[ ]");
-  return doc.lists
-    .map((list) => {
-      const out = [`## ${list.title}`];
-      for (const task of list.tasks) {
-        out.push(`- ${box(task.done)} ${task.text}`);
-        for (const child of task.children ?? []) out.push(`  - ${box(child.done)} ${child.text}`);
-      }
-      return out.join("\n") + "\n";
-    })
-    .join("\n");
-}

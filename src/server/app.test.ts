@@ -210,70 +210,10 @@ describe("file watcher", () => {
   });
 });
 
-describe("removed export route", () => {
+describe("export route", () => {
   test("GET /api/export is not served", async () => {
+    start("## A\n- [ ] one\n");
     expect((await fetch(`${base}/api/export`)).status).toBe(404);
   });
 });
 
-describe("GET /api/export (to delete)", () => {
-  const exportOf = (query = "") => fetch(`${base}/api/export${query}`);
-
-  test("returns the canonical Markdown of the whole document as text/plain", async () => {
-    start("## A\n* [X] one\n\t- [ ] sub\n\n## B\n- [ ] two\n");
-    const res = await exportOf();
-    expect(res.status).toBe(200);
-    expect(res.headers.get("Content-Type")).toStartWith("text/plain");
-    expect(await res.text()).toBe("## A\n- [x] one\n  - [ ] sub\n\n## B\n- [ ] two\n");
-  });
-  test("restricts the export to the list given by its 0-based index", async () => {
-    start("## A\n- [ ] one\n\n## B\n- [ ] two\n");
-    expect(await (await exportOf("?list=1")).text()).toBe("## B\n- [ ] two\n");
-    expect(await (await exportOf("?list=0")).text()).toBe("## A\n- [ ] one\n");
-  });
-  test("returns an empty body for an empty document", async () => {
-    start("");
-    const res = await exportOf();
-    expect(res.status).toBe(200);
-    expect(await res.text()).toBe("");
-  });
-  test("exports an empty list as its title line", async () => {
-    start("## Empty\n\n## B\n- [ ] x\n");
-    expect(await (await exportOf("?list=0")).text()).toBe("## Empty\n");
-  });
-  test("leaves the frontmatter out", async () => {
-    start("---\ntitle: x\n---\n## A\n- [ ] one\n");
-    expect(await (await exportOf()).text()).toBe("## A\n- [ ] one\n");
-  });
-  test("answers 400 for a list that is not a non-negative integer", async () => {
-    start("## A\n- [ ] one\n");
-    for (const bad of ["abc", "-1", "1.5", "", "1e0", " 0"]) {
-      expect((await exportOf(`?list=${encodeURIComponent(bad)}`)).status).toBe(400);
-    }
-  });
-  test("answers 404 for a list index out of range", async () => {
-    start("## A\n- [ ] one\n");
-    expect((await exportOf("?list=1")).status).toBe(404);
-  });
-  test("answers 404 for any list index on an empty document", async () => {
-    start("");
-    expect((await exportOf("?list=0")).status).toBe(404);
-  });
-  test("answers 422 with the line and the reason when the file is invalid", async () => {
-    start("## A\nfree text\n");
-    const res = await exportOf();
-    expect(res.status).toBe(422);
-    const body = (await res.json()) as { line: number; reason?: string; message?: string };
-    expect(body.line).toBe(2);
-  });
-  test("has no ETag and does not write to the file", async () => {
-    start("## A\n* [ ] one\n");
-    const res = await exportOf();
-    expect(res.headers.get("ETag")).toBeNull();
-    expect(readFileSync(file, "utf8")).toBe("## A\n* [ ] one\n");
-  });
-  test("only answers GET", async () => {
-    start("## A\n- [ ] one\n");
-    expect((await fetch(`${base}/api/export`, { method: "POST" })).status).toBe(405);
-  });
-});
