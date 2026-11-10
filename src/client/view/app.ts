@@ -24,7 +24,7 @@ import type { Store, StoreState } from "../store";
 import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnreachable } from "./banners";
 import { isEditing, settleEditors, type EditEnd } from "./edit-text";
 import { createCheatsheet } from "./cheatsheet";
-import { createCursor, rowSelector, stopSelector } from "./cursor";
+import { createCursor, focusAndReveal, reveal, rowSelector, stopSelector } from "./cursor";
 import { createFooter } from "./footer";
 import { renderHeader } from "./header";
 import { installKeyboard } from "./keyboard";
@@ -119,7 +119,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
           // The cursor goes to the new list and its first task is typed right away.
           const target = insertTarget(doc(), "list-start", { kind: "header", list: created });
           if (target) openPlaceholder(target, stopSelector({ kind: "header", list: created }));
-          roots.main.querySelector(`.list[data-list="${created}"]`)?.scrollIntoView?.({ block: "nearest" }); // show the whole new list
+          reveal(roots.main.querySelector(`.list[data-list="${created}"]`)); // show the whole new list
           return;
         }
       } else if (rename) {
@@ -213,7 +213,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   function startPlaceholder() {
     const row = ctx.placeholder ? roots.main.querySelector(".task-new") : null;
     row?.dispatchEvent(new Event(BEGIN_EDIT));
-    row?.scrollIntoView?.({ block: "nearest" });
+    reveal(row);
   }
 
   function updateFooter() {
@@ -233,7 +233,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     renderMain();
     const wanted = pendingFocus ? document.querySelector<HTMLElement>(pendingFocus) : null;
     pendingFocus = null;
-    if (wanted) wanted.focus();
+    if (wanted) focusAndReveal(wanted);
     else if (cursor.last() >= 0 && (!document.activeElement || document.activeElement === document.body)) {
       cursor.focusIndex(cursor.last()); // the rebuilt DOM lost the focus: back to the same position, clamped
     }

@@ -6,6 +6,19 @@ import type { Store } from "../store";
 
 export const CURSOR_KEY = "todoapp.cursor";
 
+/** Scrolls an element into view only if it is off screen, smoothly unless the user prefers reduced motion. */
+export function reveal(el: Element | null | undefined): void {
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  el?.scrollIntoView?.({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
+}
+
+/** Focuses an element without the browser's instant jump, then reveals it smoothly. */
+export function focusAndReveal(el: HTMLElement | null | undefined): void {
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  reveal(el);
+}
+
 export const rowSelector = (p: TaskPath) =>
   `.task-row[data-list="${p.list}"][data-task="${p.task}"]` + (p.child === undefined ? ":not([data-child])" : `[data-child="${p.child}"]`);
 
@@ -51,12 +64,12 @@ export function createCursor(main: HTMLElement, store: Store, storage?: Storage)
     focusIndex(index: number): void {
       const all = visibleStops();
       const i = clampIndex(all.length, index);
-      if (i >= 0) main.querySelector<HTMLElement>(stopSelector(all[i]!))?.focus();
+      if (i >= 0) focusAndReveal(main.querySelector<HTMLElement>(stopSelector(all[i]!)));
     },
     /** Focuses a stop; false when it is not on screen (for instance in a hidden list). */
     focusStop(stop: Stop): boolean {
       const el = main.querySelector<HTMLElement>(stopSelector(stop));
-      el?.focus();
+      focusAndReveal(el);
       return el !== null;
     },
     /** The stop at `index` of the visible sequence, if any. */
