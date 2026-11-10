@@ -20,20 +20,53 @@
   --color-error-bg: #fde8e6;
   --color-error-text: #7a1f14;
   --color-focus: #2f6fed;
-  --shadow: 0 1px 2px rgb(0 0 0 / 8%);
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 20px;
-  --radius: 8px;
+  /* Spacing steps, in px. */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+
+  /* Responsive tokens: tight at 240 px of viewport width, roomy at 720 px. */
+  --gutter: clamp(6px, 1px + 2.0833vw, 16px);
+  --panel-padding: clamp(4px, 3px + 0.4167vw, 6px);
+  --row-padding: clamp(6px, 5px + 0.4167vw, 8px);
+  --checkbox-gap: clamp(6px, 5px + 0.4167vw, 8px);
+  --subtask-indent: clamp(16px, 12px + 1.6667vw, 24px);
+
+  /* Radii. */
+  --radius-panel: 8px;
+  --radius-control: 6px;
+  --radius-chip: 4px;
+
+  /* Sizes. */
   --content-width: 720px;
+  --header-height: 32px;
+  --footer-height: 24px;
+  --icon-size: 14px;
+  --icon-button-size: 22px;
+  --icon-stroke: 2;
+  --scrollbar-width: 10px;
+  --scrollbar-thumb: 8px;
+  --scrollbar-padding: 1px;
+  --bar-width: 2px;
+  --hairline: 1px;
 
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --font-size: 15px;
-  --line-height: 1.625;
-  --font-size-small: 13px;
+  --font-size-lg: 16px;
+  --font-size: 14px;
+  --font-size-sm: 12px;
+  --line-height: 1.4;
+  --row-padding-y: 3px;
+
+  /* Tints, as a share of a color mixed with transparent. */
+  --tint-hover: 8%;
+  --tint-cursor: 14%;
+  --tint-alert: 100%;
+  --opacity-dragging: 0.4;
 }
 
 /* Dark palette: Sonokai, as in the Obsidian vault (snippet sonokai.css). */
@@ -57,6 +90,5 @@
     --color-error-bg: #3a2c38;
     --color-error-text: #fb617e;
     --color-focus: #508bf1;
-    --shadow: 0 1px 2px rgb(0 0 0 / 40%);
   }
 }

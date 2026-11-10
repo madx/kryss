@@ -1,0 +1,113 @@
+/* Header */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: calc(var(--space-16) * 1.5) var(--space-4) var(--space-12);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.sync-status {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-success);
+}
+
+.sync-status[data-status="unsaved"],
+.sync-status[data-status="saving"] {
+  color: var(--color-warning-text);
+}
+
+.sync-status[data-status="offline"],
+.sync-status[data-status="conflict"],
+.sync-status[data-status="invalid"],
+.sync-status[data-status="error"] {
+  color: var(--color-danger);
+}
+
+.icon-button svg {
+  display: block;
+}
+
+.app-header .icon-button {
+  padding: var(--space-4) var(--space-8);
+}
+
+/* Controls */
+.button {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: var(--space-4) var(--space-12);
+  cursor: pointer;
+}
+
+/* The list selector looks like a level 2 heading, with a caret that opens the native select. */
+.list-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  color: var(--color-muted);
+}
+
+.list-select-wrap:hover {
+  color: var(--color-text);
+}
+
+.list-select-wrap svg {
+  position: absolute;
+  right: var(--space-4);
+  pointer-events: none; /* clicks reach the select */
+}
+
+.list-select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  padding: var(--space-4) calc(var(--space-16) + var(--space-4)) var(--space-4) var(--space-8);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+
+.button:hover {
+  background: var(--color-hover);
+}
+
+.button-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.button-primary:hover {
+  background: var(--color-accent);
+  opacity: 0.9;
+}
+
+.icon-button {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-8);
+  cursor: pointer;
+  color: var(--color-muted);
+}
+
+.icon-button:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+

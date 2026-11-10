@@ -19,5 +19,5 @@
 .tasks[data-drop="end"] {
   outline: 2px dashed var(--color-accent);
   outline-offset: -2px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
 }
