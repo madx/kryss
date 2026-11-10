@@ -64,7 +64,8 @@ Work plan: `docs/TODO.md`.
 
 - **Checking**: checking a parent checks its children; when all children are checked, the parent is checked; unchecking a child, adding a child or dropping an unchecked task under a parent unchecks the parent.
   The server never normalizes states.
-- **Drag and drop**: drop before, after or as child; the subtree moves with the task; no drop into a descendant, none that creates a third level; lists themselves are not reorderable.
+- **Drag and drop**: drop before, after or as child; the subtree moves with the task; no drop into a descendant, none that creates a third level.
+  Lists are reordered in the "All" view only, by dragging the header row (no handle) onto the top or bottom half of another list, or with `J` / `K` and Alt+↑ / Alt+↓ on a header (PRD 5.1, 5.4).
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
 - **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view with a copy button and `yy` (PRD 5.11); the pending autosave is flushed before it opens, and it is never persisted.
@@ -74,7 +75,7 @@ Work plan: `docs/TODO.md`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, list reordering, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, reordering lists outside the "All" view, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 

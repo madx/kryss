@@ -148,7 +148,9 @@ A task with an empty text after trimming is rejected.
   The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
   The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the Markdown view toggle of 5.11.
   The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
-- Lists cannot be reordered in the app (order is the file's order).
+- Lists are reordered in the "All" view only, with the keyboard (5.2, 5.9) or by drag and drop (5.4).
+  In a single-list view the move keys and the drag do nothing.
+  This restriction is temporary: later list modes, search and filters are meant to reuse the same move on the visible lists, so the logic must not depend on it (5.7).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
 - When the page is installed as an app, the titlebar uses the list card background, set with two `theme-color` meta tags (light and dark) that must stay equal to `--color-surface`.
@@ -167,6 +169,11 @@ A task with an empty text after trimming is rejected.
   The keys only cross the visible lists: with a single list shown, nothing leaves it.
   Nothing happens at the very top or bottom of the visible lists.
   The check rules of 5.3 apply (an unchecked task landing under a parent unchecks it, the old parent is recomputed).
+- Move a list with the same shortcuts on a list header (5.9).
+  `J` / Alt+↓ moves the list below the next visible list, and `K` / Alt+↑ moves it above the previous visible list.
+  There is no wrapping: nothing happens at the first or last visible list.
+  The cursor stays on the moved list header, which is scrolled into view.
+  Each move is one undoable change (5.6).
 
 ### 5.3 Checking
 
@@ -196,6 +203,15 @@ A task with an empty text after trimming is rejected.
   The drop indicator is a single 2 px accent line (5.10): above or below the row, indented to the subtask level for "as child".
 - Only an empty list is a drop target of its own (the task is appended), a non-empty list is reached through the zones of its rows.
 - The DOM is rebuilt on every change, so the drag and drop registrations are redone after each render.
+- Lists are dragged by their header, in the "All" view only (5.1).
+  The whole header row is the drag source, except its icon buttons, and it is not draggable while the name input or the delete alert is open.
+  A click on the header still places the cursor, and the drag starts only once the pointer has moved.
+  There is no drag handle.
+- Every visible list panel is a drop target for a dragged list, with two zones: the top half is before the list and the bottom half is after it.
+  The indicator is the same single 2 px accent line, above or below the panel.
+  Dragging a list onto itself, or next to itself without changing the order, does nothing.
+- List drags and task drags are separate drag types: a list is never dropped into a task row and a task never reorders lists.
+- After a drop, the cursor goes to the moved list header, as after a keyboard move.
 
 ### 5.5 Rendering and editing
 
@@ -227,6 +243,7 @@ A task with an empty text after trimming is rejected.
 - No confirmation to delete a task (undo recovers it).
 - Inside a task's editor, Ctrl+Z first undoes typing (CodeMirror), then the global stack once the task is left.
 - Each entry remembers the view (All or a list) that was active when the change was made, and undo and redo switch back to it, so a change made in another view is never invisible.
+  A list move is made in the "All" view, so undoing it returns to "All" before the lists change order, and a single-list index is never affected.
 - The stack is cleared on page reload and on any detected external change.
 - The shortcut handler is global and does nothing while a task editor or a text input has focus, so that they keep their own undo.
   It is the same handler as the Normal mode handler of 5.9, so there is one global `keydown` listener and no second one.
@@ -236,6 +253,9 @@ A task with an empty text after trimming is rejected.
 - The pure logic lives in `src/client/logic/`, is immutable, and addresses tasks by `{ list, task, child? }` paths.
 - An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
 - Keyboard move (`J` / `K`, Alt+↑ / Alt+↓) follows 5.2: it crosses parent and visible list boundaries, takes the visible list range as a parameter (default: the whole document), and returns `null` at the edges of that range and for a subtask with no task to join.
+- List move takes the list to move, a target list and `before` or `after`, and returns `null` when the order would not change.
+  Drag calls it with the hovered list and the zone, and the keyboard calls it with the previous or next visible list, so that later list modes and filters only change which list is the target.
+  Like the task move, the keyboard resolution takes the visible list range as a parameter (default: the whole document).
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
 - Moving or outdenting a subtask out of a parent, or deleting one, recomputes that parent: if it still has subtasks and all are checked, it becomes checked.
@@ -337,9 +357,11 @@ The mouse keeps working as before.
 | `dd` | delete the list with the inline prompt, answered by `y` or Enter (confirm) and `n` or Escape (cancel) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
+| `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up ("All" view only) |
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
-- `x`, `>`, `<`, `J` and `K` do nothing on a header, since lists cannot be reordered.
+- `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
+- `x`, `>` and `<` do nothing on a header.
 - `N` creates the list as in 5.1, keeps the "All" view, and switches a single-list view to the new list.
   Once the name is confirmed, the cursor stays on the new list header.
   This also applies to a list created with the plus button.
@@ -512,9 +534,9 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422`, SSE after external modification, and `GET /api/export` (whole document, `list` index, empty document, empty list, frontmatter left out, `400`, `404`, `422`).
-- **Pure client logic**: checking rules, move and depth validation, undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view), positional add, cursor clamping, view cycling and statusline counts.
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view), positional add, cursor clamping, view cycling and statusline counts.
 - No e2e in v1: drag and drop and CodeMirror are verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
