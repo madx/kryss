@@ -492,7 +492,9 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     for (const o of [{ target: "field" }, { target: "control" }, { overlay: "cheatsheet" }, { overlay: "confirm-delete" }, { ctrlKey: true }, { altKey: true }] as const) {
       expect(act("p", o)).toBeNull();
       expect(act("c", { pending: "c", ...o })).toBeNull();
-      if (!("overlay" in o && o.overlay === "confirm-delete")) expect(act("y", { pending: "y", ...o })).toBeNull(); // y confirms in that overlay
+      // y confirms in the delete overlay and Ctrl+Y redoes, so they are left out of the yank check.
+      const takesY = ("overlay" in o && o.overlay === "confirm-delete") || ("ctrlKey" in o && o.ctrlKey);
+      if (!takesY) expect(act("y", { pending: "y", ...o })).toBeNull();
     }
   });
   test("with no focused element the keys still resolve, so that the caller can ignore them", () => {
