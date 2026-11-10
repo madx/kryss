@@ -133,17 +133,19 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
       if (!header) continue;
       const list = Number(panel.dataset.list);
       cleanups.push(
-        draggable({
-          element: header,
-          // Not from an icon button, and not while the name input or the delete alert is open.
-          canDrag: ({ input }) =>
-            deps.canDragLists() &&
-            header.querySelector(".name-input, .alert") === null &&
-            !document.elementFromPoint(input.clientX, input.clientY)?.closest(".icon-button"),
-          getInitialData: () => ({ type: "list", list }),
-          onDragStart: () => panel.setAttribute("data-dragging", "true"),
-          onDrop: () => panel.removeAttribute("data-dragging"),
-        }),
+        // While the name input or the delete alert is open the header is not a drag source at all, so that the input keeps its own text selection.
+        ...(header.querySelector(".name-input, .alert") !== null
+          ? []
+          : [
+              draggable({
+                element: header,
+                // Not from an icon button, and only in the "All" view.
+                canDrag: ({ input }) => deps.canDragLists() && !document.elementFromPoint(input.clientX, input.clientY)?.closest(".icon-button"),
+                getInitialData: () => ({ type: "list", list }),
+                onDragStart: () => panel.setAttribute("data-dragging", "true"),
+                onDrop: () => panel.removeAttribute("data-dragging"),
+              }),
+            ]),
         dropTargetForElements({ element: panel, canDrop: ({ source }) => source.data.type === "list", getData: () => ({ kind: "panel" }), getDropEffect: () => "move" }),
       );
     }
