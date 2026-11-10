@@ -23,6 +23,8 @@ export type KeyboardEnv = {
   renameList(list: number): void;
   /** `dd` on a header: deletes an empty list at once, asks for confirmation otherwise. */
   deleteList(list: number): void;
+  /** `J` / `K` on a header: moves the list down or up, in the "All" view only. */
+  moveList(list: number, dir: "up" | "down"): void;
   /** The list whose deletion awaits an answer, if any. */
   confirming(): number | null;
   confirmDelete(list: number): void;
@@ -142,6 +144,7 @@ export function installKeyboard(env: KeyboardEnv): void {
     if (current.kind === "header") {
       if (action.type === "edit") env.renameList(current.list);
       else if (action.type === "delete") env.deleteList(current.list);
+      else if (action.type === "move") env.moveList(current.list, action.dir);
       return;
     }
 
