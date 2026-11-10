@@ -245,6 +245,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     true,
   );
 
+  /** The notice shown in place of the lists when the page holds no document: the invalid file, the unreachable server, or nothing while loading. */
+  function noDocumentNotice(state: StoreState): Node {
+    if (state.invalid) return renderInvalid(state.invalid, store.hasPendingChanges());
+    return state.status === "offline" ? renderUnreachable() : document.createTextNode("");
+  }
+
   /** Settles the open editors first (their commit may change the document), then renders from the up-to-date state. */
   function renderMain() {
     settleEditors((host) => {
@@ -259,12 +265,10 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     if (markdownOpen) {
       // Rebuilt on every render from the document of the page, unsaved edits included.
       if (state.doc) markdownView.show({ kind: "ok", text: exportView(state.doc, state.selected) });
-      else markdownView.show({ kind: "notice", node: state.invalid ? renderInvalid(state.invalid, store.hasPendingChanges()) : state.status === "offline" ? renderUnreachable() : document.createTextNode("") });
+      else markdownView.show({ kind: "notice", node: noDocumentNotice(state) });
       if (roots.main.firstChild !== markdownView.el || roots.main.childNodes.length !== 1) roots.main.replaceChildren(markdownView.el);
-    } else if (state.invalid) {
-      roots.main.replaceChildren(renderInvalid(state.invalid, store.hasPendingChanges()));
-    } else if (!state.doc) {
-      roots.main.replaceChildren(state.status === "offline" ? renderUnreachable() : "");
+    } else if (state.invalid || !state.doc) {
+      roots.main.replaceChildren(noDocumentNotice(state));
     } else if (state.doc.lists.length === 0) {
       roots.main.replaceChildren(renderEmptyState(createList));
     } else {
