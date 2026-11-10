@@ -59,6 +59,9 @@
   --font-size: 14px;
   --font-size-sm: 12px;
   --line-height: 1.4;
+  /* Tasks: 12 px text on a 20 px line, which keeps a row about 26 px tall with its 3 px of vertical padding. */
+  --font-size-task: 12px;
+  --line-height-task: 20px;
   --row-padding-y: 3px;
 
   /* Tints, as a share of a color mixed with transparent. */

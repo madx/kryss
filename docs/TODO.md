@@ -111,10 +111,10 @@
 
 ## Design iteration #1
 - [ ] Define the design tokens in `theme.css` and replace every literal size, radius and spacing in the stylesheets (PRD 5.10)
-  - [ ] Font sizes 16 / 14 / 12, radii 8 / 6 / 4, spacing steps 2 to 16, 14 px icons and 22 px icon buttons
+  - [ ] Font sizes 16 / 14 / 12 (tasks use 12), radii 8 / 6 / 4, spacing steps 2 to 16, 14 px icons and 22 px icon buttons
   - [ ] Responsive `clamp()` tokens for the gutter, panel padding, row padding, checkbox gap and subtask indent
 - [ ] Flat list panels: surface background, 8 px radius, no border and no shadow, 8 px between panels
-- [ ] Compact rows: 14 px text, line height 1.4, 3 px vertical padding, no gap between rows
+- [ ] Compact rows: 12 px text, line height 20 px, 3 px vertical padding, no gap between rows
 - [ ] Single centered column with one shared left edge for the header, the panels and the footer
 - [ ] Fixed header of about 32 px and footer of about 24 px, with no border or separator
 - [ ] Scroll area with a stable one-edge gutter and a 10 px scrollbar, with matching padding on the header and the footer

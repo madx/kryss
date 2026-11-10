@@ -387,7 +387,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
   The header, the list panels and the footer share the same left edge.
 - A list is a flat panel: surface background, 8 px radius, no border and no shadow, with 8 px between panels.
   Panels are distinguished from the page by their background only.
-- Task text is 14 px with a line height of 1.4, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
+- Task text is 12 px (the same as in Obsidian) with a line height of 20 px, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
   Text size and row height are the same at every window width.
 - Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
   The page gutter goes from 6 to 16 px, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
@@ -428,7 +428,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Alerts**
 
-- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 14 px text (the body token), no border and a tinted background.
+- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 14 px text (the body token, larger than the 12 px tasks), no border and a tinted background.
   Amber is for warnings (the conflict banner, the empty file and the unreachable server), and red is for errors (the invalid file and rejected requests) and for the delete confirmation.
 - Its actions are text buttons on the same line, and they wrap below the message when the window is narrow.
 - Banners sit between the header and the scroll area and never scroll away.
@@ -448,7 +448,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Tokens**
 
-- Font sizes are 16 px (list selector only), 14 px (body and tasks) and 12 px (list titles, counts, footer, cheat sheet, `kbd`).
+- Font sizes are 16 px (list selector only), 14 px (body and alerts) and 12 px (tasks, list titles, counts, footer, cheat sheet, `kbd`).
 - Radii are 8 px (panels), 6 px (rows, buttons, alerts, inputs) and 4 px (chips: `code`, `kbd`, mode badge, checkbox).
 - Spacing steps are 2, 4, 6, 8, 12 and 16 px, plus the responsive `clamp()` tokens above.
 - Icons are Lucide SVG at 14 px with a stroke of 2, never text glyphs, and icon buttons are 22 px squares.

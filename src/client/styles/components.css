@@ -3,6 +3,8 @@
   background: var(--color-surface);
   border-radius: var(--radius-panel);
   padding: var(--panel-padding);
+  font-size: var(--font-size-task);
+  line-height: var(--line-height-task);
 }
 
 .list-header {
@@ -97,7 +99,7 @@
   flex: none;
   width: var(--icon-size);
   height: var(--icon-size);
-  margin: calc((var(--font-size) * var(--line-height) - var(--icon-size)) / 2) 0 0;
+  margin: calc((var(--line-height-task) - var(--icon-size)) / 2) 0 0;
   border: var(--bar-width) solid var(--color-faint);
   border-radius: var(--radius-chip);
   background: transparent;
@@ -140,7 +142,7 @@
 
 .add-line svg {
   flex: none;
-  margin-top: calc((var(--font-size) * var(--line-height) - var(--icon-size)) / 2);
+  margin-top: calc((var(--line-height-task) - var(--icon-size)) / 2);
 }
 
 .add-line:hover {
@@ -157,7 +159,7 @@
   border-radius: 0;
   background: transparent;
   outline: none;
-  line-height: var(--line-height);
+  line-height: var(--line-height-task);
 }
 
 .add-input::placeholder {
