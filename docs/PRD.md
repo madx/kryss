@@ -398,7 +398,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Rows and actions**
 
-- A row is a checkbox and the task text.
+- A row is a checkbox (a 12 px chip with a 1 px border) and the task text.
   A completed task has a checked box and a muted text color, with no background.
 - There is no drag handle (5.4).
 - A delete "×" appears on mouse hover only, on top of the end of the text with a solid background, so it reserves no width.

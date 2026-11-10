@@ -89,18 +89,18 @@
 
 /* The empty row of a positional add has no checkbox: its text lines up with the others. */
 .task-new .task-text {
-  margin-left: calc(var(--icon-size) + var(--checkbox-gap));
+  margin-left: calc(var(--checkbox-size) + var(--checkbox-gap));
 }
 
-/* Checkbox: a 14 px chip, centered on the first line of text. */
+/* Checkbox: a 12 px chip with a 1 px border, centered on the first line of text. */
 .task-check {
   appearance: none;
   position: relative;
   flex: none;
-  width: var(--icon-size);
-  height: var(--icon-size);
-  margin: calc((var(--line-height-task) - var(--icon-size)) / 2) 0 0;
-  border: var(--bar-width) solid var(--color-faint);
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  margin: calc((var(--line-height-task) - var(--checkbox-size)) / 2) 0 0;
+  border: var(--hairline) solid var(--color-faint);
   border-radius: var(--radius-chip);
   background: transparent;
   cursor: pointer;
@@ -142,7 +142,7 @@
 
 .add-line svg {
   flex: none;
-  margin-top: calc((var(--line-height-task) - var(--icon-size)) / 2);
+  margin: calc((var(--line-height-task) - var(--icon-size)) / 2) calc(var(--checkbox-size) - var(--icon-size)) 0 0; /* the text lines up with the task text, whose checkbox is narrower than the icon */
 }
 
 .add-line:hover {
