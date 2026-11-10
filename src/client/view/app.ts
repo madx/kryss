@@ -4,6 +4,8 @@ import {
   addChild,
   addList,
   addTask,
+  cutList,
+  cutTask,
   deleteList,
   deleteTask,
   editText,
@@ -167,13 +169,15 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       ctx.confirmingRemove = null;
       renderAll(store.getState());
     },
-    remove(index: number) {
+    /** Deletes a list. `next` is the document without it when the caller already computed it (`dd`). */
+    remove(index: number, next?: TodoDocument) {
       ctx.confirmingRemove = null;
+      ctx.reveal = null; // keyed by index, which shifts
       if (!doc().lists[index]) return;
       const selected = store.getState().selected;
       // Add input drafts are keyed by list index, which shifts.
       ctx.drafts.clear();
-      store.commit(deleteList(doc(), index));
+      store.commit(next ?? deleteList(doc(), index));
       if (selected === index) store.select(null);
       else if (selected !== null && selected > index) store.select(selected - 1);
     },
@@ -391,18 +395,29 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   /** The register of PRD 5.12: one in-memory slot, never stored and untouched by external changes. */
   let register: Register | null = null;
   const pasteTarget = (stop: Stop): PasteTarget => (stop.kind === "header" ? { list: stop.list } : { list: stop.path.list, task: stop.path.task, child: stop.path.child });
+  const fillRegister = (content: Register) => {
+    register = content;
+    copyText(registerText(content));
+  };
   const registerKeys = {
     yank(stop: Stop) {
       const copy = stop.kind === "header" ? copyList(doc(), stop.list) : copyTask(doc(), stop.path);
-      if (!copy) return;
-      register = copy;
-      copyText(registerText(copy));
+      if (copy) fillRegister(copy);
     },
-    /** `dd`: fills the register and the clipboard, then deletes at once, a list included. */
+    /** `dd`: deletes at once, a list included, and fills the register and the clipboard with what was removed. */
     cut(stop: Stop) {
-      this.yank(stop);
-      if (stop.kind === "header") lists.remove(stop.list);
-      else tasks.remove(stop.path);
+      ctx.reveal = null; // it is keyed by index, which shifts
+      if (stop.kind === "header") {
+        const cut = cutList(doc(), stop.list);
+        if (!cut) return;
+        fillRegister(cut.register);
+        lists.remove(stop.list, cut.doc);
+        return;
+      }
+      const cut = cutTask(doc(), stop.path);
+      if (!cut) return;
+      fillRegister(cut.register);
+      store.commit(cut.doc);
     },
     paste(stop: Stop) {
       const result = paste(doc(), register, pasteTarget(stop));
