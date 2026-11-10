@@ -180,10 +180,11 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       if (store.getState().selected !== null) return false;
       const result = moveList(doc(), list, target, place);
       if (!result) return false;
-      // Drafts, the revealed line and the delete confirmation are keyed by list index, which shifts.
+      // Drafts, the revealed line, the rename and the delete confirmation are keyed by list index, which shifts.
       ctx.drafts.clear();
       ctx.reveal = null;
       ctx.confirmingRemove = null;
+      ctx.renaming = null;
       commitFocus(result.doc, stopSelector({ kind: "header", list: result.list }));
       return true;
     },

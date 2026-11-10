@@ -108,7 +108,7 @@ export function resolveKey(input: KeyInput): Resolution {
     return undo ? done({ type: undo }) : NOTHING;
   }
   if (input.altKey) {
-    if ((key !== "ArrowDown" && key !== "ArrowUp")) return NOTHING;
+    if (key !== "ArrowDown" && key !== "ArrowUp") return NOTHING;
     return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
   }
 
