@@ -11,6 +11,8 @@ import { startEdit, type EditEnd } from "./edit-text";
 
 /** Dispatched on a row (by the keyboard layer) to open its editor. */
 export const BEGIN_EDIT = "begin-edit";
+/** Dispatched on a row to open its editor with an empty text (`cc`). Escape or an empty commit restores the previous text. */
+export const CHANGE_EDIT = "change-edit";
 
 /** Action callbacks. Those returning a boolean return false when the action was refused. */
 export type TaskActions = {
@@ -42,11 +44,11 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
 
   const text = el("span", { class: "task-text" });
   text.append(renderInline(task.text));
-  const beginEdit = (at?: { x: number; y: number }) => {
+  const beginEdit = (at?: { x: number; y: number }, empty = false) => {
     row.draggable = false; // a draggable row would drag instead of selecting text in the editor
     startEdit(
       text,
-      task.text,
+      empty ? "" : task.text,
       (result) => {
         if (result === null || result.trim() === "" || result === task.text) {
           text.replaceChildren(renderInline(task.text));
@@ -70,6 +72,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   const buttons = el("span", { class: "task-actions" }, remove);
 
   row.addEventListener(BEGIN_EDIT, () => beginEdit());
+  row.addEventListener(CHANGE_EDIT, () => beginEdit(undefined, true));
 
   row.append(checkbox, text, buttons);
   return row;

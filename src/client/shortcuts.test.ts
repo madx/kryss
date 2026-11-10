@@ -412,18 +412,19 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
       action: { type: "copy-markdown" }, pending: "", preventDefault: true,
     });
   });
-  test("y does nothing when the view is closed", () => {
-    expect(resolveKey(k("y"))).toEqual({ action: null, pending: "", preventDefault: false });
-  });
   test("y then another key cancels the prefix without an action", () => {
     const r = resolveKey(k("j", { pending: "y", ...open }));
     expect(r.action).toBeNull();
     expect(r.pending).toBe("");
   });
   test("task keys are ignored while the view is open", () => {
-    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "h", "l", "G", "ArrowDown"]) {
+    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "h", "l", "G", "ArrowDown", "p"]) {
       expect(act(key, open)).toBeNull();
     }
+  });
+  test("c is not a prefix while the view is open, so cc does nothing", () => {
+    expect(resolveKey(k("c", open))).toEqual({ action: null, pending: "", preventDefault: false });
+    expect(act("c", { pending: "c", ...open })).toBeNull();
   });
   test("dd and gg are ignored while the view is open", () => {
     expect(act("d", open)).toBeNull();
@@ -448,5 +449,55 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
   });
   test("the cheat sheet overlay still takes precedence over the view", () => {
     expect(act("Escape", { overlay: "cheatsheet", ...open })).toEqual({ type: "toggle-help" });
+  });
+});
+
+describe("resolveKey: register keys (PRD 5.12)", () => {
+  test("the first c sets the pending prefix without an action", () => {
+    expect(resolveKey(k("c"))).toEqual({ action: null, pending: "c", preventDefault: true });
+    expect(resolveKey(k("c", onHeader))).toEqual({ action: null, pending: "c", preventDefault: true });
+  });
+  test("c then c changes the task or the list", () => {
+    expect(resolveKey(k("c", { pending: "c" }))).toEqual({ action: { type: "change" }, pending: "", preventDefault: true });
+    expect(act("c", { pending: "c", ...onHeader })).toEqual({ type: "change" });
+  });
+  test("c then another key cancels the prefix without an action", () => {
+    for (const key of ["j", "o", "d", "y", "p"]) {
+      const r = resolveKey(k(key, { pending: "c" }));
+      expect(r.action).toBeNull();
+      expect(r.pending).toBe("");
+    }
+  });
+  test("another prefix followed by c cancels", () => {
+    for (const pending of ["g", "d", "y"] as const) expect(act("c", { pending })).toBeNull();
+  });
+  test("the first y sets the pending prefix, with the view open or not", () => {
+    expect(resolveKey(k("y"))).toEqual({ action: null, pending: "y", preventDefault: true });
+    expect(resolveKey(k("y", onHeader)).pending).toBe("y");
+  });
+  test("y then y yanks the task or the list", () => {
+    expect(resolveKey(k("y", { pending: "y" }))).toEqual({ action: { type: "yank" }, pending: "", preventDefault: true });
+    expect(act("y", { pending: "y", ...onHeader })).toEqual({ type: "yank" });
+  });
+  test("y then another key cancels the prefix without an action", () => {
+    const r = resolveKey(k("j", { pending: "y" }));
+    expect(r.action).toBeNull();
+    expect(r.pending).toBe("");
+  });
+  test("p pastes, on a task and on a header", () => {
+    expect(resolveKey(k("p"))).toEqual({ action: { type: "paste" }, pending: "", preventDefault: true });
+    expect(act("p", onHeader)).toEqual({ type: "paste" });
+  });
+  test("these keys do nothing in a field, in a control, in an overlay or with a modifier", () => {
+    for (const o of [{ target: "field" }, { target: "control" }, { overlay: "cheatsheet" }, { overlay: "confirm-delete" }, { ctrlKey: true }, { altKey: true }] as const) {
+      expect(act("p", o)).toBeNull();
+      expect(act("c", { pending: "c", ...o })).toBeNull();
+      // y confirms in the delete overlay and Ctrl+Y redoes, so they are left out of the yank check.
+      const takesY = ("overlay" in o && o.overlay === "confirm-delete") || ("ctrlKey" in o && o.ctrlKey);
+      if (!takesY) expect(act("y", { pending: "y", ...o })).toBeNull();
+    }
+  });
+  test("with no focused element the keys still resolve, so that the caller can ignore them", () => {
+    expect(act("p", { target: "none" })).toEqual({ type: "paste" });
   });
 });

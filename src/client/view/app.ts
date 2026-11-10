@@ -4,6 +4,8 @@ import {
   addChild,
   addList,
   addTask,
+  cutList,
+  cutTask,
   deleteList,
   deleteTask,
   editText,
@@ -21,6 +23,9 @@ import {
 } from "../logic";
 import { commitInsert, insertTarget, type AddAt, type Anchor } from "../logic/insert";
 import { getNode } from "../logic/paths";
+import { paste, type PasteTarget } from "../logic/paste";
+import { copyList, copyTask, registerText, type Register } from "../logic/register";
+import type { Stop } from "../logic/cursor";
 import { revealAfterClick, revealAfterKey, revealOrNull, type ClickTarget, type Reveal } from "../logic/reveal";
 import { countTasks } from "../logic/stats";
 import { visibleRange } from "../logic/views";
@@ -49,7 +54,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   document.body.append(footer.el, cheatsheet.el);
   const cursor = createCursor(roots.main, store, storage);
   let cursorRestored = false;
-  const markdownView = createMarkdownView();
+  const markdownView = createMarkdownView(copyText);
   let markdownOpen = false;
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
@@ -148,9 +153,10 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   const lists = {
     naming,
-    rename(index: number) {
+    /** Opens the name input. `empty` (`cc`) starts it with no text: Escape or an empty commit keeps the old name. */
+    rename(index: number, empty = false) {
       ctx.confirmingRemove = null;
-      ctx.renaming = { list: index, draft: doc().lists[index]?.title ?? "" };
+      ctx.renaming = { list: index, draft: empty ? "" : doc().lists[index]?.title ?? "" };
       pendingFocus = "[data-name-input]";
       renderAll(store.getState());
     },
@@ -163,13 +169,15 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       ctx.confirmingRemove = null;
       renderAll(store.getState());
     },
-    remove(index: number) {
+    /** Deletes a list. `next` is the document without it when the caller already computed it (`dd`). */
+    remove(index: number, next?: TodoDocument) {
       ctx.confirmingRemove = null;
+      ctx.reveal = null; // keyed by index, which shifts
       if (!doc().lists[index]) return;
       const selected = store.getState().selected;
       // Add input drafts are keyed by list index, which shifts.
       ctx.drafts.clear();
-      store.commit(deleteList(doc(), index));
+      store.commit(next ?? deleteList(doc(), index));
       if (selected === index) store.select(null);
       else if (selected !== null && selected > index) store.select(selected - 1);
     },
@@ -370,6 +378,71 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     renderAll(store.getState());
   };
 
+  /** Writes the text to the clipboard. A refusal never blocks the edit: it only shows "Copy failed". */
+  function copyText(text: string) {
+    let written: Promise<void>;
+    try {
+      written = navigator.clipboard.writeText(text);
+    } catch {
+      written = Promise.reject(new Error("clipboard unavailable"));
+    }
+    written.then(
+      () => footer.flash("Copied", false),
+      () => footer.flash("Copy failed", true),
+    );
+  }
+
+  /** The register of PRD 5.12: one in-memory slot, never stored and untouched by external changes. */
+  let register: Register | null = null;
+  const pasteTarget = (stop: Stop): PasteTarget => (stop.kind === "header" ? { list: stop.list } : { list: stop.path.list, task: stop.path.task, child: stop.path.child });
+  const fillRegister = (content: Register) => {
+    register = content;
+    copyText(registerText(content));
+  };
+  const registerKeys = {
+    yank(stop: Stop) {
+      const copy = stop.kind === "header" ? copyList(doc(), stop.list) : copyTask(doc(), stop.path);
+      if (copy) fillRegister(copy);
+    },
+    /** `dd`: deletes at once, a list included, and fills the register and the clipboard with what was removed. */
+    cut(stop: Stop) {
+      ctx.reveal = null; // it is keyed by index, which shifts
+      if (stop.kind === "header") {
+        const cut = cutList(doc(), stop.list);
+        if (!cut) return;
+        fillRegister(cut.register);
+        lists.remove(stop.list, cut.doc);
+        return;
+      }
+      const cut = cutTask(doc(), stop.path);
+      if (!cut) return;
+      fillRegister(cut.register);
+      store.commit(cut.doc);
+    },
+    paste(stop: Stop) {
+      const result = paste(doc(), register, pasteTarget(stop));
+      if (!result) return;
+      if (!("list" in result)) {
+        commitFocus(result.doc, rowSelector(result.path));
+        return;
+      }
+      // List indices shift: drafts, the revealed line, a rename and a delete confirmation are keyed by index.
+      ctx.drafts.clear();
+      ctx.reveal = null;
+      ctx.renaming = null;
+      ctx.confirmingRemove = null;
+      const focus = stopSelector({ kind: "header", list: result.list });
+      pendingFocus = focus;
+      store.commit(result.doc); // before the view switch, so that undo goes back to the view of the paste
+      pendingFocus = null;
+      if (store.getState().selected !== null) {
+        pendingFocus = focus;
+        store.select(result.list);
+        pendingFocus = null;
+      }
+    },
+  };
+
   installKeyboard({
     store,
     cursor,
@@ -377,7 +450,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     apply: (result) => void apply(result),
     commitFocus: (next, path) => commitFocus(next, rowSelector(path)),
     renameList: lists.rename,
-    deleteList: lists.confirmRemove,
+    registerKeys,
+    changeList: (list) => lists.rename(list, true),
     moveList: lists.moveByKey,
     confirming: () => ctx.confirmingRemove,
     confirmDelete(index) {

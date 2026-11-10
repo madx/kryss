@@ -37,6 +37,15 @@
   font-family: var(--font-mono);
 }
 
+.copy-feedback {
+  margin-left: var(--space-8);
+  font-family: var(--font-mono);
+}
+
+.copy-feedback[data-failed="true"] {
+  color: var(--color-danger);
+}
+
 .sync-status {
   display: inline-flex;
   flex: none;

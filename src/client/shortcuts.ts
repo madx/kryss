@@ -2,7 +2,7 @@
 import type { CursorMove } from "./logic/cursor";
 import type { AddAt } from "./logic/insert";
 
-export type Pending = "" | "g" | "d" | "y";
+export type Pending = "" | "g" | "d" | "y" | "c";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
 export type Overlay = "none" | "cheatsheet" | "confirm-delete";
@@ -14,7 +14,8 @@ export type Action =
   | { type: "move"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" } | { type: "confirm" } | { type: "cancel" }
-  | { type: "toggle-markdown" } | { type: "copy-markdown" };
+  | { type: "toggle-markdown" } | { type: "copy-markdown" }
+  | { type: "change" } | { type: "yank" } | { type: "paste" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
@@ -41,6 +42,7 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "u": return { type: "undo" };
     case "U": return { type: "redo" };
     case "N": return { type: "new-list" };
+    case "p": return { type: "paste" };
     case "?": return { type: "toggle-help" };
     case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
     case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
@@ -115,9 +117,10 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });
+  if (pending === "c" && key === "c") return done({ type: "change" });
+  if (pending === "y" && key === "y") return done({ type: "yank" });
   if (pending) return NOTHING;
-  if (key === "g") return { action: null, pending: "g", preventDefault: true };
-  if (key === "d") return { action: null, pending: "d", preventDefault: true };
+  if (key === "g" || key === "d" || key === "c" || key === "y") return { action: null, pending: key, preventDefault: true };
 
   const action = commonKey(key, onHeader) ?? (onHeader ? null : taskKey(key));
   return action ? done(action) : NOTHING;
