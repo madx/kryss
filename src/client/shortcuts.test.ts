@@ -187,13 +187,20 @@ describe("resolveKey: keys on a list header", () => {
   test("x, Space, > and < do nothing", () => {
     for (const key of ["x", " ", ">", "<"]) expect(act(key, onHeader)).toBeNull();
   });
-  test("J and K do nothing, since lists are not reorderable", () => {
-    expect(act("J", onHeader)).toBeNull();
-    expect(act("K", onHeader)).toBeNull();
+  test("J and K move the list down and up", () => {
+    expect(act("J", { ...onHeader, shiftKey: true })).toEqual({ type: "move", dir: "down" });
+    expect(act("K", { ...onHeader, shiftKey: true })).toEqual({ type: "move", dir: "up" });
   });
-  test("Alt+Arrow does not move a header", () => {
-    expect(act("ArrowDown", { ...onHeader, altKey: true })).toBeNull();
-    expect(act("ArrowUp", { ...onHeader, altKey: true })).toBeNull();
+  test("Alt+ArrowDown and Alt+ArrowUp move the list and prevent the default", () => {
+    expect(act("ArrowDown", { ...onHeader, altKey: true })).toEqual({ type: "move", dir: "down" });
+    expect(act("ArrowUp", { ...onHeader, altKey: true })).toEqual({ type: "move", dir: "up" });
+    expect(resolveKey(k("ArrowDown", { ...onHeader, altKey: true })).preventDefault).toBe(true);
+  });
+  test("the list move keys do nothing in Insert mode, on a control or in the Markdown view", () => {
+    for (const o of [{ target: "field" }, { target: "control" }, { markdownView: true }] as const) {
+      expect(act("J", { ...onHeader, ...o, shiftKey: true })).toBeNull();
+      expect(act("ArrowDown", { ...onHeader, ...o, altKey: true })).toBeNull();
+    }
   });
 });
 
