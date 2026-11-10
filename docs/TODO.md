@@ -110,35 +110,35 @@
 - [x] Verify the whole keymap by hand
 
 ## Design iteration #1
-- [ ] Define the design tokens in `theme.css` and replace every literal size, radius and spacing in the stylesheets (PRD 5.10)
-  - [ ] Font sizes 16 / 14 / 12 (tasks use 12), radii 8 / 6 / 4, spacing steps 2 to 16, 14 px icons and 22 px icon buttons
-  - [ ] Responsive `clamp()` tokens for the gutter, panel padding, row padding, checkbox gap and subtask indent
-- [ ] Flat list panels: surface background, 8 px radius, no border and no shadow, 8 px between panels
-- [ ] Compact rows: 12 px text, line height 20 px, 3 px vertical padding, no gap between rows
-- [ ] Single centered column with one shared left edge for the header, the panels and the footer
-- [ ] Fixed header of about 32 px and footer of about 24 px, with no border or separator
-- [ ] Scroll area with a 10 px scrollbar that appears only when the content overflows, with no reserved gutter
-- [ ] Replace the text glyphs (`✎`, `×`, `+`, `⋮⋮`) with Lucide SVG icons of one size and stroke
-- [ ] Remove the drag handle and make the whole row the drag source, keeping click on the text to edit
-- [ ] Drag feedback: dimmed row, one 2 px accent line, indented for "as child", inside the panel for an empty list
-- [ ] Completed tasks: checked box and muted text, with no background
-- [ ] Row actions on mouse hover only: overlaid "×" with a solid background, and remove the hover "+"
-- [ ] List header rename and delete icons on mouse hover only
-- [ ] Quiet "+ Add a task" line at the end of each list
-- [ ] "+ Add a subtask" line revealed by a mouse click on a task's text
-  - [ ] A click on a subtask reveals its parent's line, and a click on a checkbox changes nothing
-  - [ ] A click elsewhere and Escape hide it, and keyboard focus never shows it
-- [ ] Cursor look on rows and list headers: tint and 2 px left bar in blue (Normal) or green (Insert)
-- [ ] Borderless inputs for the editor, the add lines and the list name input
-- [ ] New list: created at once as "New list", a single-list view switches to it, and the name input and the selector label stay in sync
-- [ ] Single alert component for banners, notices and the list delete confirmation
-  - [ ] Amber and red tints, text buttons on the same line, wrapping on narrow windows
-  - [ ] Banners between the header and the scroll area, delete confirmation in place of the list header content
-- [ ] Custom list selector: button, menu with a check on the current view, and ↑ / ↓ / Enter / Escape support
-- [ ] Footer: NORMAL in blue and INSERT in green, with the 4 px chip radius
-- [ ] Cheat sheet in the panel look, inset by the gutter, stacked entries in a narrow window
+- [x] Define the design tokens in `theme.css` and replace every literal size, radius and spacing in the stylesheets (PRD 5.10)
+  - [x] Font sizes 16 / 14 / 12 (tasks use 12), radii 8 / 6 / 4, spacing steps 2 to 16, 14 px icons and 22 px icon buttons
+  - [x] Responsive `clamp()` tokens for the gutter, panel padding, row padding, checkbox gap and subtask indent
+- [x] Flat list panels: surface background, 8 px radius, no border and no shadow, 8 px between panels
+- [x] Compact rows: 12 px text, line height 20 px, 3 px vertical padding, no gap between rows
+- [x] Single centered column with one shared left edge for the header, the panels and the footer
+- [x] Fixed header of about 32 px and footer of about 24 px, with no border or separator
+- [x] Scroll area with a 10 px scrollbar that appears only when the content overflows, with no reserved gutter
+- [x] Replace the text glyphs (`✎`, `×`, `+`, `⋮⋮`) with Lucide SVG icons of one size and stroke
+- [x] Remove the drag handle and make the whole row the drag source, keeping click on the text to edit
+- [x] Drag feedback: dimmed row, one 2 px accent line, indented for "as child", inside the panel for an empty list
+- [x] Completed tasks: checked box and muted text, with no background
+- [x] Row actions on mouse hover only: overlaid "×" with a solid background, and remove the hover "+"
+- [x] List header rename and delete icons on mouse hover only
+- [x] Quiet "+ Add a task" line at the end of each list
+- [x] "+ Add a subtask" line revealed by a mouse click on a task's text
+  - [x] A click on a subtask reveals its parent's line, and a click on a checkbox changes nothing
+  - [x] A click elsewhere and Escape hide it, and keyboard focus never shows it
+- [x] Cursor look on rows and list headers: tint and 2 px left bar in blue (Normal) or green (Insert)
+- [x] Borderless inputs for the editor, the add lines and the list name input
+- [x] New list: created at once as "New list", a single-list view switches to it, and the name input and the selector label stay in sync
+- [x] Single alert component for banners, notices and the list delete confirmation
+  - [x] Amber and red tints, text buttons on the same line, wrapping on narrow windows
+  - [x] Banners between the header and the scroll area, delete confirmation in place of the list header content
+- [x] Custom list selector: button, menu with a check on the current view, and ↑ / ↓ / Enter / Escape support
+- [x] Footer: NORMAL in blue and INSERT in green, with the 4 px chip radius
+- [x] Cheat sheet in the panel look, inset by the gutter, stacked entries in a narrow window
 - [x] Update `CLAUDE.md` where it describes the completed task look and the mouse-only controls
-- [ ] Verify by hand in a window from 240 to 720 px wide, in light and dark
+- [x] Verify by hand in a window from 240 to 720 px wide, in light and dark
 
 ## Frontmatter passthrough
 - [x] Ignore a leading frontmatter block on read and keep it byte for byte on write
