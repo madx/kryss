@@ -22,6 +22,12 @@
   caret-color: var(--color-text) !important;
 }
 
+/* The editor wraps lines and grows with its content, so it never scrolls.
+ * CodeMirror's `overflow: auto` makes Safari add a scrollbar (about 10 px) when a formatted line overflows by a fraction of a pixel, which made the row taller. */
+.task-text .cm-scroller {
+  overflow: hidden !important;
+}
+
 .task-text .cm-content,
 .task-text .cm-line {
   padding: 0;
