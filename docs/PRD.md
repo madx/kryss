@@ -127,11 +127,12 @@ A task with an empty text after trimming is rejected.
 - A **selector** shows a single list or "All" (default on first launch).
 - The choice is stored in `localStorage` **by index**; if the index no longer exists, fall back to "All" and forget the stale index, so a list appearing later at that position is not selected.
 - Create, rename and delete a list from the selector.
-  Names are typed in an inline input (header for a new list, list title for a rename): Enter confirms, Escape cancels, and a blur commits a non-empty name (like the task editor) and cancels an empty one.
+  Names are typed in an inline input (the header selector is replaced by the input for a new list, the list title for a rename): Enter confirms, Escape cancels, and a blur commits a non-empty name (like the task editor) and cancels an empty one.
   An external change discards the name being typed and closes the input.
-  Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel prompt in the list header.
+  Deleting a list, empty or not, always asks for confirmation with an inline Delete / Cancel alert (5.10) that replaces the content of the list header.
   A new list is appended at the end.
   The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the sync status symbol on the right.
+  The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
 - Lists cannot be reordered in the app (order is the file's order).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
@@ -161,7 +162,7 @@ A task with an empty text after trimming is rejected.
   A parent left with no subtask keeps its state.
 - These rules only apply to UI actions: the server does not normalize states.
 - A completed task stays in place.
-  It is distinguished by its checked box and a different background or color (not by strikethrough text, to avoid confusion with `~~strikethrough~~`).
+  It is distinguished by its checked box and a muted text color, with no background (not by strikethrough text, to avoid confusion with `~~strikethrough~~`).
 
 ### 5.4 Drag and drop (Pragmatic drag and drop)
 
@@ -175,7 +176,8 @@ A task with an empty text after trimming is rejected.
 - The drop zone comes from the pointer position in the hovered row: top quarter is before, middle half is as child, bottom quarter is after.
   When a child drop is refused for that row, the row is split in two halves (before, after) instead.
 - A refused zone shows no indicator and a drop on it does nothing.
-- The drag starts from the row's drag handle only, and the drop indicator is a line above or below the row, or a highlighted border for "as child".
+- There is no drag handle: the drag starts from anywhere on the row, a click on the text still starts an edit, and a drag moves the task.
+  The drop indicator is a single 2 px accent line (5.10): above or below the row, indented to the subtask level for "as child".
 - Only an empty list is a drop target of its own (the task is appended), a non-empty list is reached through the zones of its rows.
 - The DOM is rebuilt on every change, so the drag and drop registrations are redone after each render.
 
@@ -242,7 +244,7 @@ A task with an empty text after trimming is rejected.
 - "Keep my version" re-sends the local document with the ETag of the disk version, and "take the disk version" reloads and discards local changes.
 - Rows and list headers are focusable, and the keyboard shortcuts of 5.9 act on the focused row or header.
   Tab and Shift+Tab are plain focus keys and are never intercepted.
-- Tasks are also added from the permanent input at the end of each list and from the "+" button of a top-level task, which stay for mouse use.
+- Tasks are also added from the "+ Add a task" line at the end of each list and, for subtasks, from the "+ Add a subtask" line that a click on a top-level task's text reveals (5.10), which stay for mouse use.
   The keyboard adds tasks with the positional keys of 5.9.
 - The text typed in an add input is kept per list (or per parent task for subtasks), so it survives a re-render.
 - Backspace no longer deletes a row.
@@ -273,6 +275,7 @@ The mouse keeps working as before.
 - Insert is active while a text field has focus (the task editor or a list name input).
   It only ever edits the one focused task or name.
 - A click on a task's text enters Insert mode on it, and a click on a row moves the cursor to it.
+  Escape leaving Insert mode also hides the "+ Add a subtask" line revealed by that click (5.10).
 
 **Cursor and navigation**
 
@@ -289,6 +292,7 @@ The mouse keeps working as before.
 - With no focused row or header, the first Normal key press puts the cursor on the first stop.
 - Normal keys are active only when focus is on a row, on a list header or on nothing.
   Buttons and the selector keep their native behavior, Enter or Space activates them, and Escape on any of them puts the focus back on the cursor.
+  While the selector menu is open, Escape closes it first and then puts the focus back on the cursor.
   The conflict banner is the first Tab stop and has no dedicated key.
 - A pending first key (`g` or `d`) is cancelled by any other key or by a blur, with no timeout.
 - Escape in Normal mode does nothing.
@@ -344,7 +348,7 @@ The mouse keeps working as before.
 
 **Footer, statusline and cheat sheet**
 
-- A fixed footer, like the header, shows the mode (NORMAL or INSERT, with a different color for each) and a short statusline.
+- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green, as in 5.10) and a short statusline.
 - The statusline shows the done / total task counts of the current view and of the whole document, then the index of the list that holds the cursor over the total number of lists.
   Subtasks count as tasks.
 - `?` opens a static cheat sheet overlay that lists every key, closed with Escape or `?`.
@@ -364,13 +368,91 @@ The mouse keeps working as before.
   The app remembers the last cursor index, and a re-render that loses the focus puts it back on that index, clamped to the visible range.
 - Creating a list through the UI selects it only in a single-list view, in the "All" view the view is kept.
 
+### 5.10 Visual design
+
+The goal is a compact and balanced UI that stays comfortable in a narrow window, with the color palette unchanged.
+The static prototype that settled these decisions was a throwaway and is not kept.
+
+**Layout and density**
+
+- The page is one centered column that fills the window and stops growing at `--content-width` (720 px).
+  The header, the list panels and the footer share the same left edge.
+- A list is a flat panel: surface background, 8 px radius, no border and no shadow, with 8 px between panels.
+  Panels are distinguished from the page by their background only.
+- Task text is 14 px with a line height of 1.4, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
+  Text size and row height are the same at every window width.
+- Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
+  The page gutter goes from 6 to 16 px, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
+- The header is fixed and about 32 px tall, the footer is fixed and about 24 px tall, and neither has a border or a separator.
+- The scroll area keeps a stable scrollbar gutter on one edge only, so the content never shifts when the scrollbar appears.
+  The scrollbar is 10 px wide (an 8 px thumb with 1 px of padding), and the header and the footer get the same extra padding on that side so that their edges stay aligned with the panels.
+  The content is therefore about 5 px off center in a wide window, which is accepted.
+
+**Rows and actions**
+
+- A row is a checkbox and the task text.
+  A completed task has a checked box and a muted text color, with no background.
+- There is no drag handle (5.4).
+- A delete "×" appears on mouse hover only, on top of the end of the text with a solid background, so it reserves no width.
+  There is no hover "+" on rows.
+- The rename and delete icons of a list header appear when the mouse is over that header only.
+  Neither set of icons appears for the keyboard cursor, since the keyboard has its own keys.
+- Each list ends with a quiet "+ Add a task" line.
+- A click with the mouse on the text of a task reveals a "+ Add a subtask" line right below it, indented to the subtask level and placed after the last subtask if there are some.
+  A click on a subtask reveals the line of its parent, since a subtask cannot have subtasks.
+  A click on a checkbox neither shows nor hides the line, and a click anywhere else hides it, as does Escape (5.9).
+  Keyboard focus never reveals it.
+
+**Cursor and inputs**
+
+- The cursor row and the cursor list header share one look: a tinted background and a 2 px bar on the left, in the color of the current mode.
+  The mode color is accent blue in Normal mode and green in Insert mode, the same as the footer badge.
+- An input never looks like a box.
+  It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
+  This applies to the task editor, to the add lines (which turn into an empty editing row) and to the list name input (which edits the title in place).
+- The name input of a new list replaces the selector in the header while it is open, and Escape or an empty name cancels it.
+
+**Drag feedback**
+
+- The dragged row is dimmed to 40%.
+- The drop position is a single 2 px accent line above or below the target row, indented to the subtask level for "as child", and inside the panel for an empty list.
+  There is no border or tint on the target row.
+
+**Alerts**
+
+- Banners, notices and the list delete confirmation are one component: a full-width strip with a 6 px radius, small padding, 13 px text, no border and a tinted background (amber for warnings, red for errors and for the delete confirmation).
+- Its actions are text buttons on the same line, and they wrap below the message when the window is narrow.
+- Banners sit between the header and the scroll area and never scroll away.
+  The delete confirmation replaces the content of the list header, and the invalid file, empty file and unreachable server notices use the same strip in place of the lists.
+
+**List selector**
+
+- The selector is a button showing the current view (All or a list title, truncated with an ellipsis) and a chevron, in the header title style (16 px, semibold).
+- It opens a menu below it with "All" and one item per list, which uses the panel look (surface background, 6 px radius items), a tint on the hovered or keyboard-focused item and a check icon on the current view.
+- The menu is a listbox usable with ↑ / ↓, Enter and Escape, it closes on an outside click, and it adds no dependency.
+
+**Cheat sheet**
+
+- The overlay is inset by the page gutter and uses the panel look, with a fixed title and a vertical scroll limited to the window height.
+- In a wide window the entries are two columns, keys then description.
+  In a narrow window each entry is stacked, with the keys in `kbd` style above the muted description, the breakpoint being chosen at implementation time.
+
+**Tokens**
+
+- Font sizes are 16 px (list selector only), 14 px (body and tasks) and 12 px (list titles, counts, footer, cheat sheet, `kbd`).
+- Radii are 8 px (panels), 6 px (rows, buttons, alerts, inputs) and 4 px (chips: `code`, `kbd`, mode badge, checkbox).
+- Spacing steps are 2, 4, 6, 8, 12 and 16 px, plus the responsive `clamp()` tokens above.
+- Icons are Lucide SVG at 14 px with a stroke of 2, never text glyphs, and icon buttons are 22 px squares.
+- Every size, radius and spacing value in the stylesheets comes from a token in `theme.css`, and a new value needs a new token first.
+- Green means "saved" for the sync symbol and Insert for the mode, and these two never appear in the same place.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422`, SSE after external modification.
 - **Pure client logic**: checking rules, move and depth validation, undo stack, the key resolution of 5.9 (modes, prefixes, target kinds), positional add, cursor clamping, view cycling and statusline counts.
-- No e2e in v1: drag and drop and CodeMirror are verified by hand.
+- No e2e in v1: drag and drop and CodeMirror are verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; frontmatter and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; frontmatter and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
