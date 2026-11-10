@@ -198,23 +198,23 @@
 - [x] Verify by hand that the Markdown view follows unsaved edits, a conflict and a view switch
 
 ## Register, change and paste
-- [ ] Pure logic
-  - [ ] Register content: a task with its subtree or a list, as a copy
-  - [ ] Paste a task below a task or a subtask, as the first task of a list, with the depth rule
-  - [ ] Paste a list after the list of the cursor
-  - [ ] Delete returns the removed element so that it can fill the register
-  - [ ] Tests: every paste placement, the depth rule, check states, list paste, copy independence, empty register
-- [ ] Keys
-  - [ ] `c` as a pending prefix, `cc`, `yy` and `p` in the pure key function, and `yy` in the Markdown view
-  - [ ] `dd` and Delete fill the register, and `dd` on a header deletes at once
-  - [ ] Cursor goes to the pasted element, scrolled into view
-  - [ ] A single-list view switches to a pasted list
-  - [ ] Tests of the key resolution
-- [ ] Clipboard and feedback
-  - [ ] Write the Markdown text of the element with `navigator.clipboard`, without blocking the edit when it is refused
-  - [ ] Transient "Copied" or "Copy failed" text in the footer statusline for 2 seconds
-  - [ ] Replace the popover of the Markdown view copy button with the footer text
-  - [ ] Tests of the clipboard text, and of the feedback timer if it is a pure function
-- [ ] Undo and redo of `p`, `dd` and `cc`, and of a list paste back to its view
-- [ ] Add `cc`, `yy` and `p` to the cheat sheet, and update `CLAUDE.md`
-- [ ] Verify by hand: `dd` then `p` to move a task and a list, `cc` with Escape, paste in a single-list view, and paste of the copied text into an external editor
+- [x] Pure logic
+  - [x] Register content: a task with its subtree or a list, as a copy
+  - [x] Paste a task below a task or a subtask, as the first task of a list, with the depth rule
+  - [x] Paste a list after the list of the cursor
+  - [x] Delete returns the removed element so that it can fill the register
+  - [x] Tests: every paste placement, the depth rule, check states, list paste, copy independence, empty register
+- [x] Keys
+  - [x] `c` as a pending prefix, `cc`, `yy` and `p` in the pure key function, and `yy` in the Markdown view
+  - [x] `dd` and Delete fill the register, and `dd` on a header deletes at once
+  - [x] Cursor goes to the pasted element, scrolled into view
+  - [x] A single-list view switches to a pasted list
+  - [x] Tests of the key resolution
+- [x] Clipboard and feedback
+  - [x] Write the Markdown text of the element with `navigator.clipboard`, without blocking the edit when it is refused
+  - [x] Transient "Copied" or "Copy failed" text in the footer statusline for 2 seconds
+  - [x] Replace the popover of the Markdown view copy button with the footer text
+  - [x] Tests of the clipboard text, and of the feedback timer if it is a pure function
+- [x] Undo and redo of `p`, `dd` and `cc`, and of a list paste back to its view
+- [x] Add `cc`, `yy` and `p` to the cheat sheet, and update `CLAUDE.md`
+- [x] Verify by hand: `dd` then `p` to move a task and a list, `cc` with Escape, paste in a single-list view, and paste of the copied text into an external editor
