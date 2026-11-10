@@ -164,7 +164,7 @@
   - [x] Ignore the other Normal keys while the view is open, keep `H` / `L`, Escape and `?`
   - [x] Add `gm` and `yy` to the cheat sheet
   - [x] Tests of the key resolution
-- [ ] Verify by hand in a window from 240 to 720 px wide, in light and dark
+- [x] Verify by hand in a window from 240 to 720 px wide, in light and dark
 
 ## List reordering
 - [ ] Pure logic
