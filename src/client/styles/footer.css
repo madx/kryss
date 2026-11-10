@@ -1,21 +1,25 @@
 /* Footer: layout (size, edges, padding) is in base.css. No border or separator. */
 .app-footer {
-  gap: var(--space-12);
   font-size: var(--font-size-sm);
   color: var(--color-muted);
-  padding-left: max(var(--gutter), calc(8ch + 2 * var(--space-8) + var(--space-8)));
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
 }
 
 /* The badge is a corner block: it reaches the left and bottom edges of the window. */
 .mode-badge {
-  position: fixed;
-  left: 0;
-  bottom: 0;
   display: flex;
+  flex: none;
   align-items: center;
-  height: var(--footer-height);
-  min-width: 8ch;
-  justify-content: center;
+  align-self: stretch;
   padding: 0 var(--space-8);
   border-top-right-radius: var(--radius-chip);
   font-family: var(--font-mono);
