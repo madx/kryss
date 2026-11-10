@@ -1,13 +1,16 @@
 // Drag and drop with Pragmatic drag and drop.
 // The whole row is the drag source (no handle) and a drop target, an empty list (`ul.tasks`) is a drop target too.
+// Lists are dragged by their whole header (All view only) onto any list panel: top half before, bottom half after (PRD 5.4).
+// List drags and task drags are separate drag types (`data.type`), so a list never lands in a task row and a task never reorders lists.
 // The DOM is rebuilt on every change, so `refresh` is called after each render: it drops the old registrations and registers the new elements.
 // The drop zone is derived from the pointer position in the row (see dnd-zone.ts) and checked with `validateDrop`: a refused zone shows no indicator and does nothing.
 import { draggable, dropTargetForElements, monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import type { TodoDocument } from "../../shared/types";
-import { getNode, moveTask, validateDrop, type Drop, type TaskPath } from "../logic";
+import { getNode, moveList, moveTask, validateDrop, type Drop, type ListPlace, type TaskPath } from "../logic";
 import { zoneFromPointer, type Zone } from "./dnd-zone";
 
 type Source = { path: TaskPath };
+type ListOver = { list: number; place: ListPlace; element: HTMLElement };
 type Over = { drop: Drop; element: HTMLElement; zone: Zone | "end" } | null;
 
 function rowPath(row: HTMLElement): TaskPath {
@@ -15,7 +18,7 @@ function rowPath(row: HTMLElement): TaskPath {
   return { list: Number(list), task: Number(task), ...(child === undefined ? {} : { child: Number(child) }) };
 }
 
-export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | null; commit(doc: TodoDocument): void }) {
+export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | null; commit(doc: TodoDocument): void; canDragLists(): boolean; moveList(list: number, target: number, place: ListPlace): void }) {
   let cleanups: Array<() => void> = [];
   let indicated: HTMLElement | null = null;
 
@@ -54,16 +57,47 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
     return resolve(args.source.data as unknown as Source, target, args.location.current.input.clientY);
   }
 
+  type Args = Parameters<typeof currentOver>[0];
+  const isList = (args: Args) => args.source.data.type === "list";
+
+  /** The list drop under the pointer, or null when it would not change the order. */
+  function currentListOver(args: Args): ListOver | null {
+    const target = args.location.current.dropTargets[0];
+    const doc = deps.getDoc();
+    if (!target || !doc) return null;
+    const element = target.element as HTMLElement;
+    const list = Number(element.dataset.list);
+    const rect = element.getBoundingClientRect();
+    const zone = zoneFromPointer(args.location.current.input.clientY, rect.top, rect.height, false);
+    const place: ListPlace = zone === "before" ? "before" : "after";
+    const from = (args.source.data as { list: number }).list;
+    return moveList(doc, from, list, place) ? { list, place, element } : null;
+  }
+
   const stopMonitor = monitorForElements({
     onDrag(args) {
-      const over = currentOver(args);
       clearIndicator();
+      if (isList(args)) {
+        const over = currentListOver(args);
+        if (over) {
+          over.element.setAttribute("data-drop", over.place);
+          indicated = over.element;
+        }
+        return;
+      }
+      const over = currentOver(args);
       if (over) {
         over.element.setAttribute("data-drop", shownZone(over, (args.source.data as unknown as Source).path));
         indicated = over.element;
       }
     },
     onDrop(args) {
+      if (isList(args)) {
+        const over = currentListOver(args);
+        clearIndicator();
+        if (over) deps.moveList((args.source.data as { list: number }).list, over.list, over.place);
+        return;
+      }
       const over = currentOver(args);
       clearIndicator();
       if (!over) return;
@@ -83,16 +117,35 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
         draggable({
           element: row,
           canDrag: () => row.querySelector(".cm-editor") === null, // never drag from an open editor
-          getInitialData: () => ({ path: rowPath(row) }),
+          getInitialData: () => ({ type: "task", path: rowPath(row) }),
           onDragStart: () => row.setAttribute("data-dragging", "true"),
           onDrop: () => row.removeAttribute("data-dragging"),
         }),
-        dropTargetForElements({ element: row, getData: () => ({ kind: "row" }), getDropEffect: () => "move" }),
+        dropTargetForElements({ element: row, canDrop: ({ source }) => source.data.type === "task", getData: () => ({ kind: "row" }), getDropEffect: () => "move" }),
       );
     }
     // Only empty lists are list targets: in a non-empty list, the drop zones of the rows are enough.
     for (const ul of Array.from(main.querySelectorAll<HTMLElement>("ul.tasks"))) {
-      if (ul.childElementCount === 0) cleanups.push(dropTargetForElements({ element: ul, getData: () => ({ kind: "list" }), getDropEffect: () => "move" }));
+      if (ul.childElementCount === 0) cleanups.push(dropTargetForElements({ element: ul, canDrop: ({ source }) => source.data.type === "task", getData: () => ({ kind: "list" }), getDropEffect: () => "move" }));
+    }
+    for (const panel of Array.from(main.querySelectorAll<HTMLElement>("section.list"))) {
+      const header = panel.querySelector<HTMLElement>(":scope > .list-header");
+      if (!header) continue;
+      const list = Number(panel.dataset.list);
+      cleanups.push(
+        draggable({
+          element: header,
+          // Not from an icon button, and not while the name input or the delete alert is open.
+          canDrag: ({ input }) =>
+            deps.canDragLists() &&
+            header.querySelector(".name-input, .alert") === null &&
+            !document.elementFromPoint(input.clientX, input.clientY)?.closest(".icon-button"),
+          getInitialData: () => ({ type: "list", list }),
+          onDragStart: () => panel.setAttribute("data-dragging", "true"),
+          onDrop: () => panel.removeAttribute("data-dragging"),
+        }),
+        dropTargetForElements({ element: panel, canDrop: ({ source }) => source.data.type === "list", getData: () => ({ kind: "panel" }), getDropEffect: () => "move" }),
+      );
     }
   }
 

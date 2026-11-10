@@ -57,7 +57,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let pendingFocus: string | null = null;
 
   const doc = (): TodoDocument => store.getState().doc!;
-  const dnd = setupDnd(roots.main, { getDoc: () => store.getState().doc, commit: (next) => store.commit(next) });
+  const dnd = setupDnd(roots.main, {
+    getDoc: () => store.getState().doc,
+    commit: (next) => store.commit(next),
+    canDragLists: () => store.getState().selected === null,
+    moveList: (list, target, place) => void lists.move(list, target, place),
+  });
   /** Keyboard moves only cross the lists on screen. */
   const visibleBounds = () => {
     const selected = store.getState().selected;
