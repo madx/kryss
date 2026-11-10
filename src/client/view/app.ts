@@ -8,11 +8,14 @@ import {
   deleteTask,
   editText,
   indent,
+  listMoveTarget,
   moveDown,
+  moveList,
   moveUp,
   outdent,
   renameList,
   toggleDone,
+  type ListPlace,
   type OpResult,
   type TaskPath,
 } from "../logic";
@@ -54,7 +57,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let pendingFocus: string | null = null;
 
   const doc = (): TodoDocument => store.getState().doc!;
-  const dnd = setupDnd(roots.main, { getDoc: () => store.getState().doc, commit: (next) => store.commit(next) });
+  const dnd = setupDnd(roots.main, {
+    getDoc: () => store.getState().doc,
+    commit: (next) => store.commit(next),
+    canDragLists: () => store.getState().selected === null,
+    moveList: (list, target, place) => void lists.move(list, target, place),
+  });
   /** Keyboard moves only cross the lists on screen. */
   const visibleBounds = () => {
     const selected = store.getState().selected;
@@ -166,6 +174,23 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       store.commit(deleteList(doc(), index));
       if (selected === index) store.select(null);
       else if (selected !== null && selected > index) store.select(selected - 1);
+    },
+    /** Moves a list in the "All" view only (PRD 5.1) and leaves the cursor on its header. */
+    move(list: number, target: number, place: ListPlace): boolean {
+      if (store.getState().selected !== null) return false;
+      const result = moveList(doc(), list, target, place);
+      if (!result) return false;
+      // Drafts, the revealed line, the rename and the delete confirmation are keyed by list index, which shifts.
+      ctx.drafts.clear();
+      ctx.reveal = null;
+      ctx.confirmingRemove = null;
+      ctx.renaming = null;
+      commitFocus(result.doc, stopSelector({ kind: "header", list: result.list }));
+      return true;
+    },
+    moveByKey(list: number, dir: "up" | "down") {
+      const step = listMoveTarget(list, dir, visibleBounds());
+      if (step) lists.move(list, step.target, step.place);
     },
     addTask(index: number, text: string) {
       const result = addTask(doc(), index, text);
@@ -370,6 +395,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     commitFocus: (next, path) => commitFocus(next, rowSelector(path)),
     renameList: lists.rename,
     deleteList: lists.confirmRemove,
+    moveList: lists.moveByKey,
     confirming: () => ctx.confirmingRemove,
     confirmDelete(index) {
       lists.remove(index);

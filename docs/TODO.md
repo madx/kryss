@@ -167,19 +167,19 @@
 - [x] Verify by hand in a window from 240 to 720 px wide, in light and dark
 
 ## List reordering
-- [ ] Pure logic
-  - [ ] Move a list before or after a target list, `null` when the order does not change
-  - [ ] Keyboard resolution: previous or next visible list, with the visible range as a parameter
-  - [ ] Tests: before, after, both edges, same list, no-op, visible range
-- [ ] Keyboard
-  - [ ] `J` / `K` and Alt+↓ / Alt+↑ on a list header in the "All" view, with no wrapping
-  - [ ] Cursor stays on the moved header, scrolled into view, and each move is one undoable change
-  - [ ] Add the keys to the cheat sheet
-  - [ ] Tests of the key resolution
-- [ ] Drag and drop
-  - [ ] Whole header row as the drag source, excluding icon buttons, the name input and the delete alert
-  - [ ] Whole list panel as drop target, top half before and bottom half after, with the 2 px accent line
-  - [ ] Separate drag types for lists and tasks, and registrations redone after each render
-  - [ ] Cursor goes to the moved header after the drop
-  - [ ] Verify by hand, in the "All" view and in a single-list view, in light and dark
-- [ ] Check that undo and redo of a list move return to the "All" view
+- [x] Pure logic
+  - [x] Move a list before or after a target list, `null` when the order does not change
+  - [x] Keyboard resolution: previous or next visible list, with the visible range as a parameter
+  - [x] Tests: before, after, both edges, same list, no-op, visible range
+- [x] Keyboard
+  - [x] `J` / `K` and Alt+↓ / Alt+↑ on a list header in the "All" view, with no wrapping
+  - [x] Cursor stays on the moved header, scrolled into view, and each move is one undoable change
+  - [x] Add the keys to the cheat sheet
+  - [x] Tests of the key resolution
+- [x] Drag and drop
+  - [x] Whole header row as the drag source, excluding icon buttons, the name input and the delete alert
+  - [x] Whole list panel as drop target, top half before and bottom half after, with the 2 px accent line
+  - [x] Separate drag types for lists and tasks, and registrations redone after each render
+  - [x] Cursor goes to the moved header after the drop
+  - [x] Verify by hand, in the "All" view and in a single-list view, in light and dark
+- [x] Check that undo and redo of a list move return to the "All" view

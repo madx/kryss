@@ -70,7 +70,7 @@ Work plan: `docs/TODO.md`.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
 - **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view with a copy button and `yy` (PRD 5.11); the pending autosave is flushed before it opens, and it is never persisted.
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change.
-- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and row and list actions (delete, rename, add subtask) are mouse-only controls shown on hover or after a click, with the visual design rules of PRD 5.10.
+- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and row and list actions (delete, add subtask) are mouse-only controls shown on hover or after a click, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope

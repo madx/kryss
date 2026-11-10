@@ -4,7 +4,7 @@ import { countList } from "../logic/stats";
 import { renderAddInput } from "./add-input";
 import { renderAlert } from "./alert";
 import { el } from "./dom";
-import { closeIcon, editIcon } from "./icons";
+import { closeIcon } from "./icons";
 import { renderNameInput, type NameInputActions } from "./name-input";
 import type { InsertTarget } from "../logic/insert";
 import type { Reveal } from "../logic/reveal";
@@ -44,8 +44,6 @@ export function renderListSection(
   actions: ListActions,
   ctx: ListContext,
 ): HTMLElement {
-  const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list", tabindex: "-1" }, editIcon());
-  rename.addEventListener("click", () => actions.rename(index));
   const remove = el("button", { type: "button", class: "icon-button", title: "Delete list", "aria-label": "Delete list", tabindex: "-1" }, closeIcon());
   remove.addEventListener("click", () => actions.confirmRemove(index));
 
@@ -77,6 +75,8 @@ export function renderListSection(
   const title = renaming
     ? renderNameInput(renaming.draft, "List name", actions.naming)
     : el("h2", { class: "list-title" }, list.title);
+  // Like the text of a task, the title starts the edit on a click (a drag does not click).
+  if (!renaming) title.addEventListener("click", () => actions.rename(index));
   const header = el("header", { class: "list-header", tabindex: "0", "data-list": String(index) });
   if (ctx.confirmingRemove === index) {
     const message = list.tasks.length > 0 ? `Delete this list and its ${list.tasks.length} task(s)?` : "Delete this empty list?";
@@ -92,7 +92,7 @@ export function renderListSection(
     );
   } else {
     const { done, total } = countList(list);
-    header.append(title, el("span", { class: "list-actions" }, rename, remove), el("span", { class: "list-count" }, `${done}/${total}`));
+    header.append(title, el("span", { class: "list-actions" }, remove), el("span", { class: "list-count" }, `${done}/${total}`));
   }
 
   return el(

@@ -29,6 +29,7 @@ const GROUPS: Group[] = [
     rows: [
       ["i, Enter", "rename the list"],
       ["dd", "delete the list (y / Enter confirm, n / Escape cancel)"],
+      ["J / K, Alt+↓ / Alt+↑", "move the list down / up (All view)"],
       ["N", "new list, from anywhere"],
     ],
   },

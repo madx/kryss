@@ -12,7 +12,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
-  min-height: var(--icon-button-size);
+  /* Room for the icon buttons shown on hover, so that the header never changes height. */
+  min-height: calc(var(--icon-button-size) + 2 * var(--space-2));
   padding: var(--space-2) var(--row-padding);
   border-radius: var(--radius-control);
   font-size: var(--font-size-sm);

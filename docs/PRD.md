@@ -353,7 +353,7 @@ The mouse keeps working as before.
 
 | Key | Action |
 |---|---|
-| `i`, Enter | rename the list in its inline name input |
+| `i`, Enter | rename the list in its inline name input (a click on the title does the same) |
 | `dd` | delete the list with the inline prompt, answered by `y` or Enter (confirm) and `n` or Escape (cancel) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
@@ -435,8 +435,9 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - There is no drag handle (5.4).
 - A delete "×" appears on mouse hover only, on top of the end of the text with a solid background, so it reserves no width.
   There is no hover "+" on rows.
-- The rename and delete icons of a list header appear when the mouse is over that header only.
-  Neither set of icons appears for the keyboard cursor, since the keyboard has its own keys.
+- The delete icon of a list header appears when the mouse is over that header only.
+  There is no rename icon: a click on the list title opens the name input, like a click on the text of a task opens its editor.
+  No delete icon appears for the keyboard cursor, since the keyboard has its own keys.
 - Each list ends with a quiet "+ Add a task" line.
 - A click with the mouse on the text of a task reveals a "+ Add a subtask" line right below it, indented to the subtask level and placed after the last subtask if there are some.
   A click on a subtask reveals the line of its parent, since a subtask cannot have subtasks.

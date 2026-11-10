@@ -4,6 +4,16 @@
   opacity: var(--opacity-dragging);
 }
 
+.list[data-dragging="true"] {
+  opacity: var(--opacity-dragging);
+}
+
+/* A dragged list: the same line above or below the hovered panel. */
+.list[data-drop] {
+  position: relative;
+}
+
+.list[data-drop]::after,
 .task-row[data-drop]::after,
 .tasks[data-drop="end"]::after {
   content: "";
@@ -32,4 +42,12 @@
 /* An empty list: the line is drawn inside the panel. */
 .tasks[data-drop="end"]::after {
   top: 50%;
+}
+
+.list[data-drop="before"]::after {
+  top: 0;
+}
+
+.list[data-drop="after"]::after {
+  bottom: 0;
 }

@@ -24,7 +24,7 @@ export type Resolution = { action: Action | null; pending: Pending; preventDefau
 const NOTHING: Resolution = { action: null, pending: "", preventDefault: false };
 const done = (action: Action | null, preventDefault = true): Resolution => ({ action, pending: "", preventDefault });
 
-/** Keys that act on both tasks and list headers. */
+/** Keys that act on both tasks and list headers (`J` / `K` move the task or the list). */
 function commonKey(key: string, onHeader: boolean): Action | null {
   switch (key) {
     case "j": case "ArrowDown": return { type: "cursor", to: "next" };
@@ -34,6 +34,8 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "l": return { type: "cursor", to: "next-header" };
     case "H": return { type: "view", dir: "prev" };
     case "L": return { type: "view", dir: "next" };
+    case "J": return { type: "move", dir: "down" };
+    case "K": return { type: "move", dir: "up" };
     case "Delete": return { type: "delete" };
     case "i": case "Enter": return { type: "edit" };
     case "u": return { type: "undo" };
@@ -55,8 +57,6 @@ function taskKey(key: string): Action | null {
     case "F2": return { type: "edit" };
     case ">": return { type: "indent" };
     case "<": return { type: "outdent" };
-    case "J": return { type: "move", dir: "down" };
-    case "K": return { type: "move", dir: "up" };
     case "O": return { type: "add", at: "above" };
     default: return null;
   }
@@ -108,7 +108,7 @@ export function resolveKey(input: KeyInput): Resolution {
     return undo ? done({ type: undo }) : NOTHING;
   }
   if (input.altKey) {
-    if (onHeader || (key !== "ArrowDown" && key !== "ArrowUp")) return NOTHING;
+    if (key !== "ArrowDown" && key !== "ArrowUp") return NOTHING;
     return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
   }
 

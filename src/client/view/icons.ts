@@ -11,7 +11,6 @@ function icon(node: IconNode): SVGElement {
 export const plusIcon = () => icon(Plus);
 export const caretIcon = () => icon(ChevronDown);
 export const checkIcon = () => icon(Check);
-export const editIcon = () => icon(Pencil);
 export const markdownIcon = () => icon(SquareLetterM); // Lucide "square-m"
 export const copyIcon = () => icon(Copy);
 export const closeIcon = () => icon(X);
