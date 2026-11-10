@@ -185,17 +185,17 @@
 - [x] Check that undo and redo of a list move return to the "All" view
 
 ## Shared serializer
-- [ ] Move `serialize` to `src/shared/` and add the serialization of one list and of one task
-  - [ ] The server uses the shared function for `PUT`, with the frontmatter handling left on the server
-  - [ ] Tests: whole document, one list, one task with and without subtasks, empty list
-- [ ] Remove `GET /api/export`, `fetchExport` and their tests
-- [ ] Rebuild the Markdown view from the page's document
-  - [ ] Pure export function for the current view, with tests: whole document, one list, empty document, empty list
-  - [ ] Open without flush, rebuild on every document or view change, and keep the DOM when the text is the same
-  - [ ] Show the notice of the task UI when the page holds no document, with copy disabled
-  - [ ] Remove `store.flush()`, its tests and the flush-related code of the view
-- [ ] Update `CLAUDE.md` and check the PRD sections 2, 2.1, 3.4, 5.11 and 6
-- [ ] Verify by hand that the Markdown view follows unsaved edits, a conflict and a view switch
+- [x] Move `serialize` to `src/shared/` and add the serialization of one list and of one task
+  - [x] The server uses the shared function for `PUT`, with the frontmatter handling left on the server
+  - [x] Tests: whole document, one list, one task with and without subtasks, empty list
+- [x] Remove `GET /api/export`, `fetchExport` and their tests
+- [x] Rebuild the Markdown view from the page's document
+  - [x] Pure export function for the current view, with tests: whole document, one list, empty document, empty list
+  - [x] Open without flush, rebuild on every document or view change, and keep the DOM when the text is the same
+  - [x] Show the notice of the task UI when the page holds no document, with copy disabled
+  - [x] Remove `store.flush()`, its tests and the flush-related code of the view
+- [x] Update `CLAUDE.md` and check the PRD sections 2, 2.1, 3.4, 5.11 and 6
+- [x] Verify by hand that the Markdown view follows unsaved edits, a conflict and a view switch
 
 ## Register, change and paste
 - [ ] Pure logic

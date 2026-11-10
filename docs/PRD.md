@@ -117,6 +117,8 @@ A task with an empty text after trimming is rejected.
 
 2-space indentation, one blank line between lists, trailing newline, `\n` line endings, `-` bullets.
 The serializer is shared by the server and the client (2), and it serializes a whole document, a list or a task, so that the Markdown view and the clipboard text use the same canonical form.
+A whole document ends with a newline when it is not empty, while a list and a task are returned without a trailing newline, so that the clipboard text and the register text hold exactly the lines of the element.
+A whole document is its lists joined by a blank line, followed by that final newline.
 
 ## 4. Synchronization
 

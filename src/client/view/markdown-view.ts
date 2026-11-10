@@ -1,9 +1,9 @@
 // The Markdown view of PRD 5.11: a read-only block showing the export of the current view, and a copy button.
-import type { ExportResult } from "../api";
-import { renderAlert } from "./alert";
-import { renderInvalid } from "./banners";
 import { el } from "./dom";
 import { copyIcon } from "./icons";
+
+/** What the view shows: the Markdown of the page's document, or the notice of the task UI when the page holds no document. */
+export type MarkdownContent = { kind: "ok"; text: string } | { kind: "notice"; node: Node };
 
 const POPOVER_MS = 1000;
 
@@ -13,7 +13,7 @@ export function createMarkdownView() {
   const popover = el("span", { class: "copied-popover", role: "status", hidden: true }, "Copied");
   const root = el("div", { class: "markdown-view" }, body, copyButton, popover);
 
-  let shown: ExportResult | null = null;
+  let shown: MarkdownContent | null = null;
   let hideTimer: ReturnType<typeof setTimeout> | undefined;
 
   const text = () => (shown?.kind === "ok" && shown.text !== "" ? shown.text : null);
@@ -42,13 +42,11 @@ export function createMarkdownView() {
   return {
     el: root,
     copy,
-    /** Shows a result. The same text again leaves the DOM alone, so that a text selection survives a silent refresh. */
-    show(result: ExportResult | null) {
-      if (result && shown && result.kind === "ok" && shown.kind === "ok" && result.text === shown.text) return;
+    /** Shows a content. The same text again leaves the DOM alone, so that a text selection survives a rebuild. */
+    show(result: MarkdownContent) {
+      if (shown && result.kind === "ok" && shown.kind === "ok" && result.text === shown.text) return;
       shown = result;
-      if (!result) body.replaceChildren();
-      else if (result.kind === "invalid") body.replaceChildren(renderInvalid(result.error, false));
-      else if (result.kind === "offline") body.replaceChildren(renderAlert("warning", ["Cannot reach the server."]));
+      if (result.kind === "notice") body.replaceChildren(result.node);
       else if (result.text === "") body.replaceChildren(el("p", { class: "markdown-empty" }, "Nothing to export"));
       else body.replaceChildren(el("pre", { class: "markdown-block" }, result.text));
       copyButton.disabled = text() === null;

@@ -29,7 +29,7 @@ import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnr
 import { isEditing, settleEditors, type EditEnd } from "./edit-text";
 import { createCheatsheet } from "./cheatsheet";
 import { createCursor, focusAndReveal, reveal, rowSelector, stopSelector } from "./cursor";
-import { fetchExport } from "../api";
+import { exportView } from "../logic/export";
 import { createFooter } from "./footer";
 import { createMarkdownView } from "./markdown-view";
 import { renderHeader } from "./header";
@@ -51,8 +51,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let cursorRestored = false;
   const markdownView = createMarkdownView();
   let markdownOpen = false;
-  let markdownOpening = false;
-  let markdownToken = 0; // an answer older than the latest request is dropped
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
 
@@ -247,6 +245,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     true,
   );
 
+  /** The notice shown in place of the lists when the page holds no document: the invalid file, the unreachable server, or nothing while loading. */
+  function noDocumentNotice(state: StoreState): Node {
+    if (state.invalid) return renderInvalid(state.invalid, store.hasPendingChanges());
+    return state.status === "offline" ? renderUnreachable() : document.createTextNode("");
+  }
+
   /** Settles the open editors first (their commit may change the document), then renders from the up-to-date state. */
   function renderMain() {
     settleEditors((host) => {
@@ -259,11 +263,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const state = store.getState();
     ctx.reveal = state.doc ? revealOrNull(ctx.reveal, state.doc) : null;
     if (markdownOpen) {
-      roots.main.replaceChildren(markdownView.el);
-    } else if (state.invalid) {
-      roots.main.replaceChildren(renderInvalid(state.invalid, store.hasPendingChanges()));
-    } else if (!state.doc) {
-      roots.main.replaceChildren(state.status === "offline" ? renderUnreachable() : "");
+      // Rebuilt on every render from the document of the page, unsaved edits included.
+      if (state.doc) markdownView.show({ kind: "ok", text: exportView(state.doc, state.selected) });
+      else markdownView.show({ kind: "notice", node: noDocumentNotice(state) });
+      if (roots.main.firstChild !== markdownView.el || roots.main.childNodes.length !== 1) roots.main.replaceChildren(markdownView.el);
+    } else if (state.invalid || !state.doc) {
+      roots.main.replaceChildren(noDocumentNotice(state));
     } else if (state.doc.lists.length === 0) {
       roots.main.replaceChildren(renderEmptyState(createList));
     } else {
@@ -308,31 +313,10 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     updateFooter();
   }
 
-  /** Fetches the export of the current view. A later request supersedes an earlier one. */
-  async function refreshMarkdown() {
-    const token = ++markdownToken;
-    const result = await fetchExport(store.getState().selected);
-    if (token === markdownToken && markdownOpen) markdownView.show(result);
-  }
-
-  /** Opens the Markdown view once the pending autosave is on disk, or closes it. The task UI stays when the flush fails. */
-  async function toggleMarkdown() {
-    if (markdownOpen) {
-      markdownOpen = false;
-      markdownToken++;
-      renderAll(store.getState());
-      return;
-    }
-    if (markdownOpening) return;
-    markdownOpening = true;
-    const flushed = await store.flush();
-    markdownOpening = false;
-    if (!flushed || markdownOpen) return;
-    markdownOpen = true;
-    markdownView.show(null);
-    renderAll(store.getState()); // settles the open editors, whose commit may leave changes to save
-    await store.flush();
-    if (markdownOpen) void refreshMarkdown();
+  /** Opens the Markdown view, or closes it. It needs no save: it shows the document held by the page. */
+  function toggleMarkdown() {
+    markdownOpen = !markdownOpen;
+    renderAll(store.getState());
   }
 
   store.subscribe((state, kind) => {
@@ -343,7 +327,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     }
     if (kind !== "status") {
       renderAll(state);
-      if (markdownOpen) void refreshMarkdown(); // another view, or a change of the file
     } else {
       renderStatus(state);
       renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
@@ -404,7 +387,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     cancelDelete: lists.cancelRemove,
     beginAdd,
     newList: createList,
-    markdown: { isOpen: () => markdownOpen, toggle: () => void toggleMarkdown(), copy: markdownView.copy },
+    markdown: { isOpen: () => markdownOpen, toggle: toggleMarkdown, copy: markdownView.copy },
   });
   renderAll(store.getState());
 }
