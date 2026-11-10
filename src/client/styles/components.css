@@ -82,7 +82,7 @@
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
-  cursor: text;
+  cursor: default;
 }
 
 /* The empty row of a positional add has no checkbox: its text lines up with the others. */

@@ -87,12 +87,12 @@ export function setupDnd(main: HTMLElement, deps: { getDoc(): TodoDocument | nul
           onDragStart: () => row.setAttribute("data-dragging", "true"),
           onDrop: () => row.removeAttribute("data-dragging"),
         }),
-        dropTargetForElements({ element: row, getData: () => ({ kind: "row" }) }),
+        dropTargetForElements({ element: row, getData: () => ({ kind: "row" }), getDropEffect: () => "move" }),
       );
     }
     // Only empty lists are list targets: in a non-empty list, the drop zones of the rows are enough.
     for (const ul of Array.from(main.querySelectorAll<HTMLElement>("ul.tasks"))) {
-      if (ul.childElementCount === 0) cleanups.push(dropTargetForElements({ element: ul, getData: () => ({ kind: "list" }) }));
+      if (ul.childElementCount === 0) cleanups.push(dropTargetForElements({ element: ul, getData: () => ({ kind: "list" }), getDropEffect: () => "move" }));
     }
   }
 
