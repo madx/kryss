@@ -27,6 +27,12 @@
   overflow-wrap: anywhere;
 }
 
+.list-count {
+  flex: none;
+  font-family: var(--font-mono);
+  color: var(--color-muted);
+}
+
 /* Rename and delete: mouse only, shown while the pointer is over the header. They are out of the tab order. */
 .list-actions,
 .task-actions {

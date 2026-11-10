@@ -1,4 +1,4 @@
-// Header: list selector (All or one list), new list button and the sync status symbol.
+// Header: list selector (All or one list) and new list button.
 import type { StoreState } from "../store";
 import { el } from "./dom";
 import { plusIcon } from "./icons";
@@ -14,5 +14,5 @@ export function renderHeader(root: HTMLElement, state: StoreState, actions: Head
     newList.addEventListener("click", actions.newList);
     left.append(newList);
   }
-  root.replaceChildren(left, el("span", { id: "sync-status", class: "sync-status", role: "status" }));
+  root.replaceChildren(left);
 }

@@ -19,7 +19,7 @@ import {
 import { commitInsert, insertTarget, type AddAt, type Anchor } from "../logic/insert";
 import { getNode } from "../logic/paths";
 import { revealAfterClick, revealAfterKey, revealOrNull, type ClickTarget, type Reveal } from "../logic/reveal";
-import { statusline } from "../logic/stats";
+import { countTasks } from "../logic/stats";
 import { visibleRange } from "../logic/views";
 import type { Store, StoreState } from "../store";
 import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnreachable } from "./banners";
@@ -251,9 +251,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const state = store.getState();
     if (!state.doc) return;
     const range = visibleRange(state.selected, state.doc.lists.length);
-    const stop = cursor.current() ?? cursor.stopAt(cursor.last()); // keeps the list number while a field has the focus
     const insert = isEditing() || isTextField(document.activeElement);
-    footer.update({ mode: insert ? "insert" : "normal", ...statusline(state.doc, range, stop ? (stop.kind === "header" ? stop.list : stop.path.list) : null) });
+    footer.update({ mode: insert ? "insert" : "normal", view: countTasks(state.doc, range) });
   }
 
   function renderAll(state: StoreState, focus: string | null = null) {

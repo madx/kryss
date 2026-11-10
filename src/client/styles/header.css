@@ -7,25 +7,6 @@
   min-width: 0;
 }
 
-.sync-status {
-  display: inline-flex;
-  flex: none;
-  margin-left: var(--space-8);
-  color: var(--color-success);
-}
-
-.sync-status[data-status="unsaved"],
-.sync-status[data-status="saving"] {
-  color: var(--color-warning-text);
-}
-
-.sync-status[data-status="offline"],
-.sync-status[data-status="conflict"],
-.sync-status[data-status="invalid"],
-.sync-status[data-status="error"] {
-  color: var(--color-danger);
-}
-
 /* Icon buttons are 22 px squares holding a 14 px icon. */
 .icon-button {
   display: inline-flex;

@@ -1,5 +1,6 @@
 // One list: title with rename / delete, its tasks with their subtasks, and the add line.
 import type { TodoList } from "../../shared/types";
+import { countList } from "../logic/stats";
 import { renderAddInput } from "./add-input";
 import { renderAlert } from "./alert";
 import { el } from "./dom";
@@ -90,7 +91,8 @@ export function renderListSection(
       ),
     );
   } else {
-    header.append(title, el("span", { class: "list-actions" }, rename, remove));
+    const { done, total } = countList(list);
+    header.append(title, el("span", { class: "list-actions" }, rename, remove), el("span", { class: "list-count" }, `${done}/${total}`));
   }
 
   return el(
