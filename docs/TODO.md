@@ -11,7 +11,7 @@
   - [x] `## Name` sections, empty lists and empty file
   - [x] `- [x]` / `- [x]` tasks with 2 nesting levels
   - [x] Tolerance: `*` bullets, `[X]`, tabs and 4-space indentation
-  - [x] `422` errors with line and reason (frontmatter, free text, `#` / `###`, empty name, 3 levels, multi-line)
+  - [x] `422` errors with line and reason (unclosed frontmatter, free text, `#` / `###`, empty name, 3 levels, multi-line)
 - [x] Write the JSON → canonical Markdown serializer
 - [x] Test the parser and serializer (edge cases and stable round-trip)
 - [x] Implement `GET /api/todos` with `ETag` (file hash) and `422` if invalid
@@ -139,3 +139,9 @@
 - [ ] Cheat sheet in the panel look, inset by the gutter, stacked entries in a narrow window
 - [x] Update `CLAUDE.md` where it describes the completed task look and the mouse-only controls
 - [ ] Verify by hand in a window from 240 to 720 px wide, in light and dark
+
+## Frontmatter passthrough
+- [x] Ignore a leading frontmatter block on read and keep it byte for byte on write
+- [x] Reject an unclosed frontmatter and keep error line numbers relative to the whole file
+- [x] Test the parser, the helpers and the `PUT` round-trip with a frontmatter
+- [x] Update the PRD and `CLAUDE.md`

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parse, serialize } from "./markdown";
+import { frontmatterOf, parse, serialize, withFrontmatter } from "./markdown";
 
 function ok(md: string) {
   const r = parse(md);
@@ -59,9 +59,29 @@ describe("parse", () => {
     expect(serialize(doc).startsWith("\uFEFF")).toBe(false);
   });
 
-  test("rejects frontmatter", () => {
-    expect(err("---\ntitle: x\n---\n## L\n").line).toBe(1);
-    expect(err("---\ntitle: x\n---\n## L\n").reason).toMatch(/frontmatter/i);
+  test("ignores frontmatter and keeps error lines relative to the file", () => {
+    const doc = ok("---\ntitle: x\ntags: [a]\n---\n\n## L\n- [ ] a\n");
+    expect(doc.lists).toEqual([{ title: "L", tasks: [{ text: "a", done: false }] }]);
+    expect(err("---\ntitle: x\n---\n## L\nhello\n").line).toBe(5);
+    expect(ok("---\n---\n").lists).toEqual([]);
+  });
+
+  test("rejects an unclosed frontmatter block", () => {
+    expect(err("---\ntitle: x\n## L\n")).toMatchObject({ line: 1, reason: expect.stringMatching(/frontmatter/i) });
+  });
+
+  test("frontmatterOf returns the block and the blank lines after it", () => {
+    expect(frontmatterOf("---\na: 1\n---\n\n## L\n")).toBe("---\na: 1\n---\n\n");
+    expect(frontmatterOf("---\r\na: 1\r\n...\r\n## L\n")).toBe("---\r\na: 1\r\n...\r\n");
+    expect(frontmatterOf("## L\n---\n---\n")).toBe("");
+  });
+
+  test("withFrontmatter keeps the block byte for byte", () => {
+    const current = "---\r\ntitle:   x \r\n---\n\n## Old\n";
+    expect(withFrontmatter(current, "## New\n")).toBe("---\r\ntitle:   x \r\n---\n\n## New\n");
+    expect(withFrontmatter(current, "")).toBe("---\r\ntitle:   x \r\n---\n\n");
+    expect(withFrontmatter("---\na: 1\n---", "## L\n")).toBe("---\na: 1\n---\n## L\n");
+    expect(withFrontmatter("## Old\n", "## New\n")).toBe("## New\n");
   });
 
   test("rejects free text, before and inside lists", () => {

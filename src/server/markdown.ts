@@ -4,8 +4,29 @@ export type ParseResult = { ok: true; doc: TodoDocument } | { ok: false; error: 
 
 const TASK = /^([-*]) \[([ xX])\](?:\s+(.*))?$/;
 
+// A leading `---` block closed by `---` or `...`, plus the blank lines that follow it.
+const FRONTMATTER = /^---[ \t]*\r?\n(?:[^\n]*\n)*?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)(?:[ \t]*\r?\n)*/;
+
+const withoutBom = (md: string) => (md.startsWith("\uFEFF") ? md.slice(1) : md);
+
+/** The exact text of the leading frontmatter block (and the blank lines after it), or "" when there is none. */
+export function frontmatterOf(md: string): string {
+  return FRONTMATTER.exec(withoutBom(md))?.[0] ?? "";
+}
+
+/** Puts the frontmatter of the current file, byte for byte, in front of freshly serialized Markdown. */
+export function withFrontmatter(current: string, markdown: string): string {
+  const frontmatter = frontmatterOf(current);
+  if (frontmatter === "" || markdown === "") return frontmatter + markdown;
+  return (frontmatter.endsWith("\n") ? frontmatter : frontmatter + "\n") + markdown;
+}
+
 export function parse(md: string): ParseResult {
-  const lines = (md.startsWith("\uFEFF") ? md.slice(1) : md).split("\n").map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l));
+  const text = withoutBom(md);
+  const frontmatter = frontmatterOf(text);
+  // Lines of the frontmatter are skipped, but errors still report line numbers of the whole file.
+  const offset = frontmatter.split("\n").length - 1;
+  const lines = text.slice(frontmatter.length).split("\n").map((l) => (l.endsWith("\r") ? l.slice(0, -1) : l));
   const lists: TodoList[] = [];
   let list: TodoList | undefined;
   let parent: Task | undefined;
@@ -13,13 +34,14 @@ export function parse(md: string): ParseResult {
   // Indentation unit, fixed by the first indented task of the file: "\t", "  " or "    ".
   let unit: string | undefined;
 
-  const fail = (line: number, reason: string): ParseResult => ({ ok: false, error: { line, reason } });
+  const fail = (line: number, reason: string): ParseResult => ({ ok: false, error: { line: line + offset, reason } });
+
+  if (frontmatter === "" && text.split("\n", 1)[0]!.trimEnd() === "---") return fail(1, "The frontmatter is not closed");
 
   for (let i = 0; i < lines.length; i++) {
     const n = i + 1;
     const raw = lines[i]!;
     if (raw.trim() === "") continue;
-    if (n === 1 && raw.trimEnd() === "---") return fail(n, "Frontmatter is not supported");
 
     const indent = /^[ \t]*/.exec(raw)![0];
     const content = raw.slice(indent.length);

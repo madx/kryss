@@ -101,6 +101,16 @@ describe("PUT /api/todos", () => {
     expect((await fetch(`${base}/api/todos`)).headers.get("ETag")).toBe(next);
   });
 
+  test("keeps the frontmatter byte for byte", async () => {
+    const frontmatter = "---\ntitle:   x \ntags: [a]\n---\n\n";
+    start(frontmatter + "## Old\n");
+    const res0 = await fetch(`${base}/api/todos`);
+    expect(res0.status).toBe(200);
+    const res = await put(doc, { "If-Match": res0.headers.get("ETag")! });
+    expect(res.status).toBe(200);
+    expect(readFileSync(file, "utf8")).toBe(frontmatter + "## L\n- [ ] a\n");
+  });
+
   test("leaves no temporary file behind", async () => {
     start("");
     const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag")!;

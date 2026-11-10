@@ -96,9 +96,17 @@ Tasks have no stable identifier: `PUT` always sends the complete document.
 
 Accepted on read, then normalized on the next `PUT`: `-` or `*` bullets, uppercase `[X]`, indentation with tabs or 4 spaces.
 
+### 3.2.1 Frontmatter
+
+Obsidian adds a YAML frontmatter to notes, so a leading block opened by `---` on the first line and closed by `---` or `...` is ignored on read.
+The blank lines that follow it are part of the block.
+The server keeps the block byte for byte and writes it back unchanged in front of the serialized lists on every `PUT`.
+The block never reaches the client, and error lines still count the frontmatter lines.
+A block that is not closed is rejected (`422`, line 1).
+
 ### 3.3 Rejection (`422`)
 
-Everything else is rejected with line and reason: frontmatter, free text, `#` or `###` headings, text before the first `##`, empty list name, tasks nested 3 or more levels deep, multi-line description under a task, inconsistent indentation.
+Everything else is rejected with line and reason: an unclosed frontmatter, free text, `#` or `###` headings, text before the first `##`, empty list name, tasks nested 3 or more levels deep, multi-line description under a task, inconsistent indentation.
 **The server never writes to an invalid file.**
 
 Indentation is read with a unit fixed by the first indented task of the file (one tab, 2 spaces or 4 spaces), and every later indent must be a whole multiple of that unit using the same characters.
@@ -455,4 +463,4 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; frontmatter and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
