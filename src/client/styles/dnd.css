@@ -33,3 +33,9 @@
 .tasks[data-drop="end"]::after {
   top: 50%;
 }
+
+/* From mouse down until the browser takes over the drag, which draws its own cursor. A row being edited is not draggable and keeps the text cursor. */
+.task-row[draggable="true"]:active,
+.task-row[draggable="true"]:active .task-text {
+  cursor: grabbing;
+}
