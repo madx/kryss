@@ -39,6 +39,7 @@ export function targetKind(target: EventTarget | null): TargetKind {
   if (isEditing() || isTextField(target)) return "field";
   const stop = stopOf(target);
   if (stop) return stop.kind === "header" ? "header" : "task";
+  if (target.closest(".markdown-view")) return "none"; // the copy button must not swallow the keys of the view
   if (CONTROL_TAGS.has(target.tagName) || target.tabIndex >= 0) return "control";
   return "none";
 }

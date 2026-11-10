@@ -237,6 +237,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
         await new Promise<void>((resolve) => idleWaiters.push(resolve));
         continue;
       }
+      if (!doc || etag === null) return false; // save() would do nothing
       if (status === "conflict" || status === "invalid" || status === "offline" || status === "error") return false;
       await save();
     }

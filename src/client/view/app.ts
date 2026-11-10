@@ -305,8 +305,9 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     if (!flushed || markdownOpen) return;
     markdownOpen = true;
     markdownView.show(null);
-    renderAll(store.getState());
-    void refreshMarkdown();
+    renderAll(store.getState()); // settles the open editors, whose commit may leave changes to save
+    await store.flush();
+    if (markdownOpen) void refreshMarkdown();
   }
 
   store.subscribe((state, kind) => {
