@@ -13,7 +13,7 @@ No virtualization needed.
 
 - A **Bun server** owns the file.
   The browser never accesses it directly, which makes the app browser-independent (Safari included).
-- Client and server exchange **JSON**.
+- Client and server exchange **JSON**, except for the read-only Markdown export of 2.1, which is plain text.
   The server is the **only** component that parses and serializes Markdown.
 - **Front end**: vanilla TypeScript, built by Bun from `index.ts`.
   No framework.
@@ -32,7 +32,12 @@ No virtualization needed.
 | `GET /api/todos` | Returns the JSON document and an `ETag` header (hash of the file contents). Returns `422` if the file is invalid. |
 | `PUT /api/todos` | Replaces the whole document. Requires `If-Match` with the known ETag. Returns `200` and the new ETag, `409` if the file changed, `422` if the file on disk is invalid. |
 | `GET /api/events` | SSE stream: an event is emitted whenever the file changes and the change was not caused by the server itself. |
+| `GET /api/export` | Returns the canonical Markdown of the document as `text/plain`, without frontmatter. The optional `list` query parameter is a 0-based list index and restricts the export to that list. Returns `422` if the file is invalid. |
 
+The `GET /api/export` route is read-only and has no `ETag` handling.
+Without `list`, it returns exactly the canonical serialization of 3.4 minus the frontmatter, which is an empty body for an empty document.
+With `list`, it returns the same serialization of that one list, so an empty list gives just its `## Name` line.
+A `list` that is not a non-negative integer gives `400`, and one that is out of range gives `404`.
 The `422` body contains the line number and the reason.
 `GET` and `PUT` return the JSON document as the body and the `ETag` header, so the client always holds the canonical state.
 The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
@@ -141,7 +146,7 @@ A task with an empty text after trimming is rejected.
   A new list is created at once, appended at the end and called "New list", as one undoable change.
   A single-list view switches to it, so that the selector shows its name, and the name input opens on its title with the name selected.
   The selector label follows the name while it is typed, and cancelling (an empty name) keeps "New list".
-  The header has no title: it holds the selector on the left and a Lucide plus icon button to create a list.
+  The header has no title: it holds the selector on the left, a Lucide plus icon button to create a list, and the Markdown view toggle of 5.11.
   The selector is a custom control that follows the look of the app (5.10), not a native `<select>`.
 - Lists cannot be reordered in the app (order is the file's order).
   Empty file: the app offers to create the first list.
@@ -305,7 +310,8 @@ The mouse keeps working as before.
   Buttons and the selector keep their native behavior, Enter or Space activates them, and Escape on any of them puts the focus back on the cursor.
   While the selector menu is open, Escape closes it first and then puts the focus back on the cursor.
   The conflict banner is the first Tab stop and has no dedicated key.
-- A pending first key (`g` or `d`) is cancelled by any other key or by a blur, with no timeout.
+- `gm` toggles the Markdown view of 5.11, and `yy` copies its content.
+- A pending first key (`g`, `d` or `y`) is cancelled by any other key or by a blur, with no timeout.
 - Escape in Normal mode does nothing.
 
 **Keys on a task**
@@ -459,13 +465,52 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - Every size, radius and spacing value in the stylesheets comes from a token in `theme.css`, and a new value needs a new token first.
 - Green means "saved" for the sync symbol and Insert for the mode, and these two never appear in the same place.
 
+### 5.11 Markdown view
+
+The Markdown view shows the Markdown equivalent of the current view, to inspect it and to copy it in full or in part.
+It is read-only: there is no editing and no text `PUT`, and the file stays editable from an external editor.
+
+**Opening and closing**
+
+- A header button toggles it, with the Lucide `square-m` icon and the label "Export as Markdown" as tooltip and accessible name.
+  `gm` does the same in Normal mode, and `m` is left free for another feature.
+- The view replaces the task area in place, between the header and the footer.
+  The header, the selector, the SSE connection and the sync state stay alive.
+- The button, `gm` or Escape closes it, and the cursor goes back to where it was.
+- It is not stored in `localStorage`, so a reload always lands on the task UI.
+
+**Content**
+
+- It shows the response of `GET /api/export`, with `list` set to the index of the selected list in a single-list view and absent in the "All" view.
+- It is a monospace block of selectable text, so the native selection and Ctrl+C copy any part of it.
+- Opening the view first flushes the pending autosave and waits for the in-flight `PUT`, then fetches the export.
+  If the flush does not succeed (`409`, network error or `422`), the view does not open and the task UI stays, with the existing banner or sync symbol showing why.
+- `H` / `L` still switch views and fetch the export again.
+  An SSE `change` event fetches it again silently, which drops any text selection.
+- An empty export shows a muted "Nothing to export" placeholder.
+  A `422` shows the line and the reason, as the task UI does, in place of the block.
+  In both cases the copy button and `yy` are disabled.
+
+**Copying**
+
+- A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
+- Both show a "Copied" popover anchored to the copy button.
+  It disappears after 1 second, or at once on a click.
+- While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
+  `H` / `L`, `gm`, `yy`, Escape and `?` keep working.
+
+**Implementation decisions**
+
+- The server builds the export with the same serializer as the file, restricted to the requested list and without the frontmatter, so the client never serializes Markdown.
+- The `gm` and `yy` resolution belongs to the pure key function of 5.9, and its output depends on whether the view is open.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip.
-- **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422`, SSE after external modification.
-- **Pure client logic**: checking rules, move and depth validation, undo stack, the key resolution of 5.9 (modes, prefixes, target kinds), positional add, cursor clamping, view cycling and statusline counts.
+- **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422`, SSE after external modification, and `GET /api/export` (whole document, `list` index, empty document, empty list, frontmatter left out, `400`, `404`, `422`).
+- **Pure client logic**: checking rules, move and depth validation, undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view), positional add, cursor clamping, view cycling and statusline counts.
 - No e2e in v1: drag and drop and CodeMirror are verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; list reordering; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; keyboard accessibility of drag and drop beyond the up / down moves; Visual and Command modes; counts, operator and motion grammar, and registers; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; a drag handle; row and list actions for the keyboard cursor; a theme setting or a new color palette.

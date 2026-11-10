@@ -36,8 +36,8 @@ Work plan: `docs/TODO.md`.
   It is the only component that parses and serializes Markdown.
   It listens on `127.0.0.1` by default (overridable with `HOST`, e.g. `0.0.0.0` in a container), without authentication.
 - **Client**: vanilla TypeScript, built by Bun from `index.ts`, no framework.
-  Client and server exchange JSON.
-- **API**: `GET /api/todos` (JSON + `ETag`), `PUT /api/todos` (`If-Match`, `409` on conflict), `GET /api/events` (SSE for external file changes).
+  Client and server exchange JSON, except for the read-only Markdown export, which is plain text.
+- **API**: `GET /api/todos` (JSON + `ETag`), `PUT /api/todos` (`If-Match`, `409` on conflict), `GET /api/events` (SSE for external file changes), `GET /api/export` (canonical Markdown as text, optional `list` index).
   Invalid file: `422` with line and reason; the server never writes to an invalid file.
 - **File location**: `TODO_FILE` environment variable, default `./todo.md`.
 - **Libraries**: Pragmatic drag and drop for drag and drop, CodeMirror 6 (single line, live preview) for task editing, a sanitized inline Markdown renderer.
@@ -67,13 +67,14 @@ Work plan: `docs/TODO.md`.
 - **Drag and drop**: drop before, after or as child; the subtree moves with the task; no drop into a descendant, none that creates a third level; lists themselves are not reorderable.
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
+- **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view with a copy button and `yy` (PRD 5.11); the pending autosave is flushed before it opens, and it is never persisted.
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change.
 - **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and row and list actions (delete, rename, add subtask) are mouse-only controls shown on hover or after a click, with the visual design rules of PRD 5.10.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, list reordering, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, list reordering, a drag handle, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 
