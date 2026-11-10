@@ -21,6 +21,21 @@ export interface Api {
   save(doc: TodoDocument, etag: string): Promise<SaveResult>;
 }
 
+export type ExportResult =
+  | { kind: "ok"; text: string }
+  | { kind: "invalid"; error: ParseError }
+  | { kind: "offline" };
+
+/** Fetches the canonical Markdown of the current view (`list` is the selected list index, null for all lists). Never throws. */
+export async function fetchExport(list: number | null): Promise<ExportResult> {
+  try {
+    const res = await fetch(list === null ? "/api/export" : `/api/export?list=${list}`, { cache: "no-store" });
+    if (res.status === 200) return { kind: "ok", text: await res.text() };
+    if (res.status === 422) return { kind: "invalid", error: await res.json() };
+  } catch {}
+  return { kind: "offline" };
+}
+
 export function createApi(): Api {
   return {
     async load() {

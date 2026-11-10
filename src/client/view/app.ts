@@ -26,7 +26,9 @@ import { renderBanners, renderEmptyState, renderInvalid, renderStatus, renderUnr
 import { isEditing, settleEditors, type EditEnd } from "./edit-text";
 import { createCheatsheet } from "./cheatsheet";
 import { createCursor, focusAndReveal, reveal, rowSelector, stopSelector } from "./cursor";
+import { fetchExport } from "../api";
 import { createFooter } from "./footer";
+import { createMarkdownView } from "./markdown-view";
 import { renderHeader } from "./header";
 import { el } from "./dom";
 import { installKeyboard } from "./keyboard";
@@ -44,6 +46,10 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   document.body.append(footer.el, cheatsheet.el);
   const cursor = createCursor(roots.main, store, storage);
   let cursorRestored = false;
+  const markdownView = createMarkdownView();
+  let markdownOpen = false;
+  let markdownOpening = false;
+  let markdownToken = 0; // an answer older than the latest request is dropped
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
 
@@ -227,7 +233,9 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     });
     const state = store.getState();
     ctx.reveal = state.doc ? revealOrNull(ctx.reveal, state.doc) : null;
-    if (state.invalid) {
+    if (markdownOpen) {
+      roots.main.replaceChildren(markdownView.el);
+    } else if (state.invalid) {
       roots.main.replaceChildren(renderInvalid(state.invalid, store.hasPendingChanges()));
     } else if (!state.doc) {
       roots.main.replaceChildren(state.status === "offline" ? renderUnreachable() : "");
@@ -257,7 +265,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   function renderAll(state: StoreState, focus: string | null = null) {
     if (focus) pendingFocus = focus;
-    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList });
+    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, markdown: { open: markdownOpen, toggle: toggleMarkdown } });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();
@@ -275,14 +283,43 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     updateFooter();
   }
 
+  /** Fetches the export of the current view. A later request supersedes an earlier one. */
+  async function refreshMarkdown() {
+    const token = ++markdownToken;
+    const result = await fetchExport(store.getState().selected);
+    if (token === markdownToken && markdownOpen) markdownView.show(result);
+  }
+
+  /** Opens the Markdown view once the pending autosave is on disk, or closes it. The task UI stays when the flush fails. */
+  async function toggleMarkdown() {
+    if (markdownOpen) {
+      markdownOpen = false;
+      markdownToken++;
+      renderAll(store.getState());
+      return;
+    }
+    if (markdownOpening) return;
+    markdownOpening = true;
+    const flushed = await store.flush();
+    markdownOpening = false;
+    if (!flushed || markdownOpen) return;
+    markdownOpen = true;
+    markdownView.show(null);
+    renderAll(store.getState()); // settles the open editors, whose commit may leave changes to save
+    await store.flush();
+    if (markdownOpen) void refreshMarkdown();
+  }
+
   store.subscribe((state, kind) => {
     if (kind === "external") {
       // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
       ctx.renaming = null;
       ctx.placeholder = null;
     }
-    if (kind !== "status") renderAll(state);
-    else {
+    if (kind !== "status") {
+      renderAll(state);
+      if (markdownOpen) void refreshMarkdown(); // another view, or a change of the file
+    } else {
       renderStatus(state);
       renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     }
@@ -341,6 +378,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     cancelDelete: lists.cancelRemove,
     beginAdd,
     newList: createList,
+    markdown: { isOpen: () => markdownOpen, toggle: () => void toggleMarkdown(), copy: markdownView.copy },
   });
   renderAll(store.getState());
 }

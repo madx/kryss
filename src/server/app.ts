@@ -66,6 +66,20 @@ export function createApp({ file }: { file: string }) {
     return json(result.doc, 200, { ETag: etagOf(content) });
   }
 
+  async function getExport(url: URL): Promise<Response> {
+    const param = url.searchParams.get("list");
+    if (param !== null && !/^\d+$/.test(param)) return json({ error: "list must be a non-negative integer" }, 400);
+    const result = parse(await readContent(file));
+    if (!result.ok) return json(result.error, 422);
+    let lists = result.doc.lists;
+    if (param !== null) {
+      const list = lists[Number(param)];
+      if (!list) return json({ error: "No such list" }, 404);
+      lists = [list];
+    }
+    return new Response(serialize({ lists }), { headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+
   async function putTodos(req: Request): Promise<Response> {
     const ifMatch = req.headers.get("If-Match");
     if (ifMatch === null) return json({ error: "If-Match header required" }, 428);
@@ -160,6 +174,10 @@ export function createApp({ file }: { file: string }) {
         if (req.method === "GET") return getTodos();
         if (req.method === "PUT") return putTodos(req);
         return json({ error: "Method not allowed" }, 405, { Allow: "GET, PUT" });
+      }
+      if (pathname === "/api/export") {
+        if (req.method === "GET") return getExport(new URL(req.url));
+        return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
       }
       if (pathname === "/api/events" && req.method === "GET") return events(req, server);
       return json({ error: "Not found" }, 404);

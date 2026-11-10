@@ -503,6 +503,10 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 
 - The server builds the export with the same serializer as the file, restricted to the requested list and without the frontmatter, so the client never serializes Markdown.
 - The `gm` and `yy` resolution belongs to the pure key function of 5.9, and its output depends on whether the view is open.
+- The store exposes `flush()`, which sends the pending changes at once, waits for the `PUT` in flight and resolves to `false` when the save does not succeed.
+- When the server cannot be reached, the view shows a "Cannot reach the server." alert in place of the block, with copy disabled.
+- Escape closes the view even when the focus is on a button, and undo and redo are ignored while it is open.
+- The `square-m` icon is called `SquareLetterM` in the installed Lucide package.
 
 ## 6. Tests
 

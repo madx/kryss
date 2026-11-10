@@ -147,21 +147,21 @@
 - [x] Update the PRD and `CLAUDE.md`
 
 ## Markdown view
-- [ ] `GET /api/export` route
-  - [ ] Canonical serialization without frontmatter, as `text/plain`
-  - [ ] Optional `list` index, with `400` for an invalid value and `404` for an out-of-range one
-  - [ ] `422` when the file is invalid
-  - [ ] Tests: whole document, `list` index, empty document, empty list, frontmatter left out, `400`, `404`, `422`
-- [ ] Markdown view
-  - [ ] Header toggle button with the `square-m` icon and the "Export as Markdown" label
-  - [ ] Read-only monospace block with selectable text, replacing the task area
-  - [ ] Flush the pending autosave before fetching, and stay on the task UI if the flush fails
-  - [ ] Fetch again on `H` / `L` and on an SSE change
-  - [ ] "Nothing to export" placeholder and `422` error state, with copy disabled
-  - [ ] Copy button with a "Copied" popover that disappears after 1 second or on a click
-- [ ] Keys
-  - [ ] `gm` toggles the view and `yy` copies it, with `y` as a pending prefix
-  - [ ] Ignore the other Normal keys while the view is open, keep `H` / `L`, Escape and `?`
-  - [ ] Add `gm` and `yy` to the cheat sheet
-  - [ ] Tests of the key resolution
+- [x] `GET /api/export` route
+  - [x] Canonical serialization without frontmatter, as `text/plain`
+  - [x] Optional `list` index, with `400` for an invalid value and `404` for an out-of-range one
+  - [x] `422` when the file is invalid
+  - [x] Tests: whole document, `list` index, empty document, empty list, frontmatter left out, `400`, `404`, `422`
+- [x] Markdown view
+  - [x] Header toggle button with the `square-m` icon and the "Export as Markdown" label
+  - [x] Read-only monospace block with selectable text, replacing the task area
+  - [x] Flush the pending autosave before fetching, and stay on the task UI if the flush fails
+  - [x] Fetch again on `H` / `L` and on an SSE change
+  - [x] "Nothing to export" placeholder and `422` error state, with copy disabled
+  - [x] Copy button with a "Copied" popover that disappears after 1 second or on a click
+- [x] Keys
+  - [x] `gm` toggles the view and `yy` copies it, with `y` as a pending prefix
+  - [x] Ignore the other Normal keys while the view is open, keep `H` / `L`, Escape and `?`
+  - [x] Add `gm` and `yy` to the cheat sheet
+  - [x] Tests of the key resolution
 - [ ] Verify by hand in a window from 240 to 720 px wide, in light and dark
