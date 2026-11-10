@@ -2,7 +2,7 @@
 import type { CursorMove } from "./logic/cursor";
 import type { AddAt } from "./logic/insert";
 
-export type Pending = "" | "g" | "d";
+export type Pending = "" | "g" | "d" | "y";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
 export type Overlay = "none" | "cheatsheet" | "confirm-delete";
@@ -13,10 +13,11 @@ export type Action =
   | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
   | { type: "move"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
-  | { type: "focus-cursor" } | { type: "confirm" } | { type: "cancel" };
+  | { type: "focus-cursor" } | { type: "confirm" } | { type: "cancel" }
+  | { type: "toggle-markdown" } | { type: "copy-markdown" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
-  target: TargetKind; pending: Pending; overlay: Overlay;
+  target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
 };
 export type Resolution = { action: Action | null; pending: Pending; preventDefault: boolean };
 
@@ -61,6 +62,23 @@ function taskKey(key: string): Action | null {
   }
 }
 
+/** Keys while the Markdown view is open (PRD 5.11): everything that changes a task is ignored. */
+function resolveMarkdownKey({ key, pending, altKey }: KeyInput): Resolution {
+  if (altKey) return NOTHING;
+  if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "y" && key === "y") return done({ type: "copy-markdown" });
+  if (pending) return NOTHING;
+  if (key === "g") return { action: null, pending: "g", preventDefault: true };
+  if (key === "y") return { action: null, pending: "y", preventDefault: true };
+  switch (key) {
+    case "Escape": return done({ type: "toggle-markdown" });
+    case "H": return done({ type: "view", dir: "prev" });
+    case "L": return done({ type: "view", dir: "next" });
+    case "?": return done({ type: "toggle-help" });
+    default: return NOTHING;
+  }
+}
+
 /** Resolves a key press into an action, the next pending prefix and whether to prevent the default. */
 export function resolveKey(input: KeyInput): Resolution {
   const { key, target, pending, overlay } = input;
@@ -78,11 +96,13 @@ export function resolveKey(input: KeyInput): Resolution {
   }
   if (target === "field") return NOTHING;
   if (target === "control") {
+    if (key === "Escape" && input.markdownView) return done({ type: "toggle-markdown" });
     if (key === "Escape") return done({ type: "focus-cursor" });
-    const undo = input.ctrlKey || input.metaKey ? undoActionFor(input) : null;
+    const undo = (input.ctrlKey || input.metaKey) && !input.markdownView ? undoActionFor(input) : null;
     return undo ? done({ type: undo }) : NOTHING;
   }
 
+  if (input.markdownView) return input.ctrlKey || input.metaKey ? NOTHING : resolveMarkdownKey(input);
   if (input.ctrlKey || input.metaKey) {
     const undo = undoActionFor(input);
     return undo ? done({ type: undo }) : NOTHING;
@@ -92,6 +112,7 @@ export function resolveKey(input: KeyInput): Resolution {
     return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
   }
 
+  if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });
   if (pending) return NOTHING;

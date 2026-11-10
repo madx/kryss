@@ -43,6 +43,14 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Markdown view",
+    rows: [
+      ["gm", "open / close the Markdown view"],
+      ["yy", "copy the Markdown (view open)"],
+      ["Escape", "close the view"],
+    ],
+  },
+  {
     title: "Other",
     rows: [
       ["Escape", "commit and leave Insert mode"],

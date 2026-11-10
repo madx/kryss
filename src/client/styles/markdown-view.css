@@ -1,0 +1,59 @@
+/* Markdown view: a read-only monospace block in the panel look, with a copy button at its top right. */
+.markdown-view {
+  position: relative;
+}
+
+.markdown-block,
+.markdown-empty {
+  margin: 0;
+  padding: var(--panel-padding) var(--row-padding);
+  background: var(--color-surface);
+  border-radius: var(--radius-panel);
+  font-size: var(--font-size-task);
+  line-height: var(--line-height-task);
+}
+
+.markdown-block {
+  /* Room for the copy button on the first line. */
+  padding-right: calc(var(--icon-button-size) + var(--space-8));
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+.markdown-empty {
+  color: var(--color-muted);
+}
+
+.copy-button {
+  position: absolute;
+  top: var(--panel-padding);
+  right: var(--row-padding);
+}
+
+.copy-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.copy-button:disabled:hover {
+  background: transparent;
+  color: var(--color-muted);
+}
+
+.copied-popover {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--panel-padding) + var(--icon-button-size) + var(--space-4));
+  right: var(--row-padding);
+  padding: var(--space-2) var(--space-6);
+  background: var(--color-text);
+  color: var(--color-surface);
+  border-radius: var(--radius-chip);
+  font-size: var(--font-size-sm);
+}
+
+.copied-popover[hidden] {
+  display: none;
+}

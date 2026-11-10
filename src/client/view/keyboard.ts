@@ -29,6 +29,7 @@ export type KeyboardEnv = {
   cancelDelete(): void;
   beginAdd(at: AddAt, anchor: Anchor): void;
   newList(): void;
+  markdown: { isOpen(): boolean; toggle(): void; copy(): void };
 };
 
 const CONTROL_TAGS = new Set(["BUTTON", "SELECT", "A", "SUMMARY", "TEXTAREA", "INPUT"]);
@@ -63,10 +64,11 @@ export function installKeyboard(env: KeyboardEnv): void {
       target: targetKind(e.target),
       pending,
       overlay,
+      markdownView: env.markdown.isOpen(),
     });
     pending = res.pending;
     if (res.preventDefault) e.preventDefault();
-    if (res.action && (state.doc || res.action.type === "toggle-help")) run(res.action);
+    if (res.action && (state.doc || res.action.type === "toggle-help" || res.action.type === "toggle-markdown" || res.action.type === "copy-markdown")) run(res.action);
   });
 
   function run(action: Action): void {
@@ -76,6 +78,12 @@ export function installKeyboard(env: KeyboardEnv): void {
       case "toggle-help":
         if (env.cheatsheet.isOpen()) env.cheatsheet.close();
         else env.cheatsheet.open();
+        return;
+      case "toggle-markdown":
+        env.markdown.toggle();
+        return;
+      case "copy-markdown":
+        env.markdown.copy();
         return;
       case "confirm": {
         const list = env.confirming();

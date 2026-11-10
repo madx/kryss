@@ -48,6 +48,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let retryTimer: unknown;
   let conflictEtag: string | null = null; // ETag of the disk version when in conflict
   let externalEvent: ChangeEvent | null = null; // external change announced while a PUT was in flight
+  const idleWaiters: (() => void)[] = []; // resolved when the PUT in flight ends
   const listeners = new Set<(state: StoreState, kind: ChangeKind) => void>();
 
   function readSelection(): number | null {
@@ -186,6 +187,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     setStatus("saving");
     const result = await api.save(snapshot, etag);
     inFlight = false;
+    for (const wake of idleWaiters.splice(0)) wake(); // the rest of this function is synchronous, so waiters see the final state
 
     if (result.kind === "ok") {
       etag = result.etag;
@@ -226,6 +228,21 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     }
   }
 
+  /** Sends the pending changes now and waits for the PUT in flight. Resolves true once nothing is pending, false when the save does not succeed. */
+  async function flush(): Promise<boolean> {
+    timers.clear(saveTimer);
+    saveTimer = undefined;
+    while (inFlight || dirty) {
+      if (inFlight) {
+        await new Promise<void>((resolve) => idleWaiters.push(resolve));
+        continue;
+      }
+      if (status === "conflict" || status === "invalid" || status === "offline" || status === "error") return false;
+      await save();
+    }
+    return true;
+  }
+
   /** SSE `change` event: the file was modified by someone else. It carries the new state of the file. */
   function onExternalChange(event: ChangeEvent) {
     if (event.etag === etag) return;
@@ -258,6 +275,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (!dirty && !inFlight) void reload();
     },
     hasPendingChanges: () => dirty,
+    flush,
     undo(): boolean {
       const result = doc && undoHistory(history, doc);
       if (!result) return false;
