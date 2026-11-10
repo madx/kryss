@@ -42,7 +42,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   document.body.append(footer.el, cheatsheet.el);
   const cursor = createCursor(roots.main, store, storage);
   let cursorRestored = false;
-  /** Create-list input open in the header, with the text typed so far. */
+  /** New list being named: a client-only section at the end of the visible lists, added to the document once it has a name. */
   let creating: { draft: string } | null = null;
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
@@ -90,6 +90,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   const createList = () => {
     creating = { draft: "" };
+    ctx.renaming = { list: doc().lists.length, draft: "" };
+    ctx.confirmingRemove = null;
     pendingFocus = "[data-name-input]";
     renderAll(store.getState());
   };
@@ -235,11 +237,15 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       roots.main.replaceChildren(renderInvalid(state.invalid, store.hasPendingChanges()));
     } else if (!state.doc) {
       roots.main.replaceChildren(state.status === "offline" ? renderUnreachable() : "");
-    } else if (state.doc.lists.length === 0) {
+    } else if (state.doc.lists.length === 0 && !creating) {
       roots.main.replaceChildren(renderEmptyState(createList));
     } else {
-      const shown = state.selected === null ? state.doc.lists.map((_, i) => i) : [state.selected];
-      roots.main.replaceChildren(...shown.map((i) => renderListSection(state.doc!.lists[i]!, i, tasks, lists, ctx)));
+      const count = state.doc.lists.length;
+      // A new list shows after the others, or alone in a single-list view; cancelling it brings the view back.
+      const shown = state.selected === null ? state.doc.lists.map((_, i) => i) : creating ? [] : [state.selected];
+      const sections = shown.map((i) => renderListSection(state.doc!.lists[i]!, i, tasks, lists, ctx));
+      if (creating) sections.push(renderListSection({ title: "", tasks: [] }, count, tasks, lists, ctx, true));
+      roots.main.replaceChildren(...sections);
     }
     dnd.refresh();
   }
@@ -262,7 +268,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   function renderAll(state: StoreState, focus: string | null = null) {
     if (focus) pendingFocus = focus;
-    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList, creating, naming });
+    renderHeader(roots.header, state, { select: (i) => store.select(i), newList: createList });
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
     renderMain();

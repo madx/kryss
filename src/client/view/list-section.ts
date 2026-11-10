@@ -42,6 +42,7 @@ export function renderListSection(
   tasks: TaskActions,
   actions: ListActions,
   ctx: ListContext,
+  isNew = false,
 ): HTMLElement {
   const rename = el("button", { type: "button", class: "icon-button", title: "Rename list", "aria-label": "Rename list", tabindex: "-1" }, editIcon());
   rename.addEventListener("click", () => actions.rename(index));
@@ -49,7 +50,7 @@ export function renderListSection(
   remove.addEventListener("click", () => actions.confirmRemove(index));
 
   // `data-list` on the <ul> makes it a drop target for empty lists later on.
-  const ul = el("ul", { class: "tasks", "data-list": String(index) });
+  const ul = el("ul", { class: "tasks", ...(isNew ? {} : { "data-list": String(index) }) });
   const ph = ctx.placeholder;
   list.tasks.forEach((task, t) => {
     const item = el("li", { class: "task-item" });
@@ -76,8 +77,11 @@ export function renderListSection(
   const title = renaming
     ? renderNameInput(renaming.draft, "List name", actions.naming)
     : el("h2", { class: "list-title" }, list.title);
-  const header = el("header", { class: "list-header", tabindex: "0", "data-list": String(index) });
-  if (ctx.confirmingRemove === index) {
+  // The section of a new list is not in the document yet: no cursor stop, no actions, no add line.
+  const header = el("header", { class: "list-header", ...(isNew ? {} : { tabindex: "0", "data-list": String(index) }) });
+  if (isNew) {
+    header.append(title);
+  } else if (ctx.confirmingRemove === index) {
     const message = list.tasks.length > 0 ? `Delete this list and its ${list.tasks.length} task(s)?` : "Delete this empty list?";
     header.append(
       renderAlert(
@@ -95,10 +99,10 @@ export function renderListSection(
 
   return el(
     "section",
-    { class: "list", "data-list": String(index) },
+    { class: "list", ...(isNew ? {} : { "data-list": String(index) }) },
     header,
     ul,
-    renderAddInput(`list-${index}`, "Add a task", ctx.drafts, (text) => actions.addTask(index, text)),
+    ...(isNew ? [] : [renderAddInput(`list-${index}`, "Add a task", ctx.drafts, (text) => actions.addTask(index, text))]),
   );
 }
 
