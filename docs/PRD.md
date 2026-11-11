@@ -967,12 +967,12 @@ Single-file mode keeps one file and has none of them.
 
 - `[[Note]]` and `[[Note|alias]]` render as a link whose label is the alias, or the note name when there is no alias.
   `[[Note#Heading]]`, `[[Note#^block]]` and `[[Note#Heading|alias]]` render with the label `Note > Heading`, or the alias, and the target is passed to Obsidian as it is.
-- The link is `obsidian://open?vault=<vault>&file=<target>`, where `<vault>` is the basename of `VAULT_DIR`, URL-encoded, and `<target>` is the text before `|`, URL-encoded.
+- The link is `obsidian://open?vault=<vault>&file=<target>`, where `<vault>` is the basename of `VAULT_DIR` after symbolic links are resolved, URL-encoded, and `<target>` is the text before `|`, URL-encoded.
   It opens in a new tab like any other link (5.5).
 - Kryss does not check that the note exists, so a link to a missing note looks like any other, and Obsidian resolves the name itself.
 - A wikilink needs a non-empty target and no `[`, `]` or `|` inside it, otherwise it is literal text.
   In single-file mode there is no vault name, so wikilinks stay literal text.
-- The client learns the vault name from the `X-Vault-Name` header of `GET /api/files`, which it already calls at startup, where the value is the URL-encoded basename of `VAULT_DIR`.
+- The client learns the vault name from the `X-Vault-Name` header of `GET /api/files`, which it already calls at startup, where the value is the URL-encoded basename of `VAULT_DIR` after symbolic links are resolved.
   So no extra scan is needed to render a link, and the header is absent in single-file mode.
 - Inside the editor, the live preview hides the brackets away from the cursor like for any other link.
 

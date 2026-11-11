@@ -24,14 +24,20 @@ export async function wikilinkSource(context: CompletionContext): Promise<Comple
   }
   const loading = (index ??= fetchNotes());
   const result = await loading;
-  if (!result || context.aborted) return null;
+  if (!result) {
+    index = null; // a failed fetch is tried again at the next keystroke
+    return null;
+  }
+  if (context.aborted) return null;
   const query = match.text.slice(2);
   const options = filterNotes(result.notes, query).map((s): Completion => {
     const text = insertText(s, result.notes, result.newLinkFormat, openFile);
     const origin = s.alias === null ? s.folder : s.folder === "" ? s.note.name : `${s.note.name} · ${s.folder}`;
     return { label: text, displayLabel: s.alias ?? s.note.name, detail: origin, apply: text };
   });
-  return options.length === 0 ? null : { from: match.from, filter: false, options };
+  // Completing inside a link that already has its closing brackets replaces them too, so none are left behind.
+  const to = context.state.sliceDoc(context.pos, context.pos + 2) === "]]" ? context.pos + 2 : context.pos;
+  return options.length === 0 ? null : { from: match.from, to, filter: false, options };
 }
 
 const hide = Decoration.replace({});
@@ -43,7 +49,10 @@ function build(view: EditorView): DecorationSet {
   const text = view.state.doc.toString();
   const sel = view.state.selection.ranges;
   const ranges = [];
+  // Like the renderer, leave alone what sits in a code span or after a backslash.
+  const code = [...text.matchAll(/`[^`]*`/g)].map((m) => [m.index!, m.index! + m[0].length] as const);
   for (let i = text.indexOf("[["); i >= 0; i = text.indexOf("[[", i + 1)) {
+    if (text[i - 1] === "\\" || code.some(([from, to]) => i >= from && i < to)) continue;
     const link = parseWikilink(text, i);
     if (!link) continue;
     ranges.push(linkMark.range(i, link.end));
