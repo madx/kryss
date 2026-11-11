@@ -41,7 +41,7 @@ The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
 The ETag is a quoted hash of the exact bytes of the file.
 The SSE event is named `change`, and its data is a JSON `ChangeEvent` (defined in `src/shared/types.ts`) carrying the whole new state, so the client updates without an extra `GET`.
 The `ChangeEvent` is `{ "etag": string, "doc": TodoDocument }` when the file is valid, or `{ "etag": string, "error": { "line": number, "reason": string } }` when it is invalid.
-`PUT` validates the body (non-empty single-line titles and texts, at most 2 levels, and the saved filters of 5.14), then serializes it, and returns the document parsed back from the canonical text, so surrounding whitespace is trimmed.
+`PUT` validates the body (non-empty single-line titles and texts, at most 2 levels, and the saved filters of 5.14, where a body without a `filters` array is a `400`), then serializes it, and returns the document parsed back from the canonical text, so surrounding whitespace is trimmed.
 The server serializes `PUT` and file-change handling, and writes through a temporary file in the same directory followed by a rename.
 The server watches the file's directory and, after a short debounce, compares the ETag of the file with the last one it knows, so its own writes and duplicate events emit nothing.
 An external change that makes the file invalid still emits a `change` event, with the error in place of the document.

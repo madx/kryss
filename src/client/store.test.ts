@@ -5,7 +5,7 @@ import { addTask } from "./logic";
 import { createStore, SELECTION_KEY, type Timers } from "./store";
 import { DEBOUNCE_MS, retryDelay } from "./sync";
 
-const doc = (...titles: string[]): TodoDocument => ({ lists: titles.map((title) => ({ title, tasks: [] })) });
+const doc = (...titles: string[]): TodoDocument => ({ lists: titles.map((title) => ({ title, tasks: [] })), filters: [] });
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 /** Manual clock: timers only fire when `advance` is called. */

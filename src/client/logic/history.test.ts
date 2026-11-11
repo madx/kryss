@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { canRedo, canUndo, clear, createHistory, MAX_HISTORY, push, redo, undo } from "./index";
 import type { TodoDocument } from "../../shared/types";
 
-const doc = (n: number): TodoDocument => ({ lists: [{ title: String(n), tasks: [] }] });
+const doc = (n: number): TodoDocument => ({ lists: [{ title: String(n), tasks: [] }], filters: [] });
 
 describe("history", () => {
   test("undo then redo", () => {

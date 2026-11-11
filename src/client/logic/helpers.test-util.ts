@@ -3,6 +3,7 @@ import type { TodoDocument } from "../../shared/types";
 /** Compact fixture: two lists, one with a parent having two subtasks. */
 export function sample(): TodoDocument {
   return {
+    filters: [],
     lists: [
       {
         title: "A",

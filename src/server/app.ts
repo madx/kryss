@@ -22,10 +22,13 @@ async function readContent(file: string): Promise<string> {
 const isLine = (s: unknown): s is string => typeof s === "string" && s.trim() !== "" && !/[\r\n]/.test(s);
 const isPlainObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** Returns true when `value` is a valid TodoDocument (non-empty single-line texts, 2 levels at most). */
+/** Returns true when `value` is a valid TodoDocument (non-empty single-line texts, 2 levels at most, unique filter names). */
 export function isValidDocument(value: unknown): value is TodoDocument {
-  if (!isPlainObject(value) || !Array.isArray(value.lists)) return false;
-  return value.lists.every(
+  if (!isPlainObject(value) || !Array.isArray(value.lists) || !Array.isArray(value.filters)) return false;
+  const filtersOk =
+    value.filters.every((f) => isPlainObject(f) && isLine(f.name) && isLine(f.text)) &&
+    new Set(value.filters.map((f) => f.name)).size === value.filters.length;
+  return filtersOk && value.lists.every(
     (list) =>
       isPlainObject(list) &&
       isLine(list.title) &&
@@ -85,7 +88,7 @@ export function createApp({ file }: { file: string }) {
       const currentEtag = etagOf(current);
       if (ifMatch.replace(/^W\//, "") !== currentEtag) return json({ error: "The file changed on disk" }, 409, { ETag: currentEtag });
 
-      const markdown = withFrontmatter(current, serialize(body));
+      const markdown = withFrontmatter(current, serialize(body), body.filters);
       const next = etagOf(markdown);
       // Recorded before the rename so that the watcher ignores this write.
       knownEtag = next;

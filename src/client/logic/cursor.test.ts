@@ -12,6 +12,7 @@ const T = (list: number, task: number, child?: number): Stop => ({
 /** Three lists: two tasks, empty, one task with one subtask. */
 function three(): TodoDocument {
   return {
+    filters: [],
     lists: [
       { title: "X", tasks: [{ text: "x0", done: false }, { text: "x1", done: false }] },
       { title: "Y", tasks: [] },
@@ -30,7 +31,7 @@ describe("stops", () => {
     expect(stops(three())).toEqual([H(0), T(0, 0), T(0, 1), H(1), H(2), T(2, 0), T(2, 0, 0)]);
   });
   test("an empty document has no stop", () => {
-    expect(stops({ lists: [] })).toEqual([]);
+    expect(stops({ lists: [], filters: [] })).toEqual([]);
   });
   test("a range restricts to one list", () => {
     expect(stops(three(), { first: 2, last: 2 })).toEqual([H(2), T(2, 0), T(2, 0, 0)]);
@@ -45,7 +46,7 @@ describe("stops", () => {
     expect(stops(three())).toEqual(stops(three(), { first: 0, last: 2 }));
   });
   test("a task with an empty children array has no subtask stop", () => {
-    const doc: TodoDocument = { lists: [{ title: "L", tasks: [{ text: "t", done: false, children: [] }] }] };
+    const doc: TodoDocument = { lists: [{ title: "L", tasks: [{ text: "t", done: false, children: [] }] }], filters: [] };
     expect(stops(doc)).toEqual([H(0), T(0, 0)]);
   });
   test("does not mutate the document", () => {
@@ -203,7 +204,7 @@ describe("indexOfStop", () => {
 describe("firstChanged", () => {
   test("undoing an add leaves fewer stops and nothing to point at", () => {
     const before = sample();
-    const after = { lists: [{ ...before.lists[0]!, tasks: before.lists[0]!.tasks.slice(0, 2) }, before.lists[1]!] };
+    const after = { ...before, lists: [{ ...before.lists[0]!, tasks: before.lists[0]!.tasks.slice(0, 2) }, before.lists[1]!] };
     expect(firstChanged(before, after)).toEqual({ kind: "header", list: 1 });
   });
   test("null for identical documents", () => {

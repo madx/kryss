@@ -1,4 +1,4 @@
-import type { ParseError, Subtask, Task, TodoDocument, TodoList } from "../shared/types";
+import type { ParseError, SavedFilter, Subtask, Task, TodoDocument, TodoList } from "../shared/types";
 
 export type ParseResult = { ok: true; doc: TodoDocument } | { ok: false; error: ParseError };
 
@@ -14,9 +14,88 @@ export function frontmatterOf(md: string): string {
   return FRONTMATTER.exec(withoutBom(md))?.[0] ?? "";
 }
 
-/** Puts the frontmatter of the current file, byte for byte, in front of freshly serialized Markdown. */
-export function withFrontmatter(current: string, markdown: string): string {
-  const frontmatter = frontmatterOf(current);
+type Block = { start: number; end: number };
+
+const FILTER_LINE = /^[ \t]+("(?:[^"\\]|\\.)*")[ \t]*:[ \t]*("(?:[^"\\]|\\.)*")[ \t]*$/;
+const stripEol = (line: string) => line.replace(/\r?\n$/, "");
+
+/** The lines of a frontmatter with their line endings, and the index of its closing delimiter. */
+function frontmatterLines(frontmatter: string) {
+  const lines = frontmatter.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+  const closing = lines.findIndex((l, i) => i > 0 && /^(---|\.\.\.)[ \t]*$/.test(stripEol(l)));
+  return { lines, closing };
+}
+
+/** The `filters` key of a frontmatter: its line and the end (exclusive) of its indented block. */
+function filtersBlocks(lines: string[], closing: number): Block[] {
+  const blocks: Block[] = [];
+  for (let i = 1; i < closing; i++) {
+    if (!lines[i]!.startsWith("filters:")) continue;
+    let end = i + 1;
+    while (end < closing && /^[ \t]/.test(lines[end]!)) end++;
+    blocks.push({ start: i, end });
+    i = end - 1;
+  }
+  return blocks;
+}
+
+/** Reads the saved filters of a frontmatter. Lines of an error are 1-based and relative to the whole file. */
+function readFilters(frontmatter: string): { filters: SavedFilter[] } | { error: ParseError } {
+  const { lines, closing } = frontmatterLines(frontmatter);
+  const blocks = closing < 0 ? [] : filtersBlocks(lines, closing);
+  if (blocks.length === 0) return { filters: [] };
+  if (blocks.length > 1) return { error: { line: blocks[1]!.start + 1, reason: 'The frontmatter has a second "filters" key' } };
+  const { start, end } = blocks[0]!;
+  if (stripEol(lines[start]!).trimEnd() !== "filters:") {
+    return { error: { line: start + 1, reason: 'The "filters" key must be alone on its line' } };
+  }
+  const filters: SavedFilter[] = [];
+  for (let i = start + 1; i < end; i++) {
+    const n = i + 1;
+    const match = FILTER_LINE.exec(stripEol(lines[i]!));
+    let name = "";
+    let text = "";
+    try {
+      if (!match) throw new Error();
+      name = JSON.parse(match[1]!);
+      text = JSON.parse(match[2]!);
+    } catch {
+      return { error: { line: n, reason: 'A saved filter must be written as "name": "text"' } };
+    }
+    if (name.trim() === "" || text.trim() === "") return { error: { line: n, reason: "The name and the text of a saved filter must not be empty" } };
+    if (/[\r\n]/.test(name + text)) return { error: { line: n, reason: "A saved filter must be on one line" } };
+    if (filters.some((f) => f.name === name)) return { error: { line: n, reason: `Duplicate saved filter name "${name}"` } };
+    filters.push({ name, text });
+  }
+  return { filters };
+}
+
+/** The frontmatter with its `filters` block set to `filters`, the other lines untouched. */
+function rewriteFilters(frontmatter: string, filters: SavedFilter[]): string {
+  const { lines, closing } = frontmatterLines(frontmatter);
+  const eol = (lines[0] ?? "").endsWith("\r\n") ? "\r\n" : "\n";
+  const block = filters.length === 0 ? [] : ["filters:", ...filters.map((f) => `  ${JSON.stringify(f.name)}: ${JSON.stringify(f.text)}`)].map((l) => l + eol);
+  if (frontmatter === "") return block.length === 0 ? "" : ["---", ...block.map(stripEol), "---", ""].join(eol) + eol;
+
+  const found = filtersBlocks(lines, closing)[0];
+  const next = found
+    ? [...lines.slice(0, found.start), ...block, ...lines.slice(found.end)]
+    : [...lines.slice(0, closing), ...block, ...lines.slice(closing)];
+  // A frontmatter left with nothing else in it is removed.
+  if (filters.length === 0 && next.slice(1, next.length - (lines.length - closing)).every((l) => l.trim() === "")) return "";
+  return next.join("");
+}
+
+/**
+ * Puts the frontmatter of the current file in front of freshly serialized Markdown.
+ * It is kept byte for byte, except for its `filters` block, which is rewritten only when `filters` differs from it.
+ */
+export function withFrontmatter(current: string, markdown: string, filters: SavedFilter[]): string {
+  let frontmatter = frontmatterOf(current);
+  const existing = readFilters(frontmatter);
+  if (JSON.stringify("filters" in existing ? existing.filters : []) !== JSON.stringify(filters)) {
+    frontmatter = rewriteFilters(frontmatter, filters);
+  }
   if (frontmatter === "" || markdown === "") return frontmatter + markdown;
   return (frontmatter.endsWith("\n") ? frontmatter : frontmatter + "\n") + markdown;
 }
@@ -37,6 +116,8 @@ export function parse(md: string): ParseResult {
   const fail = (line: number, reason: string): ParseResult => ({ ok: false, error: { line: line + offset, reason } });
 
   if (frontmatter === "" && text.split("\n", 1)[0]!.trimEnd() === "---") return fail(1, "The frontmatter is not closed");
+  const saved = readFilters(frontmatter);
+  if ("error" in saved) return { ok: false, error: saved.error };
 
   for (let i = 0; i < lines.length; i++) {
     const n = i + 1;
@@ -91,5 +172,5 @@ export function parse(md: string): ParseResult {
     }
     previousWasTask = true;
   }
-  return { ok: true, doc: { lists } };
+  return { ok: true, doc: { lists, filters: saved.filters } };
 }

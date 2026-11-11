@@ -18,7 +18,7 @@ describe("exportView", () => {
   });
 
   test("an empty document exports an empty string", () => {
-    expect(exportView({ lists: [] }, null)).toBe("");
+    expect(exportView({ lists: [], filters: [] }, null)).toBe("");
   });
 
   test("a stale list index exports the whole document", () => {

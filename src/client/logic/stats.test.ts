@@ -5,6 +5,7 @@ import { countList, countTasks } from "./stats";
 
 function doc(): TodoDocument {
   return {
+    filters: [],
     lists: [
       {
         title: "Garden",
@@ -48,7 +49,7 @@ describe("countTasks", () => {
   });
 
   test("an empty document counts 0/0", () => {
-    expect(countTasks(frozen({ lists: [] }))).toEqual({ done: 0, total: 0 });
+    expect(countTasks(frozen({ lists: [], filters: [] }))).toEqual({ done: 0, total: 0 });
   });
 
   test("an out-of-range range is clamped", () => {
