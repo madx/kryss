@@ -26,11 +26,11 @@ function frontmatterLines(frontmatter: string) {
   return { lines, closing };
 }
 
-/** The `filters` key of a frontmatter: its line and the end (exclusive) of its indented block. */
+/** The `kryss-filters` key of a frontmatter: its line and the end (exclusive) of its indented block. */
 function filtersBlocks(lines: string[], closing: number): Block[] {
   const blocks: Block[] = [];
   for (let i = 1; i < closing; i++) {
-    if (!lines[i]!.startsWith("filters:")) continue;
+    if (!lines[i]!.startsWith("kryss-filters:")) continue;
     let end = i + 1;
     while (end < closing && /^[ \t]/.test(lines[end]!)) end++;
     blocks.push({ start: i, end });
@@ -44,10 +44,10 @@ function readFilters(frontmatter: string): { filters: SavedFilter[] } | { error:
   const { lines, closing } = frontmatterLines(frontmatter);
   const blocks = closing < 0 ? [] : filtersBlocks(lines, closing);
   if (blocks.length === 0) return { filters: [] };
-  if (blocks.length > 1) return { error: { line: blocks[1]!.start + 1, reason: 'The frontmatter has a second "filters" key' } };
+  if (blocks.length > 1) return { error: { line: blocks[1]!.start + 1, reason: 'The frontmatter has a second "kryss-filters" key' } };
   const { start, end } = blocks[0]!;
-  if (stripEol(lines[start]!).trimEnd() !== "filters:") {
-    return { error: { line: start + 1, reason: 'The "filters" key must be alone on its line' } };
+  if (stripEol(lines[start]!).trimEnd() !== "kryss-filters:") {
+    return { error: { line: start + 1, reason: 'The "kryss-filters" key must be alone on its line' } };
   }
   const filters: SavedFilter[] = [];
   for (let i = start + 1; i < end; i++) {
@@ -70,11 +70,11 @@ function readFilters(frontmatter: string): { filters: SavedFilter[] } | { error:
   return { filters };
 }
 
-/** The frontmatter with its `filters` block set to `filters`, the other lines untouched. */
+/** The frontmatter with its `kryss-filters` block set to `filters`, the other lines untouched. */
 function rewriteFilters(frontmatter: string, filters: SavedFilter[]): string {
   const { lines, closing } = frontmatterLines(frontmatter);
   const eol = (lines[0] ?? "").endsWith("\r\n") ? "\r\n" : "\n";
-  const block = filters.length === 0 ? [] : ["filters:", ...filters.map((f) => `  ${JSON.stringify(f.name)}: ${JSON.stringify(f.text)}`)].map((l) => l + eol);
+  const block = filters.length === 0 ? [] : ["kryss-filters:", ...filters.map((f) => `  ${JSON.stringify(f.name)}: ${JSON.stringify(f.text)}`)].map((l) => l + eol);
   if (frontmatter === "") return block.length === 0 ? "" : ["---", ...block.map(stripEol), "---", ""].join(eol) + eol;
 
   const found = filtersBlocks(lines, closing)[0];
@@ -88,7 +88,7 @@ function rewriteFilters(frontmatter: string, filters: SavedFilter[]): string {
 
 /**
  * Puts the frontmatter of the current file in front of freshly serialized Markdown.
- * It is kept byte for byte, except for its `filters` block, which is rewritten only when `filters` differs from it.
+ * It is kept byte for byte, except for its `kryss-filters` block, which is rewritten only when `filters` differs from it.
  */
 export function withFrontmatter(current: string, markdown: string, filters: SavedFilter[]): string {
   let frontmatter = frontmatterOf(current);
