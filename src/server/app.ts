@@ -7,6 +7,7 @@ import { serialize } from "../shared/serializer";
 import type { VaultConfig } from "./config";
 import { parse, withFrontmatter } from "./markdown";
 import { scanNotes } from "./notes";
+import { lucideSvg, readLinkConfig } from "./links";
 import { createVaultFile, resolveKryssFile, scanVault } from "./vault";
 
 const WATCH_DEBOUNCE_MS = 50;
@@ -226,6 +227,11 @@ export function createApp(options: AppOptions) {
       return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST" });
     }
     if (vault && pathname === "/api/notes" && req.method === "GET") return json(await scanNotes(vault.vaultDir));
+    if (vault && pathname === "/api/config" && req.method === "GET") return json(await readLinkConfig(vault.vaultDir), 200, { "Cache-Control": "no-store" });
+    if (vault && pathname.startsWith("/api/icons/") && req.method === "GET") {
+      const svg = await lucideSvg(pathname.slice("/api/icons/".length));
+      return svg === null ? notFound() : new Response(svg, { headers: { "Content-Type": "image/svg+xml" } });
+    }
     if (pathname === "/api/todos") {
       if (req.method !== "GET" && req.method !== "PUT") return json({ error: "Method not allowed" }, 405, { Allow: "GET, PUT" });
       const file = await targetOf(req);

@@ -179,6 +179,17 @@ function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRan
       }
     }
 
+    if (c === "<" && allowLinks) {
+      // Autolink `<scheme:…>`, under the same scheme rules as a link. Anything else stays literal.
+      const end = s.indexOf(">", i + 1);
+      const target = end > i + 1 ? s.slice(i + 1, end) : "";
+      if (target !== "" && !/[\s<]/.test(target) && /^[a-z][a-z0-9+.-]*:/i.test(target) && isAllowedUrl(target)) {
+        nodes.push({ type: "link", href: normalizeUrl(target), children: [{ type: "text", value: target }] });
+        i = end + 1;
+        continue;
+      }
+    }
+
     if (c === "[" && allowLinks) {
       const labelEnd = findLabelEnd(s, i + 1);
       if (labelEnd > i + 1 && s[labelEnd + 1] === "(") {
