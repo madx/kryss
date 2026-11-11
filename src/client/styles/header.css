@@ -1,7 +1,19 @@
 /* Header: layout and height come from base.css. */
 .app-header {
   position: relative;
+  z-index: 60; /* above the scrim, which dims everything but the popups of the header */
   gap: var(--space-8);
+}
+
+.header-file {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 30%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-muted);
+  font-weight: 600;
 }
 
 .header-siblings {
@@ -46,4 +58,16 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
   color: var(--color-faint);
+}
+
+/* Behind the popups of the header: the page stays visible but recedes. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in srgb, black 35%, transparent);
+}
+
+.scrim[hidden] {
+  display: none;
 }

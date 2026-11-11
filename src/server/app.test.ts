@@ -163,13 +163,13 @@ describe("saved filters through the API", () => {
   const withFilters = (filters: unknown) => ({ lists: [{ title: "L", tasks: [] }], filters });
 
   test("GET returns the filters of the frontmatter", async () => {
-    start('---\ntitle: x\nfilters:\n  "Work": "list:Work due:week"\n---\n\n## L\n');
+    start('---\ntitle: x\nkryss-filters:\n  "Work": "list:Work due:week"\n---\n\n## L\n');
     const res = await fetch(`${base}/api/todos`);
     expect(await res.json()).toEqual({ lists: [{ title: "L", tasks: [] }], filters: [{ name: "Work", text: "list:Work due:week" }] });
   });
 
   test("GET answers 422 with the line of a malformed filters block", async () => {
-    start("---\nfilters:\n  nope\n---\n## L\n");
+    start("---\nkryss-filters:\n  nope\n---\n## L\n");
     const res = await fetch(`${base}/api/todos`);
     expect(res.status).toBe(422);
     expect(((await res.json()) as { line: number }).line).toBe(3);
@@ -182,7 +182,7 @@ describe("saved filters through the API", () => {
     const res = await put(body, { "If-Match": etag });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(body);
-    expect(readFileSync(file, "utf8")).toBe('---\ntitle:   x \nfilters:\n  "Todo": "is:todo"\n---\n\n## L\n');
+    expect(readFileSync(file, "utf8")).toBe('---\ntitle:   x \nkryss-filters:\n  "Todo": "is:todo"\n---\n\n## L\n');
   });
 
   test("PUT with no filters on a file without frontmatter creates none", async () => {
@@ -218,7 +218,7 @@ describe("saved filters through the API", () => {
     start("## L\n");
     const res = await fetch(`${base}/api/events`);
     await sleep(100);
-    writeFileSync(file, '---\nfilters:\n  "A": "x"\n---\n## L\n');
+    writeFileSync(file, '---\nkryss-filters:\n  "A": "x"\n---\n## L\n');
     expect(await collectEvents(res, 1)).toMatchObject([{ doc: { filters: [{ name: "A", text: "x" }] } }]);
   });
 });

@@ -22,6 +22,9 @@ The server only listens on the loopback interface by default and has no authenti
 
 `TODO_FILE` is the path of the Markdown file, `./todo.md` by default.
 The file is created empty if it is missing.
+`VAULT_DIR` is the path of an Obsidian Vault.
+When it is set, `TODO_FILE` is ignored and Kryss manages every `.md` file of the Vault whose frontmatter has `kryss-enabled: true`, which `go` lets you switch between.
+`NEW_FILE_DIR` is the folder of the files that Kryss creates, `VAULT_DIR` by default, and it must be inside the Vault.
 `PORT` is the listening port, `5173` by default.
 `HOST` is the listening address, `127.0.0.1` by default.
 Set `HOST=0.0.0.0` to expose the app, for example inside a container, and remember that there is no authentication.

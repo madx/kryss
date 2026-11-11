@@ -1,12 +1,24 @@
 import { serve } from "bun";
 import homepage from "../client/index.html";
 import { createApp } from "./app";
-import { ensureTodoFile, resolveHost, resolveTodoFile } from "./config";
+import { ensureTodoFile, resolveHost, resolveTodoFile, resolveVault } from "./config";
 
-const todoFile = resolveTodoFile(process.env);
-await ensureTodoFile(todoFile);
+const vault = await resolveVault(process.env).catch((error: Error) => {
+  console.error(error.message);
+  process.exit(1);
+});
 
-const app = createApp({ file: todoFile });
+let app;
+let served: string;
+if (vault) {
+  app = createApp({ vault });
+  served = `the Vault ${vault.vaultDir}`;
+} else {
+  const todoFile = resolveTodoFile(process.env);
+  await ensureTodoFile(todoFile);
+  app = createApp({ file: todoFile });
+  served = todoFile;
+}
 
 const server = serve({
   hostname: resolveHost(process.env),
@@ -17,4 +29,4 @@ const server = serve({
   },
 });
 
-console.log(`Serving ${todoFile} on ${server.url}`);
+console.log(`Serving ${served} on ${server.url}`);

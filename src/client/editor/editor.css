@@ -73,6 +73,7 @@
   color: var(--color-text);
   border: var(--hairline) solid var(--color-border);
   border-radius: var(--radius-control);
+  box-shadow: 0 4px 14px color-mix(in srgb, black 22%, transparent);
   font-family: var(--font-sans);
   font-size: var(--font-size-task);
 }

@@ -543,6 +543,18 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     expect(resolveKey(k("F", { pending: "g", shiftKey: true }))).toEqual({ action: { type: "filter-picker" }, pending: "", preventDefault: true });
   });
 
+  test("go opens the file picker, on a task, on a header, with nothing focused and in the Markdown view", () => {
+    const expected = { action: { type: "file-picker" as const }, pending: "" as const, preventDefault: true };
+    expect(resolveKey(k("o", { pending: "g" }))).toEqual(expected);
+    expect(resolveKey(k("o", { pending: "g", ...onHeader }))).toEqual(expected);
+    expect(resolveKey(k("o", { pending: "g", target: "none" }))).toEqual(expected);
+    expect(resolveKey(k("o", { pending: "g", markdownView: true }))).toEqual(expected);
+  });
+
+  test("o alone still adds a task", () => {
+    expect(act("o")).toEqual({ type: "add", at: "below" });
+  });
+
   test("gh does nothing any more, and sh toggles the siblings", () => {
     expect(act("h", { pending: "g" })).toBeNull();
     expect(act("h", { pending: "s" })).toEqual({ type: "toggle-siblings" });

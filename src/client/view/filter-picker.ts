@@ -2,6 +2,7 @@
 import type { SavedFilter } from "../../shared/types";
 import { deleteFilter, pickerEntries, pickerKey, saveFilter, type PickerEntry } from "../logic/saved-filters";
 import { el } from "./dom";
+import { setScrim } from "./scrim";
 
 export type PickerEnv = {
   saved(): SavedFilter[];
@@ -89,6 +90,7 @@ export function createFilterPicker(env: PickerEnv) {
     active = 0;
     render();
     menu.hidden = false;
+    setScrim("filter-picker", true);
     menu.focus();
     document.addEventListener("pointerdown", onOutside);
   }
@@ -96,6 +98,7 @@ export function createFilterPicker(env: PickerEnv) {
   function close(notify = true) {
     if (menu.hidden) return;
     menu.hidden = true;
+    setScrim("filter-picker", false);
     naming = false;
     pendingD = false;
     document.removeEventListener("pointerdown", onOutside);

@@ -1,10 +1,12 @@
 import { createHash } from "node:crypto";
 import { watch, type FSWatcher } from "node:fs";
 import { readFile, rename, writeFile, rm } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, relative, sep } from "node:path";
 import type { ChangeEvent, TodoDocument } from "../shared/types";
 import { serialize } from "../shared/serializer";
+import type { VaultConfig } from "./config";
 import { parse, withFrontmatter } from "./markdown";
+import { createVaultFile, resolveKryssFile, scanVault } from "./vault";
 
 const WATCH_DEBOUNCE_MS = 50;
 
@@ -45,32 +47,59 @@ export function isValidDocument(value: unknown): value is TodoDocument {
   );
 }
 
-export function createApp({ file }: { file: string }) {
-  const encoder = new TextEncoder();
-  const clients = new Set<ReadableStreamDefaultController<Uint8Array>>();
-  let knownEtag: string | undefined;
-  let queue: Promise<unknown> = Promise.resolve();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let watcher: FSWatcher | undefined;
+type Server = { timeout(req: Request, seconds: number): void };
 
-  // Serializes the handlers that read then write the file.
-  const exclusive = <T>(task: () => Promise<T>): Promise<T> => {
-    const run = queue.then(task, task);
-    queue = run.catch(() => {});
+/** What the server keeps for one file: its write queue, the last ETag it knows, and, while a stream is open, its watcher and clients. */
+type Session = {
+  file: string;
+  queue: Promise<unknown>;
+  knownEtag?: string;
+  clients: Set<ReadableStreamDefaultController<Uint8Array>>;
+  timer?: ReturnType<typeof setTimeout>;
+  watcher?: FSWatcher;
+};
+
+export type AppOptions = { file: string } | { vault: VaultConfig };
+
+export function createApp(options: AppOptions) {
+  const vault = "vault" in options ? options.vault : undefined;
+  const encoder = new TextEncoder();
+  const sessions = new Map<string, Session>();
+
+  const sessionOf = (file: string): Session => {
+    let session = sessions.get(file);
+    if (!session) sessions.set(file, (session = { file, queue: Promise.resolve(), clients: new Set() }));
+    return session;
+  };
+
+  // Serializes the handlers that read then write a file.
+  const exclusive = <T>(session: Session, task: () => Promise<T>): Promise<T> => {
+    const run = session.queue.then(task, task);
+    session.queue = run.catch(() => {});
     return run;
   };
 
   const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
     Response.json(body, { status, headers });
+  const notFound = () => json({ error: "Not found" }, 404);
 
-  async function getTodos(): Promise<Response> {
+  /** The real path of the file a request is about: the only file in single-file mode, the `file` parameter in Vault mode (null for a 404). */
+  async function targetOf(req: Request): Promise<string | null> {
+    if (!vault) return (options as { file: string }).file;
+    const rel = new URL(req.url).searchParams.get("file");
+    return rel === null ? null : resolveKryssFile(vault.vaultDir, rel);
+  }
+
+  const keyOf = (file: string) => (vault ? relative(vault.vaultDir, file).split(sep).join("/") : file);
+
+  async function getTodos(file: string): Promise<Response> {
     const content = await readContent(file);
     const result = parse(content);
     if (!result.ok) return json(result.error, 422);
     return json(result.doc, 200, { ETag: etagOf(content) });
   }
 
-  async function putTodos(req: Request): Promise<Response> {
+  async function putTodos(req: Request, file: string): Promise<Response> {
     const ifMatch = req.headers.get("If-Match");
     if (ifMatch === null) return json({ error: "If-Match header required" }, 428);
     let body: unknown;
@@ -80,8 +109,9 @@ export function createApp({ file }: { file: string }) {
       return json({ error: "Body is not valid JSON" }, 400);
     }
     if (!isValidDocument(body)) return json({ error: "Body is not a valid document" }, 400);
+    const session = sessionOf(file);
 
-    return exclusive(async () => {
+    return exclusive(session, async () => {
       const current = await readContent(file);
       const existing = parse(current);
       if (!existing.ok) return json(existing.error, 422);
@@ -91,13 +121,13 @@ export function createApp({ file }: { file: string }) {
       const markdown = withFrontmatter(current, serialize(body), body.filters);
       const next = etagOf(markdown);
       // Recorded before the rename so that the watcher ignores this write.
-      knownEtag = next;
+      session.knownEtag = next;
       const tmp = join(dirname(file), `.${basename(file)}.${process.pid}.${Date.now()}.tmp`);
       try {
         await writeFile(tmp, markdown);
         await rename(tmp, file);
       } catch (error) {
-        knownEtag = currentEtag;
+        session.knownEtag = currentEtag;
         await rm(tmp, { force: true });
         throw error;
       }
@@ -107,76 +137,121 @@ export function createApp({ file }: { file: string }) {
     });
   }
 
-  function events(req: Request, server?: { timeout(req: Request, seconds: number): void }): Response {
+  // A client whose connection is gone is dropped, and the file is no longer watched once nobody listens.
+  function send(session: Session, text: string) {
+    const message = encoder.encode(text);
+    for (const c of session.clients) {
+      try {
+        c.enqueue(message);
+      } catch {
+        session.clients.delete(c);
+      }
+    }
+    if (session.clients.size === 0) stopWatching(session);
+  }
+
+  const broadcast = (session: Session, event: ChangeEvent) => send(session, `event: change\ndata: ${JSON.stringify(event)}\n\n`);
+
+  async function onFileEvent(session: Session) {
+    const content = await readContent(session.file);
+    const etag = etagOf(content);
+    if (etag === session.knownEtag) return;
+    session.knownEtag = etag;
+    const result = parse(content);
+    broadcast(session, result.ok ? { etag, doc: result.doc } : { etag, error: result.error });
+  }
+
+  // Watch the directory so that rename-based saves (Vim, Obsidian) are caught.
+  // Any event in the directory triggers a check: the ETag comparison discards unrelated ones.
+  function startWatching(session: Session) {
+    const watcher = watch(dirname(session.file), () => {
+      clearTimeout(session.timer);
+      session.timer = setTimeout(() => void exclusive(session, () => onFileEvent(session)).catch(() => {}), WATCH_DEBOUNCE_MS);
+    });
+    // A deleted or unreadable directory must not crash the server: log and carry on.
+    watcher.on("error", (error) => console.error("File watcher error:", error));
+    session.watcher = watcher;
+  }
+
+  function stopWatching(session: Session) {
+    clearTimeout(session.timer);
+    session.watcher?.close();
+    session.watcher = undefined;
+  }
+
+  /** Only a file with an open stream is watched. */
+  async function events(req: Request, file: string, server?: Server): Promise<Response> {
     server?.timeout(req, 0);
+    const session = sessionOf(file);
+    // Checked and started without waiting, so that two streams opening together cannot start two watchers.
+    if (!session.watcher) startWatching(session);
+    session.knownEtag = etagOf(await readContent(file));
     let controller!: ReadableStreamDefaultController<Uint8Array>;
+    const release = () => {
+      session.clients.delete(controller);
+      if (session.clients.size === 0) stopWatching(session);
+    };
     const stream = new ReadableStream<Uint8Array>({
       start(c) {
         controller = c;
-        clients.add(c);
+        session.clients.add(c);
         c.enqueue(encoder.encode(": connected\n\n"));
       },
-      cancel() {
-        clients.delete(controller);
-      },
+      cancel: release,
     });
     return new Response(stream, {
       headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" },
     });
   }
 
-  function broadcast(event: ChangeEvent) {
-    const message = encoder.encode(`event: change\ndata: ${JSON.stringify(event)}\n\n`);
-    for (const c of clients) {
-      try {
-        c.enqueue(message);
-      } catch {
-        clients.delete(c);
-      }
+  async function postFile(req: Request): Promise<Response> {
+    let name: unknown;
+    try {
+      name = ((await req.json()) as { name?: unknown } | null)?.name;
+    } catch {
+      return json({ error: "Body is not valid JSON" }, 400);
     }
+    if (typeof name !== "string") return json({ error: "name must be a string" }, 400);
+    const result = await createVaultFile(vault!.vaultDir, vault!.newFileDir, name);
+    return result.ok ? json({ path: result.path }, 201) : json({ error: result.error }, result.status);
   }
 
-  async function onFileEvent() {
-    const content = await readContent(file);
-    const etag = etagOf(content);
-    if (etag === knownEtag) return;
-    knownEtag = etag;
-    const result = parse(content);
-    broadcast(result.ok ? { etag, doc: result.doc } : { etag, error: result.error });
+  async function handle(req: Request, server?: Server): Promise<Response> {
+    const { pathname } = new URL(req.url);
+    if (vault && pathname === "/api/files") {
+      if (req.method === "GET") return json(await scanVault(vault.vaultDir));
+      if (req.method === "POST") return postFile(req);
+      return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST" });
+    }
+    if (pathname === "/api/todos") {
+      if (req.method !== "GET" && req.method !== "PUT") return json({ error: "Method not allowed" }, 405, { Allow: "GET, PUT" });
+      const file = await targetOf(req);
+      if (file === null) return notFound();
+      return req.method === "GET" ? getTodos(file) : putTodos(req, file);
+    }
+    if (pathname === "/api/events" && req.method === "GET") {
+      const file = await targetOf(req);
+      return file === null ? notFound() : events(req, file, server);
+    }
+    return notFound();
   }
-
-  // Watch the directory so that rename-based saves (Vim, Obsidian) are caught.
-  readContent(file).then((content) => {
-    knownEtag ??= etagOf(content);
-  });
-  // Any event in the directory triggers a check: the ETag comparison discards unrelated ones.
-  watcher = watch(dirname(file), () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => void exclusive(onFileEvent).catch(() => {}), WATCH_DEBOUNCE_MS);
-  });
-  // A deleted or unreadable directory must not crash the server: log and carry on.
-  watcher.on("error", (error) => console.error("File watcher error:", error));
 
   return {
-    fetch(req: Request, server?: { timeout(req: Request, seconds: number): void }): Response | Promise<Response> {
-      const { pathname } = new URL(req.url);
-      if (pathname === "/api/todos") {
-        if (req.method === "GET") return getTodos();
-        if (req.method === "PUT") return putTodos(req);
-        return json({ error: "Method not allowed" }, 405, { Allow: "GET, PUT" });
-      }
-      if (pathname === "/api/events" && req.method === "GET") return events(req, server);
-      return json({ error: "Not found" }, 404);
+    fetch: handle,
+    /** The files that have a watcher, that is an open stream (paths relative to the Vault in Vault mode). */
+    watchedFiles(): string[] {
+      return [...sessions.values()].filter((s) => s.watcher).map((s) => keyOf(s.file));
     },
     stop() {
-      clearTimeout(timer);
-      watcher?.close();
-      for (const c of clients) {
-        try {
-          c.close();
-        } catch {}
+      for (const session of sessions.values()) {
+        stopWatching(session);
+        for (const c of session.clients) {
+          try {
+            c.close();
+          } catch {}
+        }
+        session.clients.clear();
       }
-      clients.clear();
     },
   };
 }

@@ -1,10 +1,10 @@
 // The cursor is the focused row or list header (PRD 5.9). This module maps between DOM focus and the stop sequence of the pure logic.
 import { clampIndex, indexOfStop, parseStoredIndex, type Stop } from "../logic/cursor";
+import { fileStorageKey } from "../logic/files";
 import { visibleStops as stopsOf } from "../logic/filter";
 import { visibleOf } from "./visible";
 import type { TaskPath } from "../logic";
 import type { Store } from "../store";
-
 export const CURSOR_KEY = "kryss.cursor";
 
 /** Scrolls an element into view only if it is off screen, smoothly unless the user prefers reduced motion. */
@@ -44,8 +44,9 @@ export function stopOf(target: EventTarget | null): Stop | null {
   return { kind: "task", path: { list: Number(row.dataset.list), task: Number(row.dataset.task), child: child === undefined ? undefined : Number(child) } };
 }
 
-export function createCursor(main: HTMLElement, store: Store, storage?: Storage) {
+export function createCursor(main: HTMLElement, store: Store, storage?: Storage, file: string | null = null) {
   let last = -1;
+  const key = fileStorageKey(CURSOR_KEY, file);
 
   const visibleStops = (): Stop[] => {
     const visible = visibleOf(store.getState());
@@ -88,7 +89,7 @@ export function createCursor(main: HTMLElement, store: Store, storage?: Storage)
     hasFocus: (): boolean => cursor.current() !== null,
     /** Puts the cursor back on the stored index (once, on load). */
     restore(): void {
-      const stored = parseStoredIndex(safe(() => storage?.getItem(CURSOR_KEY) ?? null) ?? null);
+      const stored = parseStoredIndex(safe(() => storage?.getItem(key) ?? null) ?? null);
       if (stored !== null) cursor.focusIndex(stored);
     },
   };
@@ -98,7 +99,7 @@ export function createCursor(main: HTMLElement, store: Store, storage?: Storage)
     const i = cursor.index();
     if (i < 0) return;
     last = i;
-    safe(() => storage?.setItem(CURSOR_KEY, String(i)));
+    safe(() => storage?.setItem(key, String(i)));
   });
   return cursor;
 }

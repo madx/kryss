@@ -23,6 +23,8 @@ export type KeyboardEnv = {
   toggle(path: TaskPath): void;
   /** The filter bar and the saved filter picker (PRD 5.14). */
   filters: { focus(): void; set(text: string): void; startList(): void; openPicker(): void };
+  /** The file picker of a Vault (PRD 5.16): it does nothing in single-file mode. */
+  files: { openPicker(): void };
   renameList(list: number): void;
   /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
@@ -50,7 +52,7 @@ export function targetKind(target: EventTarget | null): TargetKind {
 }
 
 /** Actions that make sense when the page holds no document. */
-const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "set-filter", "filter-list", "filter-picker"]);
+const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "set-filter", "filter-list", "filter-picker", "file-picker"]);
 
 export function installKeyboard(env: KeyboardEnv): void {
   const { store, cursor } = env;
@@ -122,6 +124,9 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "filter-picker":
         env.filters.openPicker();
+        return;
+      case "file-picker":
+        env.files.openPicker();
         return;
       case "toggle-siblings":
         store.toggleSiblings();
