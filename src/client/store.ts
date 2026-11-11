@@ -4,8 +4,8 @@
 import type { ChangeEvent, ParseError, SavedFilter, TodoDocument } from "../shared/types";
 import type { Api } from "./api";
 import { canRedo, canUndo, clear, createHistory, push, redo as redoHistory, undo as undoHistory } from "./logic";
-import { pinTask } from "./logic/filter";
-import type { TaskPath } from "./logic/paths";
+import { followPins, pinTask } from "./logic/filter";
+import type { PathMove, TaskPath } from "./logic/paths";
 import { DEBOUNCE_MS, retryDelay, type SyncStatus } from "./sync";
 
 export type StoreState = {
@@ -45,6 +45,8 @@ export type CommitOptions = {
   inserted?: boolean;
   /** `pin` is a parent whose subtasks were just changed too (a cascade): they stay visible with it. */
   pinChildren?: boolean;
+  /** A move: every node whose path changed, so that the other pins follow their tasks (PRD 5.14). */
+  moves?: PathMove[];
   /** A delete: the pins are dropped. */
   clearPins?: boolean;
 };
@@ -156,6 +158,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     if (!doc || next === doc) return;
     history = push(history, doc, filter);
     if (options.clearPins) pins = [];
+    if (options.moves) pins = followPins(pins, options.moves);
     if (options.pin) pins = pinTask(pins, options.pin, options.inserted);
     if (options.pin && options.pinChildren && options.pin.child === undefined) {
       const { list, task } = options.pin;

@@ -327,7 +327,7 @@ describe("moves under a filter", () => {
     const d = frozen<TodoDocument>({ filters: [], lists: [{ title: "A", tasks: [t("pa", "xa"), t("hz"), t("pb", "hb2", "xb")] }] });
     const down = moveDown(d, { list: 0, task: 0, child: 0 }, rows(d))!;
     expect(down.path).toEqual({ list: 0, task: 2, child: 1 });
-    expect(kids(down.doc, 0, 1)).toEqual(["hb2", "xa", "xb"]);
+    expect(kids(down.doc, 0, 2)).toEqual(["hb2", "xa", "xb"]);
     const up = moveUp(d, { list: 0, task: 2, child: 1 }, rows(d))!;
     expect(up.path).toEqual({ list: 0, task: 0, child: 1 });
     expect(kids(up.doc, 0, 0)).toEqual(["xa", "xb"]);
@@ -375,5 +375,15 @@ describe("path moves", () => {
       { from: { list: 0, task: 2 }, to: { list: 0, task: 3 } },
       { from: { list: 0, task: 1, child: 1 }, to: { list: 0, task: 1, child: 0 } },
     ]));
+  });
+});
+
+describe("an outdented subtask under a filter", () => {
+  test("stays visible when pinned, although it no longer matches", () => {
+    const d = frozen<TodoDocument>({ filters: [], lists: [{ title: "A", tasks: [t("xp", "hb")] }] });
+    const r = outdent(d, { list: 0, task: 0, child: 0 })!;
+    expect(rows(r.doc).lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [], hidden: 0 }] }]); // hb is hidden
+    const pinned = visibleRows(r.doc, "x", TODAY, [r.path]);
+    expect(pinned.lists[0]!.tasks.map((v) => v.task)).toEqual([0, 1]);
   });
 });

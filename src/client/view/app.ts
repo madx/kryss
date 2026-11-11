@@ -79,8 +79,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let pendingFocus: string | null = null;
 
   const doc = (): TodoDocument => store.getState().doc!;
-  /** Moves only run with no filter (PRD 5.14), so they cross every list. */
-  const allLists = () => ({ first: 0, last: doc().lists.length - 1 });
+  /** The visible rows, which the keyboard moves work on (PRD 5.14). */
+  const rows = () => visibleOf(store.getState()) ?? undefined;
   /** Commits with a focus request. The render is synchronous, so a request left over means nothing rendered and must not leak into a later render. */
   const commitFocus = (next: TodoDocument, selector: string | null, options?: CommitOptions) => {
     pendingFocus = selector;
@@ -89,7 +89,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   };
   const apply = (result: OpResult | null, focus = true): boolean => {
     if (!result) return false;
-    commitFocus(result.doc, focus ? rowSelector(result.path) : null);
+    // The moved task is pinned, and the other pins follow their tasks (PRD 5.14).
+    commitFocus(result.doc, focus ? rowSelector(result.path) : null, { pin: result.path, moves: result.moves });
     return true;
   };
 
@@ -103,10 +104,10 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       store.commit(editText(before, path, text), { pin: path });
       if (doc() === before) renderAll(store.getState()); // refused or unchanged after normalization: make sure the editor is gone
     },
-    indent: (path) => apply(indent(doc(), path)),
+    indent: (path) => apply(indent(doc(), path, rows())),
     outdent: (path) => apply(outdent(doc(), path)),
-    moveUp: (path) => apply(moveUp(doc(), path, allLists())),
-    moveDown: (path) => apply(moveDown(doc(), path, allLists())),
+    moveUp: (path) => apply(moveUp(doc(), path, rows())),
+    moveDown: (path) => apply(moveDown(doc(), path, rows())),
     focusRow(path) {
       document.querySelector<HTMLElement>(rowSelector(path))?.focus();
     },
@@ -178,7 +179,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       return true;
     },
     moveByKey(list: number, dir: "up" | "down", focus?: Stop) {
-      const step = listMoveTarget(list, dir, allLists());
+      const step = listMoveTarget(list, dir, (rows()?.lists ?? []).map((l) => l.list));
       if (step) lists.move(list, step.target, step.place, focus);
     },
   };

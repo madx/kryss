@@ -438,8 +438,17 @@ describe("pinned rows", () => {
   test("a move pins the moved task and the other pins follow their tasks", () => {
     store.setFilter("x");
     store.commit(doc("B"), { pin: path(1) });
-    store.commit(doc("C"), { pin: path(2), moves: [{ from: path(2), to: path(0) }, { from: path(0), to: path(1) }, { from: path(1), to: path(2) }] });
+    store.commit(doc("C"), { pin: path(0), moves: [{ from: path(2), to: path(0) }, { from: path(0), to: path(1) }, { from: path(1), to: path(2) }] });
     expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 2 }, { list: 0, task: 0 }]);
+  });
+
+  test("undoing a move made under a filter restores that filter text", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(0), moves: [] });
+    store.setFilter("y");
+    expect(store.undo()).toBe(true);
+    expect(store.getState().filter).toBe("x");
+    expect(store.getState().pins).toEqual([]);
   });
 
   test("an insertion shifts the earlier pins", () => {

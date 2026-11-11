@@ -3,8 +3,36 @@ import type { Task, TodoDocument } from "../../shared/types";
 /** Address of a task (`child` absent) or a subtask (`child` set). All indices are 0-based. */
 export type TaskPath = { list: number; task: number; child?: number };
 
-/** Result of an operation that creates or moves a task: the new document and the new path of the task. */
-export type OpResult = { doc: TodoDocument; path: TaskPath };
+/** A node that changed path in a move. */
+export type PathMove = { from: TaskPath; to: TaskPath };
+
+/**
+ * Result of an operation that creates or moves a task: the new document and the new path of the task.
+ * A move also lists every node whose path changed (the moved subtree and the siblings it shifted), so that the pins can follow.
+ */
+export type OpResult = { doc: TodoDocument; path: TaskPath; moves?: PathMove[] };
+
+/** Path of every node of the document, by identity. */
+export function pathsByNode(doc: TodoDocument): Map<Task, TaskPath> {
+  const map = new Map<Task, TaskPath>();
+  doc.lists.forEach((list, l) =>
+    list.tasks.forEach((task, t) => {
+      map.set(task, { list: l, task: t });
+      task.children?.forEach((child, c) => map.set(child, { list: l, task: t, child: c }));
+    }),
+  );
+  return map;
+}
+
+/** The nodes of `after` that are at another path than in `before`, where `after` was cloned from `before` and `before` paths come from `pathsByNode`. */
+export function changedPaths(before: Map<Task, TaskPath>, after: TodoDocument): PathMove[] {
+  const moves: PathMove[] = [];
+  for (const [node, to] of pathsByNode(after)) {
+    const from = before.get(node);
+    if (from && !samePath(from, to)) moves.push({ from, to });
+  }
+  return moves;
+}
 
 export function cloneDoc(doc: TodoDocument): TodoDocument {
   return structuredClone(doc);

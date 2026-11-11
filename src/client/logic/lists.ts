@@ -1,5 +1,4 @@
 import type { TodoDocument } from "../../shared/types";
-import type { Range } from "./cursor";
 import { copyList, type Register } from "./register";
 import { cloneDoc, normalizeText } from "./paths";
 
@@ -44,10 +43,10 @@ export function moveList(doc: TodoDocument, list: number, target: number, place:
   return { doc: next, list: index };
 }
 
-/** Target of a keyboard move: the next (down) or previous (up) visible list, or `null` at the edge of the visible range. */
-export function listMoveTarget(list: number, dir: "up" | "down", range: Range): { target: number; place: ListPlace } | null {
-  const target = dir === "down" ? list + 1 : list - 1;
-  if (target < range.first || target > range.last) return null;
+/** Target of a keyboard move: the next (down) or previous (up) visible list, or `null` at the edge of the visible lists. `visible` is in document order. */
+export function listMoveTarget(list: number, dir: "up" | "down", visible: number[]): { target: number; place: ListPlace } | null {
+  const target = visible[visible.indexOf(list) + (dir === "down" ? 1 : -1)];
+  if (visible.indexOf(list) < 0 || target === undefined) return null;
   return { target, place: dir === "down" ? "after" : "before" };
 }
 
