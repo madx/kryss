@@ -55,6 +55,11 @@
   font-family: var(--font-mono);
 }
 
+.search-status {
+  margin-left: var(--space-8);
+  font-family: var(--font-mono);
+}
+
 .copy-feedback {
   margin-left: var(--space-8);
   font-family: var(--font-mono);

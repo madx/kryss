@@ -1,4 +1,4 @@
-// The search bar above the footer (PRD 5.15): a plain input while typing, then a muted `/query  3/12` line while the search stays active.
+// The search input above the footer (PRD 5.15), shown while typing. The `/query  3/12` text lives in the footer statusline.
 import { el } from "./dom";
 
 export type SearchBarActions = {
@@ -12,8 +12,7 @@ export type SearchBarActions = {
 
 export function createSearchBar(actions: SearchBarActions) {
   const input = el("input", { type: "text", class: "search-input", "aria-label": "Search", hidden: true, autocomplete: "off", spellcheck: "false" });
-  const line = el("div", { class: "search-line", role: "status", hidden: true });
-  const root = el("div", { class: "search-bar", hidden: true }, input, line);
+  const root = el("div", { class: "search-bar", hidden: true }, input);
 
   let finished = false; // hiding the focused input fires a blur, which must not close twice
   const leave = (run: () => void) => {
@@ -43,22 +42,13 @@ export function createSearchBar(actions: SearchBarActions) {
       input.value = "";
       root.hidden = false;
       input.hidden = false;
-      line.hidden = true;
       input.focus();
     },
-    /** Replaces the input by the muted line. The caller moves the focus. */
-    showLine(text: string) {
-      finished = true;
-      root.hidden = false;
-      input.hidden = true;
-      line.hidden = false;
-      line.textContent = text;
-    },
+    /** Hides the input (the search may stay active). The caller moves the focus. */
     hide() {
       finished = true;
       root.hidden = true;
       input.hidden = true;
-      line.hidden = true;
       input.value = "";
     },
   };

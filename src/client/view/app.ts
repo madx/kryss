@@ -266,7 +266,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const active = search !== null && !markdownOpen;
     highlight(roots.main, active ? search : null);
     markCurrent(roots.main, active ? stopElement(searchCursor()) : null);
-    if (active && !searchBar.isFocused()) searchBar.showLine(searchLabel(search!, searchMatches(), searchCursor()));
+    footer.setSearch(active ? searchLabel(search!, searchMatches(), searchCursor()) : "");
   }
   function startSearch() {
     if (markdownOpen) return;
@@ -286,7 +286,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   /** Enter or Escape in the input with a query: it closes, the cursor stays on the matching row and the search stays active. */
   function closeSearchInput(refocus: boolean) {
     if (search === null) return;
-    searchBar.showLine(searchLabel(search, searchMatches(), searchIndex));
+    searchBar.hide();
     if (refocus) cursor.focusIndex(searchIndex);
     refreshSearch();
   }

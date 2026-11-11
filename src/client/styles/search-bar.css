@@ -12,8 +12,7 @@
   display: none;
 }
 
-.search-input,
-.search-line {
+.search-input {
   display: block;
   width: 100%;
   height: calc(var(--icon-button-size) + 2 * var(--space-2));
@@ -24,15 +23,14 @@
   font-size: var(--font-size-task);
 }
 
+.search-input[hidden] {
+  display: none;
+}
+
 .search-input {
   background: color-mix(in srgb, var(--color-match) var(--tint-cursor), var(--color-input));
   box-shadow: inset var(--bar-width) 0 0 0 var(--color-match);
   outline: none;
-}
-
-.search-line {
-  color: var(--color-muted);
-  font-family: var(--font-mono);
 }
 
 /* Highlights: a tint on other rows, solid with a fixed dark text on the cursor row. No underline or bold, so the layout never shifts. */

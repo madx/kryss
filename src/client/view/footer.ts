@@ -6,12 +6,13 @@ export type FooterState = { mode: "normal" | "insert" | "filter" | "search"; vie
 
 const FEEDBACK_MS = 2000;
 
-export function createFooter(): { el: HTMLElement; update(s: FooterState): void; flash(text: string, failed: boolean): void } {
+export function createFooter(): { el: HTMLElement; update(s: FooterState): void; setSearch(text: string): void; flash(text: string, failed: boolean): void } {
   const badge = el("span", { class: "mode-badge" });
   const status = el("span", { class: "statusline", role: "status" });
+  const search = el("span", { class: "search-status", role: "status" });
   const feedback = el("span", { class: "copy-feedback", role: "status" });
   const sync = el("span", { id: "sync-status", class: "sync-status", role: "status" });
-  const content = el("div", { class: "footer-content" }, status, feedback, sync);
+  const content = el("div", { class: "footer-content" }, status, search, feedback, sync);
   const root = el("footer", { class: "app-footer" }, badge, content);
   let timer: ReturnType<typeof setTimeout> | undefined;
   return {
@@ -20,6 +21,10 @@ export function createFooter(): { el: HTMLElement; update(s: FooterState): void;
       badge.textContent = s.mode.toUpperCase();
       badge.dataset.mode = s.mode;
       status.textContent = `${s.view.done}/${s.view.total}`;
+    },
+    /** The search query and counter, `/query  3/12`, or nothing when no search is active (PRD 5.15). */
+    setSearch(text) {
+      search.textContent = text;
     },
     /** Shows a short text after the counts for 2 seconds. A new one restarts the timer. */
     flash(text, failed) {
