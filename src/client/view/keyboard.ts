@@ -104,6 +104,7 @@ export function installKeyboard(env: KeyboardEnv): void {
       case "set-filter":
         env.filters.set(action.text);
         cursor.focusIndex(0); // the first visible stop
+        return;
       case "filter-list":
         env.filters.appendList();
         return;
