@@ -176,7 +176,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   The filter is cleared (5.14) so that the new list is visible, and the name input opens on its title with the name selected.
   Cancelling (an empty name) keeps "New list".
   The header has no title: it holds the filter bar of 5.14 on the left and the siblings toggle of 5.14 and the Markdown view toggle of 5.11 aligned on the right.
-  There is no button to create a list: `N` does it (5.9).
+  There is no button to create a list: `+` does it (5.9).
 - Lists are reordered with the keyboard only (5.2, 5.9), also while a filter is active, where they move over the visible lists (5.14).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
@@ -322,7 +322,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 - There are two modes only, Normal and Insert.
   There is no Visual mode and no Command mode.
-  A focused filter bar is Insert mode too, but it has its own color and label, SEARCH (5.10, 5.14).
+  A focused filter bar is Insert mode too, but it has its own color and label, FILTER (5.10, 5.14), and so does the search input, SEARCH (5.10, 5.15).
 - Normal is the default.
   Single keys act on the **cursor**, which is the focused row or list header.
 - Insert is active while a text field has focus (the task editor or a list name input).
@@ -335,7 +335,9 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   It stops at both ends and never wraps.
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
-- `/` focuses the filter bar, `ga`, `gt` and `gw` set the filter to the built-in views, `gl` starts a list filter, `gf` opens the saved filters and `gh` toggles the display of the siblings of a match (5.14).
+- `gf` focuses the filter bar, `gF` opens the saved filters, `ga`, `gt` and `gw` set the filter to the built-in views, and `gl` starts a list filter (5.14).
+  `sh` toggles the display of the siblings of a match (5.14).
+  `/` starts an incremental search, `n` / `N` jump to the next / previous match and Escape ends it (5.15).
   `H` / `L` move the whole list up / down (5.2).
   When the filter is set by a key, the cursor goes to the first stop.
 - The cursor position is stored in `localStorage` as its index in the flat sequence of stops of the current view, next to the filter text, and it is restored on load.
@@ -345,10 +347,11 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   Buttons keep their native behavior, Enter or Space activates them, and Escape on any of them puts the focus back on the cursor.
   The filter bar and the saved filter picker have their own keys (5.14), and Escape on them puts the focus back on the cursor.
   The conflict banner is the first Tab stop and has no dedicated key.
-- `gm` toggles the Markdown view of 5.11.
+- `sm` toggles the Markdown view of 5.11.
   `yy`, `dd`, `cc` and `p` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
 - A pending first key (`g`, `d`, `y`, `c` or `s`) is cancelled by any other key or by a blur, with no timeout.
-- Escape in Normal mode does nothing.
+- Each prefix has one meaning: `g` goes (cursor, filter and help), `s` shows or switches a display, `c` changes a value, `d` deletes and `y` yanks.
+- Escape in Normal mode ends the active search (5.15), and does nothing otherwise.
 
 **Keys on a task**
 
@@ -359,7 +362,8 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `dd`, Delete | delete the task with its subtree, into the register (5.12) |
 | `yy` | copy the task with its subtree into the register (5.12) |
 | `cc` | change the task: open the editor with an empty text (5.12) |
-| `sd` | set the due date: open the editor on the date and its popup (5.13) |
+| `cd` | change the due date: open the editor on the date and its popup (5.13) |
+| `cl` | change the name of the list of the task: open its name input with an empty name (5.12) |
 | `p` | paste the register below the task (5.12) |
 | `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), over the visible rows under a filter (5.14) |
@@ -369,6 +373,8 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
 | `I` / `A` | add the first / last subtask of the task. On a subtask, of its parent. |
 | `g?` | open or close the cheat sheet |
+| `/` | start an incremental search (5.15) |
+| `n` / `N` | next / previous match of the active search (5.15) |
 
 **Keys on a list header**
 
@@ -377,18 +383,19 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `i`, Enter | rename the list in its inline name input (a click on the title does the same) |
 | `dd`, Delete | delete the list at once, into the register (5.12), with no prompt since the register and undo recover it |
 | `yy` | copy the list into the register (5.12) |
-| `cc` | change the list: open the name input with an empty name (5.12) |
+| `cc`, `cl` | change the list: open the name input with an empty name (5.12) |
 | `p` | paste the register as the first task of the list, or after the list if it holds a list (5.12) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
 | `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up, over the visible lists under a filter (5.14) |
 | `H` / `L` | move the list up / down, like `K` / `J` |
-| `N` | create a list at the end and open its name input, from anywhere in Normal mode |
+| `+` | create a list at the end and open its name input, from anywhere in Normal mode |
+| `/`, `n` / `N` | search, as on a task (5.15) |
 
 - `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
   `H` and `L` do the same on a header, and also work on a task.
-- `x`, `>`, `<` and `sd` do nothing on a header.
-- `N` creates the list as in 5.1 and clears the filter, so that the new list is visible.
+- `x`, `>`, `<` and `cd` do nothing on a header.
+- `+` creates the list as in 5.1 and clears the filter, so that the new list is visible.
   Once the name is confirmed, the cursor stays on the new list header.
 
 **Positional add and Insert mode**
@@ -414,19 +421,19 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 **Footer, statusline and cheat sheet**
 
-- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green and SEARCH in orange while the filter bar has the focus, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
-  The mode badge is a corner block that reaches the left and bottom edges of the window.
+- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green, FILTER in orange while the filter bar has the focus and SEARCH in yellow while the search input has the focus, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
+  The mode badge is a corner block of the footer, fully rounded in a wide window, and with only its top-right corner rounded in a narrow one, where it touches the left and bottom edges of the window.
 - The counts are those of the visible tasks of the current filter (5.14), and each visible list also shows its own done / total counts of visible tasks at the top right of its header.
   Subtasks count as tasks.
 - The statusline also shows a short transient text after a copy, as described in 5.12.
 - `g?` opens a static cheat sheet overlay that lists every key, closed with Escape or `g?`.
   A bare `?` does nothing, since the keys that start with `g` all mean "go".
-  The keys are drawn as accent-colored chips, one per key, the group titles are in the accent color, the filter grammar is in the search orange, and the groups flow in as many columns as fit.
+  The keys are drawn as accent-colored chips, one per key, the group titles are in the accent color, the filter grammar is in the filter orange, and the groups flow in as many columns as fit.
   It is not configurable.
 
 **Implementation decisions**
 
-- The key handling is a pure function in `src/client/shortcuts.ts` that takes the mode, the kind of focused target, the pending prefix and the key, and returns an action.
+- The key handling is a pure function in `src/client/shortcuts.ts` that takes the mode, the kind of focused target, the pending prefix, whether a search is active and the key, and returns an action.
   The DOM layer only applies the action.
 - The positional add, the cursor movement and clamping, and the filter parsing and matching (5.14) are pure functions in `src/client/logic/`, with the same immutable and `null` conventions as 5.7.
 - The empty task of a positional add is never put in the document.
@@ -447,6 +454,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The page is one centered column that fills the window and stops growing at `--content-width` (720 px).
   The header, the list panels and the footer share the same left edge.
+- The footer box is the column itself: centered, at most `--content-width` wide, with its own background and nothing drawn outside it, and full width in a narrow window.
+  The search bar of 5.15 is stacked right above it, with the same width.
 - A list is a flat panel: surface background, 8 px radius, no border and no shadow, with 8 px between panels.
   Panels are distinguished from the page by their background only.
 - Task text is 12 px (the same as in Obsidian) with a line height of 20 px, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
@@ -480,7 +489,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The cursor row and the cursor list header share one look: a tinted background and a 2 px bar on the left, in the color of the current mode.
   The mode color is accent blue in Normal mode and green in Insert mode, the same as the footer badge.
-  The focused filter bar is orange (`--color-search`), with the same tint and 2 px bar, and the footer badge says SEARCH in that color.
+  The focused filter bar is orange (`--color-filter`), with the same tint and 2 px bar, and the footer badge says FILTER in that color.
+  The search input is yellow (`--color-match`) in the same way, and the footer badge says SEARCH in that color.
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
   This applies to the task editor and to the list name input (which edits the title in place).
@@ -525,10 +535,10 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 **Opening and closing**
 
 - A header button toggles it, with the Lucide `square-m` icon and the label "Export as Markdown" as tooltip and accessible name.
-  `gm` does the same in Normal mode, and `m` is left free for another feature.
+  `sm` does the same in Normal mode, and `m` is left free for another feature.
 - The view replaces the task area in place, between the header and the footer.
   The header, the filter bar, the SSE connection and the sync state stay alive.
-- The button, `gm` or Escape closes it, and the cursor goes back to where it was.
+- The button, `sm` or Escape closes it, and the cursor goes back to where it was.
 - It is not stored in `localStorage`, so a reload always lands on the task UI.
 
 **Content**
@@ -548,12 +558,13 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 - A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
 - Both show the transient footer text of 5.12.
 - While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
-  `/`, `ga`, `gt`, `gw`, `gl`, `gf`, `gh`, `gm`, `yy`, Escape and `g?` keep working.
+  `ga`, `gt`, `gw`, `gl`, `gf`, `gF`, `sh`, `sm`, `yy`, Escape and `g?` keep working.
+  `/`, `n` and `N` do nothing there, and opening the view ends the active search (5.15).
 
 **Implementation decisions**
 
 - The export is a pure function in `src/client/logic/` that applies the shared serializer to the visible rows of the current filter.
-- The `gm` and `yy` resolution belongs to the pure key function of 5.9, and its output depends on whether the view is open.
+- The `sm` and `yy` resolution belongs to the pure key function of 5.9, and its output depends on whether the view is open.
 - Escape closes the view even when the focus is on a button, and undo and redo are ignored while it is open.
 - The `square-m` icon is called `SquareLetterM` in the installed Lucide package.
 
@@ -578,6 +589,9 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - `cc` opens the editor of a task with an empty text, or the name input of a list with an empty name.
   The subtasks and the check state are kept, the register is not touched, and `cc` is one undoable change once committed.
   Escape on an empty editor restores the previous text, as in 5.9.
+- `cl` opens the name input of the list of the cursor with an empty name, from its header or from any task of that list.
+  It acts like `cc` on a header: it is one undoable change once committed, and Escape on the empty input discards the rename and restores the previous name.
+  It works under every filter and touches neither the register nor the filter.
 - `c` is a pending prefix like `g`, `d` and `y`: a lone `c` does nothing and any other key cancels it.
 - `p` on a task pastes right below it, after its whole subtree, at the cursor's own level.
   A subtask pasted at the top level becomes a top-level task.
@@ -586,14 +600,14 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - A pasted task is pinned while a filter is active (5.14).
 - When the register holds a list, `p` pastes it after the list the cursor is in, whether the cursor is on its header or on one of its tasks.
   A copied list keeps its title, since list names are not unique.
-  It works under every filter, and the filter is cleared so that the pasted list is visible, as for `N` (5.9).
+  It works under every filter, and the filter is cleared so that the pasted list is visible, as for `+` (5.9).
 - The pasted element keeps its own check states and those of its children.
   The rules of 5.3 apply at the destination: an unchecked task pasted under a checked parent unchecks that parent.
 - After `p`, the cursor goes to the pasted element, scrolled into view.
-- `p`, `dd` and `cc` are each one undoable change, and `yy` is not one.
+- `p`, `dd`, `cc` and `cl` are each one undoable change, and `yy` is not one.
   Undoing the paste of a list goes back to the filter that was active when it was pasted, as in 5.6.
-- While the Markdown view is open, `cc`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
-- With no list there is no cursor, so the keys do nothing, and `N` creates the first list.
+- While the Markdown view is open, `cc`, `cl`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
+- With no list there is no cursor, so the keys do nothing, and `+` creates the first list.
 
 **Clipboard**
 
@@ -632,7 +646,7 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
   Earlier ones stay plain text.
 - The server and the JSON model do not know about dates: a date never makes a file invalid, and the Markdown view, the clipboard and the register carry it as text.
 - A due date inside a link label or inside emphasis (`**`, `*`, `_`, `~~`) is plain text too, so a pill only sits at the top level of the text.
-  The editor, `sd` and the view all use the range that the inline parser finds, so they always agree.
+  The editor, `cd` and the view all use the range that the inline parser finds, so they always agree.
 - A due date is not an inline Markdown syntax.
   It is recognized inside the inline parser of 5.5 only to render it, and a `-> DATE` inside a code span stays literal.
 
@@ -653,7 +667,7 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 
 **Entering a date**
 
-- Typing `->` in the task editor opens a popup, and `sd` in Normal mode opens it too (see below).
+- Typing `->` in the task editor opens a popup, and `cd` in Normal mode opens it too (see below).
   The popup is a CodeMirror autocomplete, so ↑ / ↓ move in it, Enter or Tab accept the highlighted entry, and Escape closes it without committing the editor, a second Escape committing as in 5.9.
   With the popup closed, Enter and Escape behave as in 5.9.
 - Each entry shows a shortcut and the date it resolves to, for example `tomorrow  2026-11-12`.
@@ -671,17 +685,17 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 - Accepting an entry replaces the `->` and the typed shortcut with `-> DATE`, and never touches the text before the arrow.
   Typing a space or committing right after a valid shortcut also resolves it, so the popup is a convenience and not a requirement.
   An unknown word is left as typed, and a prose arrow such as `A -> B` stays plain text.
-- A bare arrow left behind, such as the ` ->` that `sd` appends, is kept as typed.
+- A bare arrow left behind, such as the ` ->` that `cd` appends, is kept as typed.
 - The editor colors the literal text of a valid date with its state (5.10), and an invalid date is not colored, which shows that it is not recognized.
 
-**`sd` in Normal mode**
+**`cd` in Normal mode**
 
-- `sd` works on a task only, with `s` as a pending prefix like `g`, `d`, `y` and `c` (5.9).
+- `cd` works on a task only, with `c` as a pending prefix like `g`, `d`, `y` and `s` (5.9).
 - On a task with no due date, it opens the editor with the caret at the end, appends ` ->` and opens the popup.
 - On a task with a due date, it opens the editor with the space and the date after the arrow selected, and opens the popup.
   Typing a shortcut replaces the selection, and Escape leaves the text as it was.
 - The committed change is one undoable change, like any other edit of the text (5.6).
-- `sd` is in the cheat sheet, and the footer statusline shows nothing about dates.
+- `cd` is in the cheat sheet, and the footer statusline shows nothing about dates.
 
 **Completing a task**
 
@@ -717,7 +731,7 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 
 - The header holds a one-line filter bar, always visible, with the placeholder `All` when it is empty (5.10).
   It is a single-line CodeMirror editor, so that it shares the popup mechanism of 5.13.
-- `/` focuses the bar and enters the search mode, shown as SEARCH in orange in the footer and on the bar, and a click on the bar does the same.
+- `gf` focuses the bar and enters the filter mode, shown as FILTER in orange in the footer and on the bar, and a click on the bar does the same.
   The lists narrow live while typing.
 - Enter accepts the highlighted popup entry when the popup is open, and otherwise applies the text and returns to Normal mode, with the cursor on the first visible stop.
   Escape closes the popup first, and a second Escape does the same as Enter: it keeps the text and returns to Normal mode, like Escape in the task editor (5.9).
@@ -733,8 +747,9 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 | `gt` | `due:today,overdue` |
 | `gw` | `due:week,overdue` |
 | `gl` | replaces the text with `list:` and opens the list popup |
-| `gf` | opens the saved filter picker |
-| `gh` | toggles the display of the siblings of a match (see Results) |
+| `gf` | focuses the filter bar, which keeps its text |
+| `gF` | opens the saved filter picker |
+| `sh` | toggles the display of the siblings of a match (see Results) |
 
 `ga`, `gt`, `gw` and `gl` replace the whole text.
 Nothing else marks a view: it is the text in the bar.
@@ -772,7 +787,7 @@ There is no selector, and no way to show a single list other than `list:`.
   A matching parent therefore shows its whole subtree, and a matching subtask shows its parent as context.
 - **Hidden subtasks**: a task that shows only some of its subtasks ends its row with a muted eye-off icon and the number of subtasks that are hidden, for example when it is shown because one subtask matches.
   Its tooltip reads "N other subtasks hidden by the filter".
-- **Siblings toggle**: an icon button in the header, next to the Markdown view toggle, and `gh` switch between two displays.
+- **Siblings toggle**: an icon button in the header, next to the Markdown view toggle, and `sh` switch between two displays.
   Off, which is the default, a task shown because a subtask matches shows only the matching subtasks.
   On, it shows all its subtasks, so no eye is shown.
   The button is accent-colored while it is on, and the choice is stored in `localStorage` and kept when the filter changes.
@@ -781,7 +796,7 @@ There is no selector, and no way to show a single list other than `list:`.
   To add the first task of an empty list, clear the filter.
 - Hiding only changes what is rendered: the document is whole, the cursor stops are the visible rows, and the counts of 5.9 are those of the visible tasks.
 - **Pinned rows**: a task that the user adds, pastes, edits, checks or unchecks stays visible, with its ancestors, until the filter text changes or is applied again, even if it no longer matches.
-  Applying the text again, with `/` then Enter or Escape, or with a built-in view key that sets the same text, drops the pins: it refreshes the view.
+  Applying the text again, with `gf` then Enter or Escape, or with a built-in view key that sets the same text, drops the pins: it refreshes the view.
   Pins follow the task through the add, the paste or the move that shifts it, and they are cleared by a refresh, a delete, an undo, a redo and an external change.
 - An empty result shows a muted "No matching task" and the filter text in place of the lists.
   When a known key has an invalid value, it shows the reason, for example "Unknown due value: foo".
@@ -789,7 +804,7 @@ There is no selector, and no way to show a single list other than `list:`.
 
 **Editing under a filter**
 
-- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `sd` and the positional adds work as usual on the visible rows.
+- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `cd` and the positional adds work as usual on the visible rows.
 - `J` / `K`, Alt+↑ / Alt+↓, `>` and `<` work on the visible rows, for tasks and for lists.
   The visible rows are the rows shown, so the siblings toggle changes which subtasks count as neighbours.
 - **Move**: a task swaps with the next visible sibling in the direction of the key, and lands right after it (down) or right before it (up), so the hidden siblings between them stay where they were.
@@ -803,13 +818,13 @@ There is no selector, and no way to show a single list other than `list:`.
   The pins of the other tasks follow the move, so that every pin keeps pointing at the task it was set on.
   A list move needs no pin, since a list with a visible task stays visible.
 - The check rules of 5.3 apply unchanged, and each move is one undoable change that restores the filter text it was made under (5.6).
-- `N` and the paste of a list clear the filter, so that the new list is visible.
+- `+` and the paste of a list clear the filter, so that the new list is visible.
 - Completing a task rewrites its due date (5.13), and pinning keeps it visible even in a filter that it no longer matches, such as `is:todo`.
 
 **Saved filters**
 
 - A saved filter is a name and a filter text, stored in the frontmatter (3.2.1) and carried by the document (2.2).
-- `gf` opens the picker below the filter bar.
+- `gF` opens the picker below the filter bar.
   Its first entry is "Save current filter…", shown only when the text is not empty, followed by the saved filters in file order.
 - Picking "Save current filter…" replaces the list by a name input.
   Enter saves, Escape or an empty name cancels, and an existing name is overwritten with the new text.
@@ -830,14 +845,59 @@ There is no selector, and no way to show a single list other than `list:`.
 - The CodeMirror parts (the bar, the popups) and the picker are verified by hand.
 - The server reads and writes the `filters` block in a small module next to the parser, with no YAML dependency.
 
+### 5.15 Incremental search
+
+`/` starts an incremental search over the visible rows, to find a task or a list without narrowing anything.
+It is separate from the filter of 5.14: a filter hides rows, a search only highlights them and moves the cursor.
+
+**Starting and ending**
+
+- `/` works in Normal mode, on a task, on a list header or on nothing, and it is ignored in the Markdown view (5.11).
+  It opens the search input above the footer, a plain input with the look of 5.10, and the footer badge says SEARCH in yellow while it has the focus.
+- While typing, every match is highlighted and the cursor goes to the first matching row at or after the row where `/` was pressed, wrapping from the end to the start.
+  With no match, or with an empty query, the cursor goes back to that row.
+- Enter and Escape do the same: the input closes, the cursor stays where it is and the search stays active.
+  With an empty query they end the search, and so does Backspace on an empty input.
+- While the search is active, `n` / `N` move the cursor to the next / previous matching row from the cursor row, wrapping at both ends, and the footer statusline shows "Wrapped" for 2 seconds when they wrap.
+- Escape in Normal mode ends the search: the query is forgotten and the highlights and the search bar disappear.
+  With no active search, `n`, `N` and Escape do nothing, and `/` always opens an empty input.
+- The query lives in memory only.
+  It is not in `localStorage`, the undo history or the document, a reload ends it, and so does opening the Markdown view.
+
+**Matching**
+
+- A query is a literal substring, matched ignoring case, against the rendered text of the visible rows of 5.14: the task texts, including the text of a due date pill and the label of a link but not its URL, and the list titles.
+  There is no grammar, no regex and no `list:` or `due:`.
+- A row matches on its own text only, not on the text of its ancestors or descendants.
+- The search never reveals a row hidden by the filter, including a subtask hidden by it, and it pins nothing.
+- The matches, the highlights and the counter are recomputed from the document and the filter at each render, so an edit, an undo, an external change and a change of the filter all update them, and the search stays active even when nothing matches.
+- The task editor shows no highlight in Insert mode, and the row is highlighted again once it is committed.
+
+**Look**
+
+- Every occurrence is highlighted with `--color-match`, which is `#edc763` (the Sonokai yellow) in both themes.
+  On other rows it is a 40% tint behind the normal text color, and on the cursor row it is solid with a fixed dark text color (`#1f2328`).
+  It has the chip radius, and no underline or bold, so the layout never shifts.
+- The search bar is stacked right above the footer, with the same width, the 12 px font, the input tint and a 2 px bar in `--color-match`, like the focused filter bar of 5.10.
+  It takes no space when no search is active, and the page grows by its height while it is shown, so that the last rows stay reachable.
+- When the input is closed and the search is active, the bar stays as a muted line, `/query  3/12`, with `no match` in place of the counter when nothing matches.
+  The counter is the position of the cursor row among the matching rows, or the number of matching rows when the cursor is not on one.
+
+**Implementation decisions**
+
+- The matching rows, the next and previous match with wrap and the counter are pure functions in `src/client/logic/search.ts`, with the immutable and `null` conventions of 5.7.
+  The key function of 5.9 takes whether a search is active, to resolve `n`, `N` and Escape.
+- The view highlights by walking the text nodes of the rendered rows after each render, and the search input is built once, like the filter bar of 5.14.
+- The input and the highlight are verified by hand.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `sd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `filters` key, and file-based settings other than the saved filters; `xit` format; automatic conflict merging; wrapping at the edges; tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `filters` key, and file-based settings other than the saved filters; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
