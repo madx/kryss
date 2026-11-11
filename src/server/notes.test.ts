@@ -16,7 +16,7 @@ const put = (rel: string, content: string) => {
   writeFileSync(path, content);
 };
 const fm = (body: string) => `---\n${body}\n---\n`;
-const DEFAULTS = { newLinkFormat: "shortest", userIgnoreFilters: [] };
+const DEFAULTS = { newLinkFormat: "shortest" as const, userIgnoreFilters: [] };
 
 describe("parseAliases", () => {
   test("a YAML list", () => {
