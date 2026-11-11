@@ -108,3 +108,10 @@
     --color-focus: #508bf1;
   }
 }
+
+/* A narrow window gives 4 px less to each side of the central area. The breakpoint is the content width, a literal since a media query cannot read a token. */
+@media (max-width: 720px) {
+  :root {
+    --gutter: clamp(2px, -3px + 2.0833vw, 12px);
+  }
+}
