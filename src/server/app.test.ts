@@ -29,7 +29,7 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const doc = { lists: [{ title: "L", tasks: [{ text: "a", done: false }] }] };
+const doc = { lists: [{ title: "L", tasks: [{ text: "a", done: false }] }], filters: [] };
 const put = (body: unknown, headers: Record<string, string> = {}) =>
   fetch(`${base}/api/todos`, { method: "PUT", body: typeof body === "string" ? body : JSON.stringify(body), headers });
 
@@ -84,7 +84,7 @@ describe("GET /api/todos", () => {
   test("a missing file is an empty document", async () => {
     start();
     const res = await fetch(`${base}/api/todos`);
-    expect(await res.json()).toEqual({ lists: [] });
+    expect(await res.json()).toEqual({ lists: [], filters: [] });
   });
 });
 
@@ -128,11 +128,11 @@ describe("PUT /api/todos", () => {
     const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag")!;
     const h = { "If-Match": etag };
     expect((await put("not json", h)).status).toBe(400);
-    expect((await put({ lists: "x" }, h)).status).toBe(400);
-    expect((await put({ lists: [{ title: "", tasks: [] }] }, h)).status).toBe(400);
-    expect((await put({ lists: [{ title: "L", tasks: [{ text: "a\nb", done: false }] }] }, h)).status).toBe(400);
-    expect((await put({ lists: [{ title: "L", tasks: [{ text: "a", done: "no" }] }] }, h)).status).toBe(400);
-    expect((await put({ lists: [{ title: "L", tasks: [{ text: "a", done: false, children: [{ text: "b", done: false, children: [] }] }] }] }, h)).status).toBe(400);
+    expect((await put({ lists: "x", filters: [] }, h)).status).toBe(400);
+    expect((await put({ lists: [{ title: "", tasks: [] }], filters: [] }, h)).status).toBe(400);
+    expect((await put({ lists: [{ title: "L", tasks: [{ text: "a\nb", done: false }] }], filters: [] }, h)).status).toBe(400);
+    expect((await put({ lists: [{ title: "L", tasks: [{ text: "a", done: "no" }] }], filters: [] }, h)).status).toBe(400);
+    expect((await put({ lists: [{ title: "L", tasks: [{ text: "a", done: false, children: [{ text: "b", done: false, children: [] }] }] }], filters: [] }, h)).status).toBe(400);
     expect(readFileSync(file, "utf8")).toBe("");
   });
 
@@ -159,6 +159,70 @@ describe("PUT /api/todos", () => {
   });
 });
 
+describe("saved filters through the API", () => {
+  const withFilters = (filters: unknown) => ({ lists: [{ title: "L", tasks: [] }], filters });
+
+  test("GET returns the filters of the frontmatter", async () => {
+    start('---\ntitle: x\nfilters:\n  "Work": "list:Work due:week"\n---\n\n## L\n');
+    const res = await fetch(`${base}/api/todos`);
+    expect(await res.json()).toEqual({ lists: [{ title: "L", tasks: [] }], filters: [{ name: "Work", text: "list:Work due:week" }] });
+  });
+
+  test("GET answers 422 with the line of a malformed filters block", async () => {
+    start("---\nfilters:\n  nope\n---\n## L\n");
+    const res = await fetch(`${base}/api/todos`);
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { line: number }).line).toBe(3);
+  });
+
+  test("PUT writes the block, keeps the other frontmatter lines and returns the filters", async () => {
+    start("---\ntitle:   x \n---\n\n## Old\n");
+    const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag")!;
+    const body = withFilters([{ name: "Todo", text: "is:todo" }]);
+    const res = await put(body, { "If-Match": etag });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(body);
+    expect(readFileSync(file, "utf8")).toBe('---\ntitle:   x \nfilters:\n  "Todo": "is:todo"\n---\n\n## L\n');
+  });
+
+  test("PUT with no filters on a file without frontmatter creates none", async () => {
+    start("## Old\n");
+    const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag")!;
+    expect((await put(withFilters([]), { "If-Match": etag })).status).toBe(200);
+    expect(readFileSync(file, "utf8")).toBe("## L\n");
+  });
+
+  test("PUT answers 400 and writes nothing for invalid filters", async () => {
+    start("");
+    const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag")!;
+    const h = { "If-Match": etag };
+    const lists = [{ title: "L", tasks: [] }];
+    for (const filters of [
+      undefined,
+      "x",
+      [{ name: "", text: "a" }],
+      [{ name: "a", text: "" }],
+      [{ name: "  ", text: "a" }],
+      [{ name: "a\nb", text: "a" }],
+      [{ name: "a", text: "a\nb" }],
+      [{ name: "a", text: 1 }],
+      [{ name: "a", text: "x" }, { name: "a", text: "y" }],
+      [null],
+    ]) {
+      expect((await put({ lists, filters }, h)).status).toBe(400);
+    }
+    expect(readFileSync(file, "utf8")).toBe("");
+  });
+
+  test("an external change of the frontmatter emits the filters in the event", async () => {
+    start("## L\n");
+    const res = await fetch(`${base}/api/events`);
+    await sleep(100);
+    writeFileSync(file, '---\nfilters:\n  "A": "x"\n---\n## L\n');
+    expect(await collectEvents(res, 1)).toMatchObject([{ doc: { filters: [{ name: "A", text: "x" }] } }]);
+  });
+});
+
 describe("GET /api/events", () => {
   test("emits a change event with the new ETag after an external modification", async () => {
     start("## L\n");
@@ -168,7 +232,7 @@ describe("GET /api/events", () => {
     writeFileSync(file, "## L\n- [ ] external\n");
     const events = await collectEvents(res, 1);
     const etag = (await fetch(`${base}/api/todos`)).headers.get("ETag");
-    expect(events).toEqual([{ etag: etag!, doc: { lists: [{ title: "L", tasks: [{ text: "external", done: false }] }] } }]);
+    expect(events).toEqual([{ etag: etag!, doc: { lists: [{ title: "L", tasks: [{ text: "external", done: false }] }], filters: [] } }]);
   });
 
   test("catches rename-based saves", async () => {

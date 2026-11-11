@@ -15,17 +15,18 @@ function err(md: string) {
 
 describe("parse", () => {
   test("empty file is zero lists", () => {
-    expect(ok("")).toEqual({ lists: [] });
-    expect(ok("\n\n")).toEqual({ lists: [] });
+    expect(ok("")).toEqual({ lists: [], filters: [] });
+    expect(ok("\n\n")).toEqual({ lists: [], filters: [] });
   });
 
   test("empty list", () => {
-    expect(ok("## Empty\n")).toEqual({ lists: [{ title: "Empty", tasks: [] }] });
+    expect(ok("## Empty\n")).toEqual({ lists: [{ title: "Empty", tasks: [] }], filters: [] });
   });
 
   test("lists, tasks and subtasks", () => {
     const doc = ok("## Groceries\n- [ ] Milk\n  - [x] Semi-skimmed\n- [ ] Bread\n\n## Work\n- [x] Send the report\n");
     expect(doc).toEqual({
+      filters: [],
       lists: [
         {
           title: "Groceries",
@@ -48,7 +49,7 @@ describe("parse", () => {
   });
 
   test("tolerates * bullets, [X], tabs and 4-space indentation, CRLF", () => {
-    const expected = { lists: [{ title: "L", tasks: [{ text: "a", done: true, children: [{ text: "b", done: false }] }] }] };
+    const expected = { lists: [{ title: "L", tasks: [{ text: "a", done: true, children: [{ text: "b", done: false }] }] }], filters: [] };
     expect(ok("## L\n* [X] a\n\t* [ ] b\n")).toEqual(expected);
     expect(ok("## L\n- [X] a\n    - [ ] b\n")).toEqual(expected);
     expect(ok("## L\r\n- [x] a\r\n  - [ ] b\r\n")).toEqual(expected);
@@ -79,10 +80,10 @@ describe("parse", () => {
 
   test("withFrontmatter keeps the block byte for byte", () => {
     const current = "---\r\ntitle:   x \r\n---\n\n## Old\n";
-    expect(withFrontmatter(current, "## New\n")).toBe("---\r\ntitle:   x \r\n---\n\n## New\n");
-    expect(withFrontmatter(current, "")).toBe("---\r\ntitle:   x \r\n---\n\n");
-    expect(withFrontmatter("---\na: 1\n---", "## L\n")).toBe("---\na: 1\n---\n## L\n");
-    expect(withFrontmatter("## Old\n", "## New\n")).toBe("## New\n");
+    expect(withFrontmatter(current, "## New\n", [])).toBe("---\r\ntitle:   x \r\n---\n\n## New\n");
+    expect(withFrontmatter(current, "", [])).toBe("---\r\ntitle:   x \r\n---\n\n");
+    expect(withFrontmatter("---\na: 1\n---", "## L\n", [])).toBe("---\na: 1\n---\n## L\n");
+    expect(withFrontmatter("## Old\n", "## New\n", [])).toBe("## New\n");
   });
 
   test("rejects free text, before and inside lists", () => {
