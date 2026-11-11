@@ -2,8 +2,8 @@
 import { acceptCompletion, autocompletion, startCompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import { EditorState } from "@codemirror/state";
-import { EditorView, keymap, placeholder } from "@codemirror/view";
-import { filterCompletion } from "../logic/filter";
+import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, keymap, placeholder } from "@codemirror/view";
+import { filterCompletion, filterPills } from "../logic/filter";
 import { singleLine } from "./single-line";
 import "./editor.css"; // the popup look is shared with the task editor
 import "./filter-bar.css";
@@ -19,6 +19,31 @@ export type FilterBarOptions = {
   /** The second Escape: the text was restored, go back to Normal mode. */
   onEscape(): void;
 };
+
+const keyMark = Decoration.mark({ class: "cm-filter-key" });
+const valueMark = Decoration.mark({ class: "cm-filter-value" });
+
+/** `list:` and `due:` terms are drawn as pills: a colored key and a gray value. */
+function pillMarks(view: EditorView): DecorationSet {
+  const marks = filterPills(view.state.doc.toString()).flatMap(({ key, value }) => [
+    keyMark.range(key.from, key.to),
+    ...(value.to > value.from ? [valueMark.range(value.from, value.to)] : []),
+  ]);
+  return Decoration.set(marks);
+}
+
+const pills = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = pillMarks(view);
+    }
+    update(u: ViewUpdate) {
+      if (u.docChanged) this.decorations = pillMarks(u.view);
+    }
+  },
+  { decorations: (p) => p.decorations },
+);
 
 export function createFilterBar(options: FilterBarOptions) {
   const host = document.createElement("div");
@@ -40,6 +65,7 @@ export function createFilterBar(options: FilterBarOptions) {
         singleLine,
         history(),
         placeholder("All"),
+        pills,
         autocompletion({ override: [source], icons: false }),
         EditorView.contentAttributes.of({ "aria-label": "Filter" }),
         keymap.of([

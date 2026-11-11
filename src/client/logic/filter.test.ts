@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { TodoDocument } from "../../shared/types";
-import { applyVisible, filterCompletion, isFiltering, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
+import { applyVisible, filterCompletion, filterPills, isFiltering, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
 import { frozen } from "./helpers.test-util";
 
 // Wednesday 2026-11-11, ISO week 2026-W46, quarter 2026-Q4.
@@ -431,5 +431,30 @@ describe("filterCompletion", () => {
     expect(c("due:2026-Q1")?.options.map((o) => o.label)).toEqual(["2026-Q1"]);
     expect(c("due:2026-02-30")).toBeNull();
     expect(c("due:foo")).toBeNull();
+  });
+});
+
+describe("filterPills", () => {
+  test("a list: or due: term gives a key range and a value range", () => {
+    expect(filterPills("list:Work due:today")).toEqual([
+      { key: { from: 0, to: 5 }, value: { from: 5, to: 9 } },
+      { key: { from: 10, to: 14 }, value: { from: 14, to: 19 } },
+    ]);
+  });
+
+  test("the value runs over commas and quotes, spaces inside quotes included", () => {
+    expect(filterPills('list:"Side projects",Work')).toEqual([{ key: { from: 0, to: 5 }, value: { from: 5, to: 25 } }]);
+    expect(filterPills('list:"Side pro')).toEqual([{ key: { from: 0, to: 5 }, value: { from: 5, to: 14 } }]);
+  });
+
+  test("a key with no value yet has an empty value range", () => {
+    expect(filterPills("due:")).toEqual([{ key: { from: 0, to: 4 }, value: { from: 4, to: 4 } }]);
+  });
+
+  test("keys ignore case, and other terms and unknown keys have no pill", () => {
+    expect(filterPills("LIST:a")).toHaveLength(1);
+    expect(filterPills("is:todo foo:bar word")).toEqual([]);
+    expect(filterPills('"list:x"')).toEqual([]);
+    expect(filterPills("")).toEqual([]);
   });
 });

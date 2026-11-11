@@ -190,6 +190,36 @@ export function pinTask(pins: TaskPath[], path: TaskPath, inserted = false): Tas
   return [...next, path];
 }
 
+export type Range = { from: number; to: number };
+export type Pill = { key: Range; value: Range };
+
+/** The `list:` and `due:` terms of the text, as the range of the key (with its colon) and of its value, for the pills of the bar. */
+export function filterPills(text: string): Pill[] {
+  const pills: Pill[] = [];
+  let quoted = false;
+  let start = -1;
+  const end = (to: number) => {
+    if (start < 0) return;
+    const token = text.slice(start, to);
+    const key = text[start] === '"' ? undefined : KEY.exec(token)?.[1]!.toLowerCase();
+    if (key === "list" || key === "due") {
+      const split = start + key.length + 1;
+      pills.push({ key: { from: start, to: split }, value: { from: split, to } });
+    }
+    start = -1;
+  };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]!;
+    if (!quoted && /\s/.test(c)) end(i);
+    else {
+      if (start < 0) start = i;
+      if (c === '"') quoted = !quoted;
+    }
+  }
+  end(text.length);
+  return pills;
+}
+
 export type Completion = { from: number; options: { label: string; apply: string }[] };
 
 const needsQuotes = (title: string) => /[\s,]/.test(title);

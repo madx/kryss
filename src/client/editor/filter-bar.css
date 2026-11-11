@@ -50,3 +50,22 @@
 .filter-bar .cm-editor:not(.cm-focused) .cm-cursor {
   display: none !important;
 }
+
+/* Pills of list: and due: terms: the key on a colored background, the value on a gray one. */
+.filter-bar .cm-filter-key,
+.filter-bar .cm-filter-value {
+  padding: var(--space-2) 0;
+}
+
+.filter-bar .cm-filter-key {
+  padding-left: var(--space-6);
+  border-radius: var(--radius-chip) 0 0 var(--radius-chip);
+  background: color-mix(in srgb, var(--color-accent) var(--tint-pill), transparent);
+  color: var(--color-accent);
+}
+
+.filter-bar .cm-filter-value {
+  padding-right: var(--space-6);
+  border-radius: 0 var(--radius-chip) var(--radius-chip) 0;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+}
