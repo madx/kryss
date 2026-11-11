@@ -247,29 +247,29 @@
 
 ## Due dates
 - [x] Update the PRD, `CLAUDE.md` and this file for due dates
-- [ ] Pure date logic in `src/client/logic/due.ts`
-  - [ ] Parse and validate a day, an ISO week and a quarter, with week 53, leap years and zero padding
-  - [ ] Period of a date, and the state against a horizon (overdue, due now, later)
-  - [ ] Resolve every shortcut from a given today: `today`, `tomorrow`, `+N` / `-N` with `d`, `w`, `m`, `y`, `W` or `Q`, bare `W` and `Q`, and `+mon` / `-tue`
-  - [ ] Month and year clamping, and week and quarter shifts across years
-  - [ ] Popup entries: the default set, a dynamic entry for a valid word, nothing for an unknown one
-  - [ ] Tests for all of the above
-- [ ] Inline parser
-  - [ ] A `due` node for the last valid `-> DATE`, preceded by whitespace or the start, and ended by whitespace or the end
-  - [ ] Earlier dates, invalid dates and dates inside code stay literal
-  - [ ] Tests
-- [ ] Rendering
-  - [ ] Add `ArrowRight` to `icons.ts` and render the pill with the date as written
-  - [ ] State colors and the neutral pill on completed tasks, with tokens in `theme.css`
-  - [ ] Recompute the states on render, on visibility change and on focus, without touching the editor
-- [ ] Editor
-  - [ ] Add `@codemirror/autocomplete` and the popup opened by `->`, with the resolved date in each entry
-  - [ ] Enter and Tab accept, Escape closes the popup first, and accepting writes `-> DATE`
-  - [ ] Resolve a valid shortcut when a space is typed or when the editor commits
-  - [ ] Color the literal text of a valid date with its state
-- [ ] Keys
-  - [ ] `s` as a pending prefix and `sd` on a task, in the pure key function, with no effect on a header
-  - [ ] Open the editor with ` ->` appended, or with the space and the date after the arrow selected, and open the popup
-  - [ ] Add `sd` to the cheat sheet
-  - [ ] Tests of the key resolution
-- [ ] Verify by hand: each shortcut, `sd` with and without a date, Escape behavior, undo of a date change, light and dark, a window from 240 to 720 px wide, and a date typed from an external editor
+- [x] Pure date logic in `src/client/logic/due.ts`
+  - [x] Parse and validate a day, an ISO week and a quarter, with week 53, leap years and zero padding
+  - [x] Period of a date, and the state against a horizon (overdue, due now, later)
+  - [x] Resolve every shortcut from a given today: `today`, `tomorrow`, `+N` / `-N` with `d`, `w`, `m`, `y`, `W` or `Q`, bare `W` and `Q`, and `+mon` / `-tue`
+  - [x] Month and year clamping, and week and quarter shifts across years
+  - [x] Popup entries: the default set, a dynamic entry for a valid word, nothing for an unknown one
+  - [x] Tests for all of the above
+- [x] Inline parser
+  - [x] A `due` node for the last valid `-> DATE`, preceded by whitespace or the start, and ended by whitespace or the end
+  - [x] Earlier dates, invalid dates and dates inside code stay literal
+  - [x] Tests
+- [x] Rendering
+  - [x] Add `ArrowRight` to `icons.ts` and render the pill with the date as written
+  - [x] State colors and the neutral pill on completed tasks, with tokens in `theme.css`
+  - [x] Recompute the states on render, on visibility change and on focus, without touching the editor
+- [x] Editor
+  - [x] Add `@codemirror/autocomplete` and the popup opened by `->`, with the resolved date in each entry
+  - [x] Enter and Tab accept, Escape closes the popup first, and accepting writes `-> DATE`
+  - [x] Resolve a valid shortcut when a space is typed or when the editor commits
+  - [x] Color the literal text of a valid date with its state
+- [x] Keys
+  - [x] `s` as a pending prefix and `sd` on a task, in the pure key function, with no effect on a header
+  - [x] Open the editor with ` ->` appended, or with the space and the date after the arrow selected, and open the popup
+  - [x] Add `sd` to the cheat sheet
+  - [x] Tests of the key resolution
+- [x] Verify by hand: each shortcut, `sd` with and without a date, Escape behavior, undo of a date change, light and dark, a window from 240 to 720 px wide, and a date typed from an external editor
