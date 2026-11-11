@@ -2,8 +2,8 @@
 .filter-bar {
   flex: 1;
   min-width: 0;
-  height: calc(var(--icon-button-size) + 2 * var(--space-2));
-  padding: var(--space-2) var(--space-8);
+  height: calc(var(--icon-button-size) + 2 * var(--space-4));
+  padding: var(--space-4) var(--space-8);
   border-radius: var(--radius-control);
   background: var(--color-input);
   font-size: var(--font-size-task);
@@ -11,8 +11,8 @@
 
 /* Focused: the search look, the cursor look of a task row in orange (a tint and a 2 px bar), with no ring that would shrink the bar. */
 .filter-bar:focus-within {
-  background: color-mix(in srgb, var(--color-search) var(--tint-cursor), var(--color-input));
-  box-shadow: inset var(--bar-width) 0 0 0 var(--color-search);
+  background: color-mix(in srgb, var(--color-filter) var(--tint-cursor), var(--color-input));
+  box-shadow: inset var(--bar-width) 0 0 0 var(--color-filter);
 }
 
 .filter-bar .cm-editor {

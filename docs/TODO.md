@@ -350,23 +350,23 @@
 - [x] Verify by hand: a move across hidden siblings, a move between visible lists, indent under a filter, an outdented subtask that stops matching, a list move, undo and redo
 
 ## Search and key groups
-- [ ] Key groups
-  - [ ] `cd` replaces `sd`, `sm` replaces `gm`, `sh` replaces `gh` and `+` replaces `N`
-  - [ ] `gf` focuses the filter bar, `gF` opens the saved filter picker, and `/` no longer focuses the bar
-  - [ ] `cl` opens the name input of the list of the cursor with an empty name, and Escape on the empty input restores the name
-  - [ ] Update the key resolution tests, the cheat sheet and the keys allowed in the Markdown view
-- [ ] Search logic
-  - [ ] Pure functions in `search.ts`: matching rows, next and previous with wrap, counter
-  - [ ] Tests: ignoring case, list titles, rendered text, hidden rows, wrap, counter, no match
-  - [ ] Key function: `/`, `n`, `N`, Escape and Backspace with and without an active search, and `/` ignored in the Markdown view
-  - [ ] Hold the active search in memory and end it when the Markdown view opens
-- [ ] Search input and highlights
-  - [ ] Plain input above the footer: live cursor, Enter and Escape keep the search, a muted `/query  3/12` line afterwards
-  - [ ] Highlight every occurrence after each render, with a stronger style on the cursor row, and add the `--color-match` token
-  - [ ] "Wrapped" in the footer statusline when `n` or `N` wraps
-- [ ] Footer and badges
-  - [ ] Narrow the footer box to the column on wide screens, and keep it full width on narrow ones
-  - [ ] Round the mode badge on all corners on wide screens and on its top-right corner only on narrow ones
-  - [ ] Rename `--color-search` to `--color-filter`, and show FILTER (orange) and SEARCH (yellow) in the badge
-- [ ] Run `bun test` and `bun run build`
-- [ ] Verify by hand: typing, wrap, `n` and `N` under a filter, an edit of a matching task, an external change, `cl`, `cd`, `sm`, `sh`, `+`, light and dark, a window from 240 to 720 px wide
+- [x] Key groups
+  - [x] `cd` replaces `sd`, `sm` replaces `gm`, `sh` replaces `gh` and `+` replaces `N`
+  - [x] `gf` focuses the filter bar, `gF` opens the saved filter picker, and `/` no longer focuses the bar
+  - [x] `cl` opens the name input of the list of the cursor with an empty name, and Escape on the empty input restores the name
+  - [x] Update the key resolution tests, the cheat sheet and the keys allowed in the Markdown view
+- [x] Search logic
+  - [x] Pure functions in `search.ts`: matching rows, next and previous with wrap, counter
+  - [x] Tests: ignoring case, list titles, rendered text, hidden rows, wrap, counter, no match
+  - [x] Key function: `/`, `n`, `N`, Escape and Backspace with and without an active search, and `/` ignored in the Markdown view
+  - [x] Hold the active search in memory and end it when the Markdown view opens
+- [x] Search input and highlights
+  - [x] Plain input above the footer: live cursor, Enter and Escape keep the search, a muted `/query  3/12` line afterwards
+  - [x] Highlight every occurrence after each render, with a stronger style on the cursor row, and add the `--color-match` token
+  - [x] "Wrapped" in the footer statusline when `n` or `N` wraps
+- [x] Footer and badges
+  - [x] Narrow the footer box to the column on wide screens, and keep it full width on narrow ones
+  - [x] Round the mode badge on all corners on wide screens and on its top-right corner only on narrow ones
+  - [x] Rename `--color-search` to `--color-filter`, and show FILTER (orange) and SEARCH (yellow) in the badge
+- [x] Run `bun test` and `bun run build`
+- [x] Verify by hand: typing, wrap, `n` and `N` under a filter, an edit of a matching task, an external change, `cl`, `cd`, `sm`, `sh`, `+`, light and dark, a window from 240 to 720 px wide

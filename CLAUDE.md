@@ -68,17 +68,21 @@ Work plan: `docs/TODO.md`.
 - **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and also under a filter, where they follow the visible rows (PRD 5.1, 5.4, 5.14).
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode (SEARCH in orange while the filter bar has the focus) and a statusline.
-- **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
+- **Markdown view**: read-only toggle (`sm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
 - **Register**: `dd` and `yy` put a task subtree or a list in an in-memory register and write its Markdown to the clipboard, `p` pastes it, and `cc` clears the text of a task or the name of a list to retype it (PRD 5.12).
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change, remembering the filter text of each change and never touching the saved filters.
 - **UI details**: filter bar in the header (PRD 5.14), its text stored in `localStorage`; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and rows and list headers have no action buttons (delete, add, move are keys only), hovering a row highlights it slightly, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
 - **Due dates**: plain task text, `-> 2026-11-22`, `-> 2026-W47` (ISO week) or `-> 2026-Q4`, only the last valid one counts, and invalid ones are plain text (PRD 5.13).
   The server and the JSON model do not know about them: the inline parser recognizes them and the client renders a pill with a state (overdue, due now, later) computed by a pure function against a horizon that is today by default.
-  Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `sd` in Normal mode opens the editor on the date and its popup.
+  Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `cd` in Normal mode opens the editor on the date and its popup.
 - **Filters and views** (PRD 5.14): there is no list selector (`H` / `L` move the focused list, not the view).
-  The header filter bar (`/`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE`, `is:done|todo`, terms ANDed and commas for OR inside a term.
-  `ga`, `gt` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gf` opens the saved filters, whose first entry saves the current text under a name.
+  The header filter bar (`gf`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE`, `is:done|todo`, terms ANDed and commas for OR inside a term.
+  `ga`, `gt` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gF` opens the saved filters, whose first entry saves the current text under a name.
   A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent work on the visible rows: they jump over hidden tasks and lists, indent targets the previous visible task, and the moved task is pinned.
+  `sh` toggles the display of the siblings of a match.
+- **Incremental search** (PRD 5.15): `/` opens a plain input above the footer, highlights every occurrence (a literal substring, ignoring case) in the visible rows and moves the cursor, `n` / `N` jump to the next / previous match with wrap, and Escape in Normal mode ends it.
+  It is client-only and in memory, it never reveals a row hidden by the filter, and the Markdown view ends it.
+- **Key groups** (PRD 5.9): `g` goes (cursor, filter, help), `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`), `d` deletes, `y` yanks, `+` creates a list.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.

@@ -10,7 +10,7 @@ import { localToday } from "../today";
 function dueSource(context: CompletionContext): CompletionResult | null {
   const sel = context.state.selection.main;
   const before = context.state.doc.sliceString(0, sel.empty ? context.pos : sel.from);
-  // With a selection (`sd` selects ` DATE` after the arrow) the arrow ends the text before it, and typing replaces the selection.
+  // With a selection (`cd` selects ` DATE` after the arrow) the arrow ends the text before it, and typing replaces the selection.
   const m = sel.empty ? /(?<=^|\s)->(\S*)$/.exec(before) : /(?<=^|\s)->()$/.exec(before);
   if (!m) return null;
   const entries = dueEntries(m[1]!, localToday());

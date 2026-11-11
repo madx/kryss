@@ -454,15 +454,15 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The page is one centered column that fills the window and stops growing at `--content-width` (720 px).
   The header, the list panels and the footer share the same left edge.
-- The footer box is the column itself: centered, at most `--content-width` wide, with its own background and nothing drawn outside it, and full width in a narrow window.
-  The search bar of 5.15 is stacked right above it, with the same width.
+- The footer box is the column itself: centered, as wide as the list panels in a wide window (`--content-width` minus the two page gutters), with its own background and nothing drawn outside it, and full width in a narrow window.
+  The search input of 5.15 is stacked right above it, with the same width, while it is open.
 - A list is a flat panel: surface background, 8 px radius, no border and no shadow, with 8 px between panels.
   Panels are distinguished from the page by their background only.
 - Task text is 12 px (the same as in Obsidian) with a line height of 20 px, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
   Text size and row height are the same at every window width.
 - Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
-  The page gutter goes from 6 to 16 px, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
-- The header is fixed and about 32 px tall, the footer is fixed and about 24 px tall, and neither has a border or a separator.
+  The page gutter is fixed at 8 px up to 720 px of window width and 16 px above, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
+- The header is fixed and about 32 px tall, below an 8 px margin at the top of the page, the footer is fixed and about 24 px tall, and neither has a border or a separator.
 - The scrollbar of the scroll area appears only when the content overflows, and no space is reserved for it, so the layout stays centered and balanced.
   It is 10 px wide (an 8 px thumb with 1 px of padding).
   When it appears, the panels shrink by its width and their edges move a few pixels away from those of the header and the footer, which is accepted.
@@ -506,7 +506,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Filter bar and picker**
 
-- The filter bar is a one-line input at the left of the header, in the body size, with the muted placeholder `All` when it is empty.
+- The filter bar is a one-line input at the left of the header, in the body size, with 4 px of vertical padding, with the muted placeholder `All` when it is empty.
   It has no border or box of its own, like the other inputs, and the cursor look in Insert color is the only signal that it is focused.
 - The saved filter picker opens below the bar and uses the panel look (surface background, 6 px radius items), with a tint on the highlighted item.
   It is a listbox usable with ↑ / ↓, Enter and Escape, it closes on an outside click, and it adds no dependency.
@@ -878,9 +878,11 @@ It is separate from the filter of 5.14: a filter hides rows, a search only highl
 - Every occurrence is highlighted with `--color-match`, which is `#edc763` (the Sonokai yellow) in both themes.
   On other rows it is a 40% tint behind the normal text color, and on the cursor row it is solid with a fixed dark text color (`#1f2328`).
   It has the chip radius, and no underline or bold, so the layout never shifts.
-- The search bar is stacked right above the footer, with the same width, the 12 px font, the input tint and a 2 px bar in `--color-match`, like the focused filter bar of 5.10.
-  It takes no space when no search is active, and the page grows by its height while it is shown, so that the last rows stay reachable.
-- When the input is closed and the search is active, the bar stays as a muted line, `/query  3/12`, with `no match` in place of the counter when nothing matches.
+  An occurrence that spans several inline elements, for example across a bold marker, still matches but is not highlighted.
+- The search input is stacked right above the footer, with the same width, the 12 px font, the input tint and a 2 px bar in `--color-match`, like the focused filter bar of 5.10.
+  It takes no space when it is closed, and the page grows by its height and an 8 px gap above the footer while it is shown, so that the last rows stay reachable.
+- While the search is active, the footer statusline shows `/query  3/12` after the counts, the query in yellow (`--color-match`) and the counter in the muted color, with `no match` in place of the counter when nothing matches, whether the input is open or closed.
+  It disappears when the search ends.
   The counter is the position of the cursor row among the matching rows, or the number of matching rows when the cursor is not on one.
 
 **Implementation decisions**

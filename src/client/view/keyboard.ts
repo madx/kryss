@@ -28,6 +28,8 @@ export type KeyboardEnv = {
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
   /** `cc` on a header: opens the name input with no text. */
   changeList(list: number): void;
+  /** Incremental search (PRD 5.15). `step` moves the cursor to the next or previous match. */
+  search: { active(): boolean; start(): void; step(dir: "next" | "prev"): void; end(): void };
   /** `J` / `K` on a header: moves the list down or up, over the visible lists under a filter. */
   moveList(list: number, dir: "up" | "down", focus?: Stop): void;
   beginAdd(at: AddAt, anchor: Anchor): void;
@@ -72,6 +74,7 @@ export function installKeyboard(env: KeyboardEnv): void {
       pending,
       overlay,
       markdownView: env.markdown.isOpen(),
+      search: env.search.active(),
     });
     pending = res.pending;
     if (res.preventDefault) e.preventDefault();
@@ -93,6 +96,16 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "new-list":
         env.newList();
+        return;
+      case "search-start":
+        env.search.start();
+        return;
+      case "search-next":
+      case "search-prev":
+        env.search.step(action.type === "search-next" ? "next" : "prev");
+        return;
+      case "search-end":
+        env.search.end();
         return;
       case "focus-cursor":
         cursor.focusIndex(cursor.last());
@@ -142,6 +155,7 @@ export function installKeyboard(env: KeyboardEnv): void {
       env.beginAdd(action.at, current.kind === "header" ? { kind: "header", list: current.list } : { kind: "task", path: current.path });
       return;
     }
+    if (action.type === "change-list") return env.changeList(current.kind === "header" ? current.list : current.path.list);
     if (action.type === "yank") return env.registerKeys.yank(current);
     if (action.type === "paste") return env.registerKeys.paste(current);
     if (action.type === "move-list") {

@@ -1,0 +1,46 @@
+/* Incremental search (PRD 5.15): the bar stacked right above the footer, and the highlights. */
+.search-bar {
+  flex: none;
+  width: 100%;
+  max-width: var(--content-width);
+  margin: 0 auto var(--space-8);
+  padding: 0 var(--gutter);
+  font-size: var(--font-size-task);
+}
+
+.search-bar[hidden] {
+  display: none;
+}
+
+.search-input {
+  display: block;
+  width: 100%;
+  height: calc(var(--icon-button-size) + 2 * var(--space-2));
+  padding: var(--space-2) var(--space-8);
+  border: 0;
+  border-radius: var(--radius-control);
+  line-height: var(--icon-button-size);
+  font-size: var(--font-size-task);
+}
+
+.search-input[hidden] {
+  display: none;
+}
+
+.search-input {
+  background: color-mix(in srgb, var(--color-match) var(--tint-cursor), var(--color-input));
+  box-shadow: inset var(--bar-width) 0 0 0 var(--color-match);
+  outline: none;
+}
+
+/* Highlights: a tint on other rows, solid with a fixed dark text on the cursor row. No underline or bold, so the layout never shifts. */
+.search-hit {
+  border-radius: var(--radius-chip);
+  background: color-mix(in srgb, var(--color-match) var(--tint-match), transparent);
+  color: inherit;
+}
+
+.search-current .search-hit {
+  background: var(--color-match);
+  color: var(--color-match-text);
+}
