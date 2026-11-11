@@ -1,5 +1,6 @@
 // Thin fetch / EventSource wrapper around the server API. It never throws: failures become result values.
 import type { ChangeEvent, ParseError, TodoDocument } from "../shared/types";
+import type { NewLinkFormat, Note } from "./logic/wikilink";
 
 export type LoadResult =
   | { kind: "ok"; doc: TodoDocument; etag: string }
@@ -24,17 +25,28 @@ export interface Api {
 /** The URL of an endpoint that takes the open file (`file`) in Vault mode. */
 const withFile = (path: string, file: string | null) => (file === null ? path : `${path}?file=${encodeURIComponent(file)}`);
 
-export type FilesResult = { kind: "single" } | { kind: "vault"; files: string[] } | { kind: "offline" };
+/** `vault` is the name of the Vault (its folder name), sent by the server in a header, for the `obsidian://` links of wikilinks. */
+export type FilesResult = { kind: "single" } | { kind: "vault"; files: string[]; vault: string } | { kind: "offline" };
+export type NotesResult = { notes: Note[]; newLinkFormat: NewLinkFormat };
 export type CreateFileResult = { kind: "ok"; path: string } | { kind: "refused"; error: string } | { kind: "offline" };
 
 /** The Kryss files of the Vault, or `single` when the server runs on one file and has no such route. */
 export async function listFiles(): Promise<FilesResult> {
   try {
     const res = await fetch("/api/files", { cache: "no-store" });
-    if (res.status === 200) return { kind: "vault", files: await res.json() };
+    if (res.status === 200) return { kind: "vault", files: await res.json(), vault: decodeURIComponent(res.headers.get("X-Vault-Name") ?? "") };
     if (res.status === 404) return { kind: "single" };
   } catch {}
   return { kind: "offline" };
+}
+
+/** The note index for the `[[` popup, or null when it cannot be fetched. */
+export async function fetchNotes(): Promise<NotesResult | null> {
+  try {
+    const res = await fetch("/api/notes", { cache: "no-store" });
+    if (res.status === 200) return await res.json();
+  } catch {}
+  return null;
 }
 
 export async function createFile(name: string): Promise<CreateFileResult> {
