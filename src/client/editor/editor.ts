@@ -41,11 +41,11 @@ export type EditorOptions = {
   at?: { x: number; y: number };
   /** Enter on an empty text does nothing (new tasks). */
   keepOnEmptyEnter?: boolean;
-  /** Text shown in the editor when it differs from `text` (`sd` appends ` ->`). `text` stays the task's own text. */
+  /** Text shown in the editor when it differs from `text` (`cd` appends ` ->`). `text` stays the task's own text. */
   initial?: string;
-  /** Selection range at the start, instead of the caret at the end (`sd` selects the date). */
+  /** Selection range at the start, instead of the caret at the end (`cd` selects the date). */
   select?: { from: number; to: number };
-  /** Opens the due date popup right away (`sd`). */
+  /** Opens the due date popup right away (`cd`). */
   openPopup?: boolean;
 };
 

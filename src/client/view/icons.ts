@@ -11,7 +11,7 @@ function icon(node: IconNode): SVGElement {
 export const caretIcon = () => icon(ChevronDown);
 export const checkIcon = () => icon(Check);
 export const markdownIcon = () => icon(SquareLetterM); // Lucide "square-m"
-export const siblingsIcon = () => icon(ListTree); // the header toggle of `gh`
+export const siblingsIcon = () => icon(ListTree); // the header toggle of `sh`
 export const hiddenIcon = () => icon(EyeOff); // the count of subtasks the filter hides
 export const copyIcon = () => icon(Copy);
 export const arrowRightIcon = () => icon(ArrowRight); // the due date pill

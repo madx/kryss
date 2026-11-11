@@ -13,7 +13,7 @@ import { startEdit, type EditEnd } from "./edit-text";
 export const BEGIN_EDIT = "begin-edit";
 /** Dispatched on a row to open its editor with an empty text (`cc`). Escape or an empty commit restores the previous text. */
 export const CHANGE_EDIT = "change-edit";
-/** Dispatched on a row to open its editor on the due date and its popup (`sd`). */
+/** Dispatched on a row to open its editor on the due date and its popup (`cd`). */
 export const DUE_EDIT = "due-edit";
 
 /** Action callbacks. Those returning a boolean return false when the action was refused. */

@@ -29,7 +29,10 @@ export function createSearchBar(actions: SearchBarActions) {
       leave(() => (empty ? actions.end(true) : actions.close(true)));
     }
   });
-  input.addEventListener("blur", () => leave(() => (input.value === "" ? actions.end(false) : actions.close(false))));
+  input.addEventListener("blur", () => {
+    if (!document.hasFocus()) return; // the window lost the focus (alt-tab): the input stays open
+    leave(() => (input.value === "" ? actions.end(false) : actions.close(false)));
+  });
 
   return {
     el: root,
@@ -49,10 +52,6 @@ export function createSearchBar(actions: SearchBarActions) {
       root.hidden = false;
       input.hidden = true;
       line.hidden = false;
-      line.textContent = text;
-    },
-    /** Updates the line while the input is open, or the muted line while it is closed (the input shows the query by itself). */
-    setLine(text: string) {
       line.textContent = text;
     },
     hide() {

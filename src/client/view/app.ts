@@ -260,6 +260,9 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   const searchCursor = () => (searchBar.isFocused() ? searchIndex : cursor.hasFocus() ? cursor.index() : cursor.last());
   /** Recomputes the highlights, the cursor row mark and the muted line from the document and the filter (PRD 5.15). */
   function refreshSearch() {
+    const last = Math.max(0, cursor.count() - 1); // a re-render while the input is open can remove rows
+    searchOrigin = Math.min(searchOrigin, last);
+    searchIndex = Math.min(searchIndex, last);
     const active = search !== null && !markdownOpen;
     highlight(roots.main, active ? search : null);
     markCurrent(roots.main, active ? stopElement(searchCursor()) : null);
