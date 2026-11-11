@@ -41,7 +41,7 @@ Work plan: `docs/TODO.md`.
 - **API**: `GET /api/todos` (JSON + `ETag`), `PUT /api/todos` (`If-Match`, `409` on conflict), `GET /api/events` (SSE for external file changes).
   Invalid file: `422` with line and reason; the server never writes to an invalid file.
 - **File location**: `TODO_FILE` environment variable, default `./todo.md`.
-- **Libraries**: CodeMirror 6 (single line, live preview) for task editing, a sanitized inline Markdown renderer.
+- **Libraries**: CodeMirror 6 (single line, live preview, autocomplete popup for due dates) for task editing, a sanitized inline Markdown renderer.
   `xit-parse` is to be removed.
 
 ## Markdown file format
@@ -72,11 +72,14 @@ Work plan: `docs/TODO.md`.
 - **Register**: `dd` and `yy` put a task subtree or a list in an in-memory register and write its Markdown to the clipboard, `p` pastes it, and `cc` clears the text of a task or the name of a list to retype it (PRD 5.12).
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change.
 - **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and rows and list headers have no action buttons (delete, add, move are keys only), hovering a row highlights it slightly, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
+- **Due dates**: plain task text, `-> 2026-11-22`, `-> 2026-W47` (ISO week) or `-> 2026-Q4`, only the last valid one counts, and invalid ones are plain text (PRD 5.13).
+  The server and the JSON model do not know about them: the inline parser recognizes them and the client renders a pill with a state (overdue, due now, later) computed by a pure function against a horizon that is today by default.
+  Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `sd` in Normal mode opens the editor on the date and its popup.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, reordering lists outside the "All" view, drag and drop, add lines and buttons, hover action buttons, due dates, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, reordering lists outside the "All" view, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting and filtering by due date, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 

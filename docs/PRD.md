@@ -24,7 +24,8 @@ No virtualization needed.
   The `HOST` environment variable overrides the listening address, for example `HOST=0.0.0.0` when the app runs inside a container.
   Exposing the app beyond the loopback interface is an explicit opt-in.
 - **Dependencies**: `xit-parse` is removed.
-  `lucide` provides the icons (Markdown view toggle, sync status), and only the icons in use are bundled.
+  `lucide` provides the icons (Markdown view toggle, sync status, due date arrow), and only the icons in use are bundled.
+  `@codemirror/autocomplete`, from the CodeMirror 6 family already in use, provides the due date popup (5.13).
 
 ### 2.1 API
 
@@ -91,6 +92,8 @@ Tasks have no stable identifier: `PUT` always sends the complete document.
 - An empty list is valid.
   An empty file is valid (zero lists).
 - Task text may contain inline Markdown, stored as-is.
+- A due date (5.13) is plain task text, `-> 2026-11-22` for example.
+  The parser and the serializer do not know about it, and the JSON model has no date field.
 
 ### 3.2 Read tolerance
 
@@ -215,6 +218,8 @@ A whole document is its lists joined by a blank line, followed by that final new
   Before checking the scheme, whitespace, control and zero-width characters are removed (so `java\tscript:` is refused), and the cleaned URL is the one used as `href`.
   Relative URLs are refused.
 - Links are not nested, and inline syntax inside a link label is supported.
+- A due date (`-> 2026-11-22`) is recognized by the same inline parser, as one more node, and rendered as a pill (5.13).
+  It is not Markdown syntax, so the file stays plain text.
 
 ### 5.6 Undo
 
@@ -310,7 +315,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   The conflict banner is the first Tab stop and has no dedicated key.
 - `gm` toggles the Markdown view of 5.11.
   `yy`, `dd`, `cc` and `p` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
-- A pending first key (`g`, `d`, `y` or `c`) is cancelled by any other key or by a blur, with no timeout.
+- A pending first key (`g`, `d`, `y`, `c` or `s`) is cancelled by any other key or by a blur, with no timeout.
 - Escape in Normal mode does nothing.
 
 **Keys on a task**
@@ -322,6 +327,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `dd`, Delete | delete the task with its subtree, into the register (5.12) |
 | `yy` | copy the task with its subtree into the register (5.12) |
 | `cc` | change the task: open the editor with an empty text (5.12) |
+| `sd` | set the due date: open the editor on the date and its popup (5.13) |
 | `p` | paste the register below the task (5.12) |
 | `>` / `<` | indent / outdent |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2) |
@@ -346,7 +352,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
 - `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
-- `x`, `>` and `<` do nothing on a header.
+- `x`, `>`, `<` and `sd` do nothing on a header.
 - `N` creates the list as in 5.1, keeps the "All" view, and switches a single-list view to the new list.
   Once the name is confirmed, the cursor stays on the new list header.
 
@@ -423,6 +429,14 @@ The static prototype that settled these decisions was a throwaway and is not kep
   Deleting, adding and moving are keys only (5.9).
 - A click on the list title opens the name input, like a click on the text of a task opens its editor.
 - A list ends with its last task: there is no "+ Add a task" line and no "+ Add a subtask" line.
+
+**Due date pill**
+
+- A due date is a small chip in the task text: a Lucide `ArrowRight` icon, then the date exactly as written, with no `->`.
+  It follows the radii and spacing tokens, with the 4 px chip radius.
+- Its colors depend on the state of 5.13: the danger color for overdue, the accent color for due now, and the muted color for later.
+  On a completed task the pill is neutral, in the same muted text color as the task, with no state color.
+- In the editor, the same colors apply to the literal text of a valid date, with no icon and no widget.
 
 **Cursor and inputs**
 
@@ -559,13 +573,86 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - The `cc`, `yy` and `p` resolution belongs to the pure key function of 5.9, with `c` as one more pending prefix.
 - The task-to-text and list-to-text functions are the shared serializer, so the register never builds Markdown by hand.
 
+### 5.13 Due dates
+
+A task can carry one due date.
+It is plain text in the task, `-> DATE`, and the app only adds formatting and an easy way to type it.
+
+**Format**
+
+- A date is one of `YYYY-MM-DD`, `YYYY-Www` (ISO week) and `YYYY-Qn` (calendar quarter), for example `2026-11-22`, `2026-W47` and `2026-Q4`.
+  Only a strictly valid value counts: a real calendar day, a week from 01 to the last ISO week of that year, a quarter from 1 to 4, and zero-padded numbers.
+  `2026-02-30`, `2026-W54`, `2026-Q5` and `2026-1-5` are plain text.
+- The marker is `->` followed by one space and the date, as in `Renew passport -> 2026-12-01`.
+  The marker must be preceded by whitespace or by the start of the text.
+  The date must end at whitespace or at the end of the text.
+- The due date of a task is its last valid `-> DATE`.
+  Earlier ones stay plain text.
+- The server and the JSON model do not know about dates: a date never makes a file invalid, and the Markdown view, the clipboard and the register carry it as text.
+- A due date is not an inline Markdown syntax.
+  It is recognized inside the inline parser of 5.5 only to render it, and a `-> DATE` inside a code span stays literal.
+
+**Periods and states**
+
+- Every due date covers a period: the day, the ISO week (Monday to Sunday) or the calendar quarter.
+- The state of a due date is computed against a **horizon**, which is also a period.
+  The horizon is today by default, so that a later "this week", "this month" or "this quarter" view can pass another period without changing the rule.
+- **Overdue**: the due period ends before the horizon starts.
+  **Due now**: the due period overlaps the horizon.
+  **Later**: the due period starts after the horizon ends.
+- With today as the horizon, `2026-11-11` is due now on that day and overdue the day after, `2026-W46` is due now for the whole week and overdue from the following Monday, and `2026-Q4` is due now for the whole quarter.
+- Today is read from the local clock.
+  The states are recomputed on every render and when the tab becomes visible again or gets the focus, with no timer, and this only restyles the pills, never the editor.
+- The state is classified by one pure function in `src/client/logic/`.
+  The look is described in 5.10.
+
+**Entering a date**
+
+- Typing `->` in the task editor opens a popup, and `sd` in Normal mode opens it too (see below).
+  The popup is a CodeMirror autocomplete, so ↑ / ↓ move in it, Enter or Tab accept the highlighted entry, and Escape closes it without committing the editor, a second Escape committing as in 5.9.
+  With the popup closed, Enter and Escape behave as in 5.9.
+- Each entry shows a shortcut and the date it resolves to, for example `tomorrow  2026-11-12`.
+  A bare `->` lists a default set: `today`, `tomorrow`, `+1d`, `+1w`, `+1m`, `+1y`, `+mon`, `W`, `Q`, `+1W` and `+1Q`.
+  A valid shortcut or literal that is not in the set, such as `->+3d`, `->-2m`, `->+fri` or `->2026-W52`, appears as one entry with its resolved date.
+  An unknown word shows nothing.
+- A shortcut never contains a space: `->today`, `->tomorrow`, `->+1w`, `->-tue`.
+  `+N` or `-N` followed by `d`, `w`, `m` or `y` is a day date, `N` days, 7 × `N` days, `N` months or `N` years from today.
+  `+N` or `-N` followed by `W` or `Q` is the ISO week or the calendar quarter `N` periods from the current one, across year boundaries.
+  `W` and `Q` alone are the current week and quarter.
+  `+mon` is the first Monday strictly after today and `-mon` the last Monday strictly before it, with the weekdays `mon`, `tue`, `wed`, `thu`, `fri`, `sat` and `sun`.
+  `N` is a positive integer, there is no `yesterday`, and a literal date, week or quarter is accepted as is.
+- Month and year shifts keep the day of the month and clamp to the last day of the target month, so one month after 31 January is 28 February (29 in a leap year).
+- With today being Wednesday 2026-11-11, `+1w` is `2026-11-18`, `+mon` is `2026-11-16`, `-tue` is `2026-11-10`, `W` is `2026-W46`, `+1W` is `2026-W47`, `Q` is `2026-Q4` and `+1Q` is `2027-Q1`.
+- Accepting an entry replaces the `->` and the typed shortcut with `-> DATE`, and never touches the text before the arrow.
+  Typing a space or committing right after a valid shortcut also resolves it, so the popup is a convenience and not a requirement.
+  An unknown word is left as typed, and a prose arrow such as `A -> B` stays plain text.
+- A bare arrow left behind, such as the ` ->` that `sd` appends, is kept as typed.
+- The editor colors the literal text of a valid date with its state (5.10), and an invalid date is not colored, which shows that it is not recognized.
+
+**`sd` in Normal mode**
+
+- `sd` works on a task only, with `s` as a pending prefix like `g`, `d`, `y` and `c` (5.9).
+- On a task with no due date, it opens the editor with the caret at the end, appends ` ->` and opens the popup.
+- On a task with a due date, it opens the editor with the space and the date after the arrow selected, and opens the popup.
+  Typing a shortcut replaces the selection, and Escape leaves the text as it was.
+- The committed change is one undoable change, like any other edit of the text (5.6).
+- `sd` is in the cheat sheet, and the footer statusline shows nothing about dates.
+
+**Implementation decisions**
+
+- The date logic is pure functions in `src/client/logic/due.ts`, with the immutable and `null` conventions of 5.7: parsing a date, its period, the state against a horizon, and the shortcut resolution and its list of entries.
+  The current date is a parameter, never read inside them.
+- The inline parser returns a node that holds the date text, and the view adds the state, so the parser stays independent of the clock.
+- The popup source, its entry rendering and the date coloring are the only CodeMirror parts, and they are verified by hand.
+- `->` and a date in the file are the whole contract: an external editor can type, change or delete a due date with no help from the app.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, view cycling and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, view cycling and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `sd` keys).
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; due dates, tags, priorities, search, filters; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter, and file-based settings; `xit` format; automatic conflict merging; reordering lists outside the "All" view, and wrapping at the edges; tags, priorities, search, filters; sorting and filtering by due date, the "this week", "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; hiding completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette.
