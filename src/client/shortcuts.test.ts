@@ -494,7 +494,7 @@ describe("resolveKey: sd (due date)", () => {
 describe("resolveKey: filters and views (PRD 5.14)", () => {
   const views = [
     ["a", { type: "set-filter", text: "" }],
-    ["d", { type: "set-filter", text: "due:today,overdue" }],
+    ["t", { type: "set-filter", text: "due:today,overdue" }],
     ["w", { type: "set-filter", text: "due:week,overdue" }],
     ["l", { type: "filter-list" }],
     ["f", { type: "filter-picker" }],

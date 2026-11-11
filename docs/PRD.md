@@ -332,7 +332,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   It stops at both ends and never wraps.
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
-- `/` focuses the filter bar, `ga`, `gd` and `gw` set the filter to the built-in views, `gl` starts a list filter and `gf` opens the saved filters (5.14).
+- `/` focuses the filter bar, `ga`, `gt` and `gw` set the filter to the built-in views, `gl` starts a list filter and `gf` opens the saved filters (5.14).
   `H` and `L` do not exist any more.
   When the filter is set by a key, the cursor goes to the first stop.
 - The cursor position is stored in `localStorage` as its index in the flat sequence of stops of the current view, next to the filter text, and it is restored on load.
@@ -539,7 +539,7 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 - A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
 - Both show the transient footer text of 5.12.
 - While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
-  `/`, `ga`, `gd`, `gw`, `gl`, `gf`, `gm`, `yy`, Escape and `?` keep working.
+  `/`, `ga`, `gt`, `gw`, `gl`, `gf`, `gm`, `yy`, Escape and `?` keep working.
 
 **Implementation decisions**
 
@@ -721,12 +721,12 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 | Key | Filter text |
 |---|---|
 | `ga` | empty, which shows everything |
-| `gd` | `due:today,overdue` |
+| `gt` | `due:today,overdue` |
 | `gw` | `due:week,overdue` |
 | `gl` | adds ` list:` at the end of the current text and opens the list popup |
 | `gf` | opens the saved filter picker |
 
-`ga`, `gd` and `gw` replace the whole text, and `gl` keeps the other terms.
+`ga`, `gt` and `gw` replace the whole text, and `gl` keeps the other terms.
 Nothing else marks a view: it is the text in the bar.
 There is no selector, no `H` / `L`, and no way to show a single list other than `list:`.
 

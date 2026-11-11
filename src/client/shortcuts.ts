@@ -70,7 +70,7 @@ function taskKey(key: string): Action | null {
 function filterKey(key: string): Action | null {
   switch (key) {
     case "a": return { type: "set-filter", text: "" };
-    case "d": return { type: "set-filter", text: "due:today,overdue" };
+    case "t": return { type: "set-filter", text: "due:today,overdue" };
     case "w": return { type: "set-filter", text: "due:week,overdue" };
     case "l": return { type: "filter-list" };
     case "f": return { type: "filter-picker" };

@@ -306,7 +306,7 @@
   - [ ] Visible counts in the footer and in the list headers
 - [ ] Keys
   - [ ] Remove `H` / `L` and the view cycling logic and tests
-  - [ ] `/`, `ga`, `gd`, `gw`, `gl` and `gf` in the pure key function, also while the Markdown view is open
+  - [ ] `/`, `ga`, `gt`, `gw`, `gl` and `gf` in the pure key function, also while the Markdown view is open
   - [ ] `h` / `l` between visible list headers in every view
   - [ ] Moves, indent and outdent do nothing while a filter is active
   - [ ] `N` and the paste of a list clear the filter
