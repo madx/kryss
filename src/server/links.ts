@@ -56,7 +56,7 @@ export async function lucideSvg(name: string): Promise<string | null> {
     return null;
   }
   if (!Array.isArray(node)) return null;
-  // Black strokes: the client uses the image as a CSS mask, where only the opacity counts.
+  // The client rebuilds the shapes of this SVG and draws them in the text color, so the stroke color here does not matter.
   const body = node.map(([tag, attrs]) => `<${tag} ${Object.entries(attrs).map(([k, v]) => `${k}="${escapeAttr(v)}"`).join(" ")}/>`).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 }

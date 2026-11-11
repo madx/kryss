@@ -1023,7 +1023,7 @@ Single-file mode keeps one file and has none of them.
 - A rule with an invalid regular expression, or no `match` or `label`, is skipped, and the statusline reports it once per load.
 - `icon` is either the name of a Lucide icon or a `data:image/svg+xml` URL.
   Any other value is ignored.
-  Both are drawn as a CSS mask, so they take the text color and follow the theme, and no script in an SVG can run.
+  Both are drawn as an inline SVG that the client rebuilds from an allow-list of shapes (`path`, `circle`, `ellipse`, `rect`, `line`, `polyline`, `polygon`, `g`) and attributes, with every fill and stroke set to the text color, so the icon follows the theme, and no script or external reference of an SVG can reach the page.
 - A Lucide name is read by the server from the installed package: `GET /api/icons/<name>` accepts only `[a-z0-9-]+` and returns the SVG or a `404`.
   A rule with no icon, an unknown name or a refused value shows the Lucide `Link` icon.
 - Kryss ships no rule and no brand icon, and the user writes them for Jira, Slack, Confluence, GitHub or anything else.
