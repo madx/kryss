@@ -50,8 +50,12 @@ if (listing.kind === "vault") {
 let linkProblems: string[] = [];
 if (listing.kind === "vault") {
   const config = await getLinkConfig();
-  setLinkRules(config.links);
-  linkProblems = config.problems;
+  setLinkRules(config?.links ?? []);
+  linkProblems = config?.problems ?? [];
+  // An edit of `.kryss.json` applies when the window is back in focus. A failed fetch keeps the rules in use.
+  window.addEventListener("focus", () => {
+    void getLinkConfig().then((fresh) => fresh && setLinkRules(fresh.links));
+  });
 }
 
 if (listing.kind !== "vault" || file !== null) {

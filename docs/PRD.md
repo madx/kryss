@@ -1007,6 +1007,8 @@ Single-file mode keeps one file and has none of them.
 **Rules**
 
 - `.kryss.json` at the root of `VAULT_DIR` holds the rules, and `GET /api/config` returns them, read at each call.
+  The client loads them at startup and again each time the window regains the focus, so an edit of the file applies without a reload.
+  A failed fetch keeps the rules in use, and the links already on screen get their new icon at their next render.
   A missing file means no rules, and a malformed file is reported in the statusline and means no rules.
   The app never writes it.
 

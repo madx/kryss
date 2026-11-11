@@ -52,13 +52,13 @@ export async function fetchNotes(): Promise<NotesResult | null> {
 
 export type LinkConfig = { links: LinkRule[]; problems: string[] };
 
-/** The link rules of the Vault (PRD 5.18). A failure means no rules. */
-export async function getLinkConfig(): Promise<LinkConfig> {
+/** The link rules of the Vault (PRD 5.18), or null when they cannot be fetched. */
+export async function getLinkConfig(): Promise<LinkConfig | null> {
   try {
     const res = await fetch("/api/config", { cache: "no-store" });
     if (res.status === 200) return await res.json();
   } catch {}
-  return { links: [], problems: [] };
+  return null;
 }
 
 export async function createFile(name: string): Promise<CreateFileResult> {
