@@ -435,6 +435,13 @@ describe("pinned rows", () => {
     expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 0 }, path(0, 0), path(0, 1)]);
   });
 
+  test("a move pins the moved task and the other pins follow their tasks", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    store.commit(doc("C"), { pin: path(2), moves: [{ from: path(2), to: path(0) }, { from: path(0), to: path(1) }, { from: path(1), to: path(2) }] });
+    expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 2 }, { list: 0, task: 0 }]);
+  });
+
   test("an insertion shifts the earlier pins", () => {
     store.setFilter("x");
     store.commit(doc("B"), { pin: path(1) });

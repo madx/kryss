@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { TodoDocument } from "../../shared/types";
-import { applyVisible, filterCompletion, filterPills, isFiltering, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
+import { applyVisible, filterCompletion, filterPills, isFiltering, followPins, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
 import { frozen } from "./helpers.test-util";
 
 // Wednesday 2026-11-11, ISO week 2026-W46, quarter 2026-Q4.
@@ -470,5 +470,24 @@ describe("filterPills", () => {
     expect(filterPills("is:todo foo:bar word")).toEqual([]);
     expect(filterPills('"list:x"')).toEqual([]);
     expect(filterPills("")).toEqual([]);
+  });
+});
+
+describe("followPins", () => {
+  const at = (task: number, child?: number) => ({ list: 0, task, child });
+  test("a pin follows its task to the new path", () => {
+    const moves = [{ from: at(0), to: at(2) }, { from: at(2), to: at(1) }];
+    expect(followPins([at(0), at(2)], moves)).toEqual([at(2), at(1)]);
+  });
+  test("a pin that no move touches stays", () => {
+    expect(followPins([at(3)], [{ from: at(0), to: at(1) }])).toEqual([at(3)]);
+  });
+  test("the moves apply at once, so two tasks that swap do not collapse", () => {
+    const moves = [{ from: at(0), to: at(1) }, { from: at(1), to: at(0) }];
+    expect(followPins([at(0), at(1)], moves)).toEqual([at(1), at(0)]);
+  });
+  test("a subtask pin follows its parent and can change level", () => {
+    const moves = [{ from: at(1, 0), to: at(2) }];
+    expect(followPins([at(1, 0)], moves)).toEqual([at(2)]);
   });
 });

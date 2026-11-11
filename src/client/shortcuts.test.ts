@@ -561,13 +561,17 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     expect(act("w", { pending: "y" })).toBeNull();
   });
 
-  test("moves, indent and outdent do nothing while a filter is active, for tasks and headers", () => {
+  test("moves, indent and outdent resolve as usual while a filter is active, for tasks and headers", () => {
     const f = { filtering: true } as const;
-    for (const [key, o] of [["J", { shiftKey: true }], ["K", { shiftKey: true }], [">", { shiftKey: true }], ["<", { shiftKey: true }], ["ArrowUp", { altKey: true }], ["ArrowDown", { altKey: true }]] as const) {
-      expect(act(key, { ...o, ...f })).toBeNull();
-      expect(act(key, { ...o, ...f, ...onHeader })).toBeNull();
-    }
-    expect(resolveKey(k("ArrowDown", { altKey: true, filtering: true })).preventDefault).toBe(true);
+    const move = (dir: "up" | "down") => ({ type: "move", dir });
+    expect(act("J", { shiftKey: true, ...f })).toEqual(move("down"));
+    expect(act("K", { shiftKey: true, ...f })).toEqual(move("up"));
+    expect(act("ArrowDown", { altKey: true, ...f })).toEqual(move("down"));
+    expect(act("ArrowUp", { altKey: true, ...f })).toEqual(move("up"));
+    expect(act(">", { shiftKey: true, ...f })).toEqual({ type: "indent" });
+    expect(act("<", { shiftKey: true, ...f })).toEqual({ type: "outdent" });
+    expect(act("J", { shiftKey: true, ...f, ...onHeader })).toEqual(move("down"));
+    expect(act("ArrowUp", { altKey: true, ...f, ...onHeader })).toEqual(move("up"));
   });
 
   test("the other task keys work as usual under a filter", () => {

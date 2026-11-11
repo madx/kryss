@@ -78,26 +78,24 @@ describe("moveList", () => {
 });
 
 describe("listMoveTarget", () => {
-  const all = { first: 0, last: 3 };
-  test("down targets the next list, after it", () => {
+  const all = [0, 1, 2, 3];
+  test("down targets the next visible list, after it", () => {
     expect(listMoveTarget(1, "down", all)).toEqual({ target: 2, place: "after" });
   });
-  test("up targets the previous list, before it", () => {
+  test("up targets the previous visible list, before it", () => {
     expect(listMoveTarget(2, "up", all)).toEqual({ target: 1, place: "before" });
   });
   test("returns null at both edges", () => {
     expect(listMoveTarget(0, "up", all)).toBeNull();
     expect(listMoveTarget(3, "down", all)).toBeNull();
   });
-  test("returns null at the edges of a visible range, even with lists beyond it", () => {
-    const range = { first: 1, last: 2 };
-    expect(listMoveTarget(1, "up", range)).toBeNull();
-    expect(listMoveTarget(2, "down", range)).toBeNull();
-    expect(listMoveTarget(1, "down", range)).toEqual({ target: 2, place: "after" });
+  test("hidden lists are jumped over", () => {
+    expect(listMoveTarget(0, "down", [0, 2])).toEqual({ target: 2, place: "after" });
+    expect(listMoveTarget(2, "up", [0, 2])).toEqual({ target: 0, place: "before" });
   });
   test("a single visible list never moves", () => {
-    expect(listMoveTarget(1, "up", { first: 1, last: 1 })).toBeNull();
-    expect(listMoveTarget(1, "down", { first: 1, last: 1 })).toBeNull();
+    expect(listMoveTarget(1, "up", [1])).toBeNull();
+    expect(listMoveTarget(1, "down", [1])).toBeNull();
   });
 });
 
