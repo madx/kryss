@@ -433,7 +433,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 **Due date pill**
 
 - A due date is a small chip in the task text: a Lucide `ArrowRight` icon, then the date exactly as written, with no `->`.
-  It follows the radii and spacing tokens, with the 4 px chip radius.
+  It follows the radii and spacing tokens, with a fully rounded shape (the pill radius), a semi-bold date and a tint stronger than the hover tint so that it stands out.
 - Its colors depend on the state of 5.13: the danger color for overdue, the accent color for due now, and the muted color for later.
   On a completed task the pill is neutral, in the same muted text color as the task, with no state color.
 - In the editor, the same colors apply to the literal text of a valid date, with no icon and no widget.

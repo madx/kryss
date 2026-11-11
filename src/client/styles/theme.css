@@ -44,6 +44,7 @@
   --radius-panel: 8px;
   --radius-control: 6px;
   --radius-chip: 4px;
+  --radius-pill: 999px;
 
   /* Sizes. */
   --content-width: 720px;
@@ -73,6 +74,7 @@
   /* Tints, as a share of a color mixed with transparent. */
   --tint-hover: 8%;
   --tint-cursor: 14%;
+  --tint-pill: 22%;
 }
 
 /* Dark palette: Sonokai, as in the Obsidian vault (snippet sonokai.css). */
