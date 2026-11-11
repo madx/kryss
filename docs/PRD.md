@@ -175,7 +175,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   A new list is created at once, appended at the end and called "New list", as one undoable change.
   The filter is cleared (5.14) so that the new list is visible, and the name input opens on its title with the name selected.
   Cancelling (an empty name) keeps "New list".
-  The header has no title: it holds the filter bar of 5.14 on the left and the Markdown view toggle of 5.11 aligned on the right.
+  The header has no title: it holds the filter bar of 5.14 on the left and the siblings toggle of 5.14 and the Markdown view toggle of 5.11 aligned on the right.
   There is no button to create a list: `N` does it (5.9).
 - Lists are reordered with the keyboard only (5.2, 5.9), and only while the filter is empty.
   With a filter, the move keys do nothing.
@@ -333,7 +333,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   It stops at both ends and never wraps.
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
-- `/` focuses the filter bar, `ga`, `gt` and `gw` set the filter to the built-in views, `gl` starts a list filter and `gf` opens the saved filters (5.14).
+- `/` focuses the filter bar, `ga`, `gt` and `gw` set the filter to the built-in views, `gl` starts a list filter, `gf` opens the saved filters and `gh` toggles the display of the siblings of a match (5.14).
   `H` and `L` do not exist any more.
   When the filter is set by a key, the cursor goes to the first stop.
 - The cursor position is stored in `localStorage` as its index in the flat sequence of stops of the current view, next to the filter text, and it is restored on load.
@@ -365,7 +365,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `o` / `O` | add a sibling below / above, always at the same level |
 | `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
 | `I` / `A` | add the first / last subtask of the task. On a subtask, of its parent. |
-| `?` | open or close the cheat sheet |
+| `g?` | open or close the cheat sheet |
 
 **Keys on a list header**
 
@@ -414,7 +414,9 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 - The counts are those of the visible tasks of the current filter (5.14), and each visible list also shows its own done / total counts of visible tasks at the top right of its header.
   Subtasks count as tasks.
 - The statusline also shows a short transient text after a copy, as described in 5.12.
-- `?` opens a static cheat sheet overlay that lists every key, closed with Escape or `?`.
+- `g?` opens a static cheat sheet overlay that lists every key, closed with Escape or `g?`.
+  A bare `?` does nothing, since the keys that start with `g` all mean "go".
+  The keys are drawn as accent-colored chips, one per key, the group titles are in the accent color, the filter grammar is in the search orange, and the groups flow in as many columns as fit.
   It is not configurable.
 
 **Implementation decisions**
@@ -541,7 +543,7 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 - A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
 - Both show the transient footer text of 5.12.
 - While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
-  `/`, `ga`, `gt`, `gw`, `gl`, `gf`, `gm`, `yy`, Escape and `?` keep working.
+  `/`, `ga`, `gt`, `gw`, `gl`, `gf`, `gh`, `gm`, `yy`, Escape and `g?` keep working.
 
 **Implementation decisions**
 
@@ -725,10 +727,11 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 | `ga` | empty, which shows everything |
 | `gt` | `due:today,overdue` |
 | `gw` | `due:week,overdue` |
-| `gl` | adds ` list:` at the end of the current text and opens the list popup |
+| `gl` | replaces the text with `list:` and opens the list popup |
 | `gf` | opens the saved filter picker |
+| `gh` | toggles the display of the siblings of a match (see Results) |
 
-`ga`, `gt` and `gw` replace the whole text, and `gl` keeps the other terms.
+`ga`, `gt`, `gw` and `gl` replace the whole text.
 Nothing else marks a view: it is the text in the bar.
 There is no selector, no `H` / `L`, and no way to show a single list other than `list:`.
 
@@ -756,17 +759,25 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 - Typing `list:` opens a popup of the list titles, quoted when they need it, and `due:` opens one of `today`, `week` and `overdue`, plus one entry for a typed valid day, week or quarter.
   After a comma, the popup completes the next value.
 - The popup is a CodeMirror autocomplete like the one of 5.13: ↑ / ↓ move, Enter or Tab accept, Escape closes it first.
-- `gl` opens the bar with the list popup, and the other keys of the bar are those above.
+- `gl` opens the bar with `list:` alone and its popup, and the other keys of the bar are those above.
 
 **Results**
 
 - A task is visible if it matches, or one of its ancestors matches, or one of its descendants matches.
   A matching parent therefore shows its whole subtree, and a matching subtask shows its parent as context.
+- **Hidden subtasks**: a task that shows only some of its subtasks ends its row with a muted eye-off icon and the number of subtasks that are hidden, for example when it is shown because one subtask matches.
+  Its tooltip reads "N other subtasks hidden by the filter".
+- **Siblings toggle**: an icon button in the header, next to the Markdown view toggle, and `gh` switch between two displays.
+  Off, which is the default, a task shown because a subtask matches shows only the matching subtasks.
+  On, it shows all its subtasks, so no eye is shown.
+  The button is accent-colored while it is on, and the choice is stored in `localStorage` and kept when the filter changes.
+  It is a display setting: it is not in the document, the undo history or the saved filters, and the cursor stops, the counts and the Markdown view follow the rows it shows.
 - A list with no visible task is hidden under any non-empty filter, and with an empty filter every list is shown, empty ones included.
   To add the first task of an empty list, clear the filter.
 - Hiding only changes what is rendered: the document is whole, the cursor stops are the visible rows, and the counts of 5.9 are those of the visible tasks.
-- **Pinned rows**: a task that the user adds, pastes, edits, checks or unchecks stays visible, with its ancestors, until the filter text changes, even if it no longer matches.
-  Pins follow the task through the add or paste that shifts it, and they are cleared by a delete, an undo, a redo and an external change.
+- **Pinned rows**: a task that the user adds, pastes, edits, checks or unchecks stays visible, with its ancestors, until the filter text changes or is applied again, even if it no longer matches.
+  Applying the text again, with `/` then Enter or Escape, or with a built-in view key that sets the same text, drops the pins: it refreshes the view.
+  Pins follow the task through the add or paste that shifts it, and they are cleared by a refresh, a delete, an undo, a redo and an external change.
 - An empty result shows a muted "No matching task" and the filter text in place of the lists.
   When a known key has an invalid value, it shows the reason, for example "Unknown due value: foo".
   An empty file keeps the offer of 5.1.

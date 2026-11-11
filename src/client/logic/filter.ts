@@ -14,8 +14,8 @@ export type Term =
   | { kind: "is"; values: ("done" | "todo")[] };
 export type ParsedFilter = { terms: Term[]; error: string | null };
 
-/** A task with the indices of the subtasks that are shown. */
-export type VisibleTask = { task: number; children: number[] };
+/** A task with the indices of the subtasks that are shown, and the number of its subtasks that are not. */
+export type VisibleTask = { task: number; children: number[]; hidden: number };
 export type VisibleList = { list: number; tasks: VisibleTask[] };
 export type Visible = { lists: VisibleList[]; error: string | null; filtering: boolean };
 
@@ -123,8 +123,9 @@ const pinned = (pins: TaskPath[], list: number, task: number, child?: number) =>
 /**
  * The rows to show. A task is visible when it matches, or an ancestor matches, or a descendant matches, or it is pinned
  * (with its ancestors). With a non-blank filter, a list with no visible task is hidden.
+ * With `showSiblings`, a task shown because a subtask matches shows all its subtasks, not only the matching ones.
  */
-export function visibleRows(doc: TodoDocument, text: string, today: string, pins: TaskPath[] = []): Visible {
+export function visibleRows(doc: TodoDocument, text: string, today: string, pins: TaskPath[] = [], showSiblings = false): Visible {
   const filter = parseFilter(text);
   const filtering = isFiltering(text);
   const lists: VisibleList[] = [];
@@ -132,11 +133,13 @@ export function visibleRows(doc: TodoDocument, text: string, today: string, pins
     const tasks: VisibleTask[] = [];
     list.tasks.forEach((task, t) => {
       const parentMatches = !filtering || matchesTask(task, list.title, filter, today);
+      const matching = task.children?.map((child) => matchesTask(child, list.title, filter, today)) ?? [];
+      const all = parentMatches || (showSiblings && matching.some(Boolean));
       const children: number[] = [];
-      task.children?.forEach((child, c) => {
-        if (parentMatches || matchesTask(child, list.title, filter, today) || pinned(pins, l, t, c)) children.push(c);
+      task.children?.forEach((_, c) => {
+        if (all || matching[c] || pinned(pins, l, t, c)) children.push(c);
       });
-      if (parentMatches || pinned(pins, l, t) || children.length > 0) tasks.push({ task: t, children });
+      if (parentMatches || pinned(pins, l, t) || children.length > 0) tasks.push({ task: t, children, hidden: (task.children?.length ?? 0) - children.length });
     });
     if (!filtering || tasks.length > 0) lists.push({ list: l, tasks });
   });

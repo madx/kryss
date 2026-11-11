@@ -239,8 +239,14 @@ describe("resolveKey: N, help and target none", () => {
       expect(act("N", { target, shiftKey: true })).toEqual({ type: "new-list" });
     }
   });
-  test("? toggles the cheat sheet", () => {
-    expect(act("?", { shiftKey: true })).toEqual({ type: "toggle-help" });
+  test("g? toggles the cheat sheet, and a bare ? does nothing", () => {
+    expect(act("?", { pending: "g", shiftKey: true })).toEqual({ type: "toggle-help" });
+    expect(act("?", { shiftKey: true })).toBeNull();
+  });
+  test("pressing Shift between g and ? keeps the prefix, in every context", () => {
+    for (const o of [{}, { overlay: "cheatsheet" }, { markdownView: true }] as const) {
+      expect(resolveKey(k("Shift", { pending: "g", shiftKey: true, ...o }))).toEqual({ action: null, pending: "g", preventDefault: false });
+    }
   });
   test("Normal keys work with no focused target", () => {
     expect(act("j", { target: "none" })).toEqual({ type: "cursor", to: "next" });
@@ -323,8 +329,9 @@ describe("resolveKey: modifiers", () => {
 
 describe("resolveKey: cheat sheet overlay", () => {
   const cheat = { overlay: "cheatsheet" } as const;
-  test("? and Escape close it", () => {
-    expect(act("?", { ...cheat, shiftKey: true })).toEqual({ type: "toggle-help" });
+  test("g? and Escape close it, and a bare ? does not", () => {
+    expect(act("?", { ...cheat, pending: "g", shiftKey: true })).toEqual({ type: "toggle-help" });
+    expect(act("?", { ...cheat, shiftKey: true })).toBeNull();
     expect(act("Escape", cheat)).toEqual({ type: "toggle-help" });
   });
   test("closing prevents the default", () => {
@@ -343,12 +350,16 @@ describe("resolveKey: cheat sheet overlay", () => {
     expect(resolveKey(k("Tab", cheat)).preventDefault).toBe(true);
     expect(resolveKey(k("r", { ...cheat, ctrlKey: true })).preventDefault).toBe(false);
   });
+  test("g still starts the g? prefix behind the overlay, and any other key drops it", () => {
+    expect(resolveKey(k("g", cheat))).toEqual({ action: null, pending: "g", preventDefault: true });
+    expect(resolveKey(k("a", { ...cheat, pending: "g" }))).toEqual({ action: null, pending: "", preventDefault: true });
+  });
   test("a pending prefix is dropped", () => {
     expect(resolveKey(k("d", { ...cheat, pending: "d" })).action).toBeNull();
     expect(resolveKey(k("d", { ...cheat, pending: "d" })).pending).toBe("");
   });
   test("it takes precedence over the target kind", () => {
-    expect(act("?", { ...cheat, target: "control", shiftKey: true })).toEqual({ type: "toggle-help" });
+    expect(act("?", { ...cheat, pending: "g", target: "control", shiftKey: true })).toEqual({ type: "toggle-help" });
   });
 });
 
@@ -402,10 +413,11 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(act("ArrowDown", { altKey: true, ...open })).toBeNull();
     expect(act("z", { ctrlKey: true, ...open })).toBeNull();
   });
-  test("? keeps working while the view is open, and H and L do nothing", () => {
+  test("g? and gh keep working while the view is open, and H and L do nothing", () => {
     expect(act("H", { shiftKey: true, ...open })).toBeNull();
     expect(act("L", { shiftKey: true, ...open })).toBeNull();
-    expect(act("?", open)).toEqual({ type: "toggle-help" });
+    expect(act("?", { pending: "g", ...open })).toEqual({ type: "toggle-help" });
+    expect(act("h", { pending: "g", ...open })).toEqual({ type: "toggle-siblings" });
   });
   test("Escape closes the view, also from a focused button", () => {
     expect(act("Escape", open)).toEqual({ type: "toggle-markdown" });
@@ -498,6 +510,7 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     ["w", { type: "set-filter", text: "due:week,overdue" }],
     ["l", { type: "filter-list" }],
     ["f", { type: "filter-picker" }],
+    ["h", { type: "toggle-siblings" }],
   ] as const;
 
   test("/ focuses the filter bar, on a task, on a header and with nothing focused", () => {

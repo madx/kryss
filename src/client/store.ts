@@ -19,6 +19,8 @@ export type StoreState = {
   filter: string;
   /** Tasks that stay visible until the filter text changes, even when they do not match. */
   pins: TaskPath[];
+  /** A task shown because a subtask matches shows all its subtasks (PRD 5.14). */
+  showSiblings: boolean;
   canUndo: boolean;
   canRedo: boolean;
 };
@@ -31,6 +33,7 @@ export type Timers = { set(fn: () => void, ms: number): unknown; clear(handle: u
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem" | "removeItem">;
 
 export const FILTER_KEY = "todoapp.filter";
+export const SIBLINGS_KEY = "todoapp.showSiblings";
 /** The key of the list selector, which no longer exists. It is removed on start. */
 export const OLD_SELECTION_KEY = "todoapp.selectedList";
 
@@ -60,6 +63,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let history = createHistory();
   let filter = readFilter();
   let pins: TaskPath[] = [];
+  let showSiblings = readSiblings();
   let dirty = false; // local changes not on disk yet
   let inFlight = false;
   let attempts = 0;
@@ -78,6 +82,14 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     }
   }
 
+  function readSiblings(): boolean {
+    try {
+      return storage?.getItem(SIBLINGS_KEY) === "true";
+    } catch {
+      return false;
+    }
+  }
+
   function storeFilter() {
     try {
       storage?.setItem(FILTER_KEY, filter);
@@ -92,6 +104,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       invalid,
       filter,
       pins,
+      showSiblings,
       canUndo: canUndo(history),
       canRedo: canRedo(history),
     };
@@ -318,12 +331,25 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (status !== "conflict") return;
       void reload(true);
     },
-    /** Sets the filter text. It is not a change of the document: no history, no save. Pins are dropped when the text changes. */
+    /** Sets the filter text. It is not a change of the document: no history, no save. Pins are dropped when the text is applied, even when it is the same: that refreshes the view. */
     setFilter(text: string) {
-      if (text === filter) return;
+      if (text === filter) {
+        if (pins.length === 0) return;
+        pins = [];
+        emit("content");
+        return;
+      }
       filter = text;
       pins = [];
       storeFilter();
+      emit("content");
+    },
+    /** Switches between showing every subtask of a task that has a matching subtask, and only the matching ones. Not in the history. */
+    toggleSiblings() {
+      showSiblings = !showSiblings;
+      try {
+        storage?.setItem(SIBLINGS_KEY, String(showSiblings));
+      } catch {}
       emit("content");
     },
     /** Replaces the saved filters. Saved like any change of the document, but kept out of the history (PRD 5.14). */

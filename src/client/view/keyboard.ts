@@ -22,7 +22,7 @@ export type KeyboardEnv = {
   /** Toggles the task at `path` (the due date rewrite and the pin included) and keeps the focus on it. */
   toggle(path: TaskPath): void;
   /** The filter bar and the saved filter picker (PRD 5.14). */
-  filters: { focus(): void; set(text: string): void; appendList(): void; openPicker(): void };
+  filters: { focus(): void; set(text: string): void; startList(): void; openPicker(): void };
   renameList(list: number): void;
   /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
@@ -106,10 +106,13 @@ export function installKeyboard(env: KeyboardEnv): void {
         cursor.focusIndex(0); // the first visible stop
         return;
       case "filter-list":
-        env.filters.appendList();
+        env.filters.startList();
         return;
       case "filter-picker":
         env.filters.openPicker();
+        return;
+      case "toggle-siblings":
+        store.toggleSiblings();
         return;
       case "undo":
       case "redo": {

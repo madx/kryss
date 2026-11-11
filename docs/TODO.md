@@ -321,3 +321,12 @@
 - [x] Remove the list selector component, its styles, its tests and the 16 px font token
 - [x] Run `bun test` and `bun run build`, and fix the tests that referred to the removed code
 - [x] Verify by hand: each built-in view, `gl` and `gf`, tick of an overdue task, a cascade, an Obsidian edit of the frontmatter, a conflict while saving a filter, light and dark, a window from 240 to 720 px wide
+
+## Filter and cheat sheet fixes
+- [x] `gl` replaces the filter with `list:` and opens the list popup, like `ga`, `gt` and `gw` replace it
+- [x] Open the cheat sheet with `g?` instead of `?`, also in the Markdown view and behind the overlay
+- [x] Restyle the cheat sheet: key chips, accent group titles, orange grammar and columns
+- [x] Show a muted eye with the number of hidden subtasks at the end of a task row
+- [x] Add the siblings toggle, a header button and `gh`, stored in `localStorage`
+- [x] Refresh the view by applying the filter text again: it drops the pins
+- [x] Update the PRD and the tests, then run `bun test` and `bun run build`

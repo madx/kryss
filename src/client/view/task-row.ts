@@ -6,6 +6,7 @@ import type { TaskPath } from "../logic";
 import { findDueRange, renderInline } from "../markdown/inline";
 import { el } from "./dom";
 import { renderDuePill } from "./due-pill";
+import { hiddenIcon } from "./icons";
 import { startEdit, type EditEnd } from "./edit-text";
 
 /** Dispatched on a row (by the keyboard layer) to open its editor. */
@@ -27,7 +28,8 @@ export type TaskActions = {
   focusRow(path: TaskPath): void;
 };
 
-export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions): HTMLElement {
+/** `hidden` is the number of subtasks the filter hides: a muted eye and that count close the row. */
+export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions, hidden = 0): HTMLElement {
   const isSubtask = path.child !== undefined;
   const row = el("div", {
     class: "task-row",
@@ -76,6 +78,10 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   row.addEventListener(DUE_EDIT, () => beginEdit(undefined, false, true));
 
   row.append(checkbox, text);
+  if (hidden > 0) {
+    const label = `${hidden} other ${hidden === 1 ? "subtask" : "subtasks"} hidden by the filter`;
+    row.append(el("span", { class: "task-hidden", title: label, "aria-label": label }, hiddenIcon(), String(hidden)));
+  }
   return row;
 }
 

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import type { ChangeEvent, TodoDocument } from "../shared/types";
 import type { Api, LoadResult, SaveResult } from "./api";
 import { addTask } from "./logic";
-import { createStore, FILTER_KEY, OLD_SELECTION_KEY, type Timers } from "./store";
+import { createStore, FILTER_KEY, OLD_SELECTION_KEY, SIBLINGS_KEY, type Timers } from "./store";
 import { DEBOUNCE_MS, retryDelay } from "./sync";
 
 const doc = (...titles: string[]): TodoDocument => ({ lists: titles.map((title) => ({ title, tasks: [] })), filters: [] });
@@ -341,6 +341,20 @@ describe("history", () => {
   });
 });
 
+describe("show siblings", () => {
+  test("is off by default, toggles without touching the document or the history, and is stored", () => {
+    expect(store.getState().showSiblings).toBe(false);
+    store.toggleSiblings();
+    expect(store.getState().showSiblings).toBe(true);
+    expect(mem.get(SIBLINGS_KEY)).toBe("true");
+    expect(store.getState().canUndo).toBe(false);
+    expect(store.hasPendingChanges()).toBe(false);
+    expect(createStore({ api, timers: clock.timers, storage: storageOf() }).getState().showSiblings).toBe(true);
+    store.toggleSiblings();
+    expect(store.getState().showSiblings).toBe(false);
+  });
+});
+
 describe("filter text", () => {
   test("is stored in localStorage and restored on load", () => {
     store.setFilter("due:today");
@@ -355,6 +369,14 @@ describe("filter text", () => {
     store.setFilter("x");
     await clock.advance(DEBOUNCE_MS);
     expect(api.calls).toHaveLength(0);
+  });
+
+  test("applying the same text drops the pins and notifies, and does nothing without pins", () => {
+    store.setFilter("x");
+    let notified = 0;
+    store.subscribe(() => notified++);
+    store.setFilter("x");
+    expect(notified).toBe(0);
   });
 
   test("setting a filter is not a change of the document: no history, no save", async () => {
@@ -397,6 +419,15 @@ describe("pinned rows", () => {
     expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 1 }]);
   });
 
+  test("applying the same filter text drops the pins", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    expect(store.getState().pins).toHaveLength(1);
+    store.setFilter("x");
+    expect(store.getState().pins).toEqual([]);
+    expect(store.getState().filter).toBe("x");
+  });
+
   test("pinChildren also pins the subtasks of the pinned parent", () => {
     store.setFilter("x");
     const withChildren: TodoDocument = { filters: [], lists: [{ title: "A", tasks: [{ text: "p", done: true, children: [{ text: "a", done: true }, { text: "b", done: true }] }] }] };
@@ -411,11 +442,9 @@ describe("pinned rows", () => {
     expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 2 }, { list: 0, task: 0 }]);
   });
 
-  test("a change of the filter text clears them, the same text does not", () => {
+  test("a change of the filter text clears them", () => {
     store.setFilter("x");
     store.commit(doc("B"), { pin: path(1) });
-    store.setFilter("x");
-    expect(store.getState().pins).toHaveLength(1);
     store.setFilter("y");
     expect(store.getState().pins).toEqual([]);
   });
