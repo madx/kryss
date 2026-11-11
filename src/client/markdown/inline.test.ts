@@ -205,3 +205,32 @@ describe("findDueRange", () => {
     ]);
   });
 });
+
+describe("autolinks", () => {
+  test("<https://example.com> is a link whose label is the URL", () => {
+    expect(parseInline("see <https://example.com/a?b=1> now")).toEqual([
+      { type: "text", value: "see " },
+      { type: "link", href: "https://example.com/a?b=1", children: [{ type: "text", value: "https://example.com/a?b=1" }] },
+      { type: "text", value: " now" },
+    ]);
+  });
+  test("follows the scheme allow-list", () => {
+    expect(parseInline("<mailto:a@b.test>")[0]?.type).toBe("link");
+    expect(parseInline("<obsidian://open?vault=v>")[0]?.type).toBe("link");
+    expect(parseInline("<HTTP://EXAMPLE.COM>")[0]?.type).toBe("link");
+  });
+  test("<javascript:…> and other refused schemes stay literal", () => {
+    expect(parseInline("<javascript:alert(1)>")).toEqual([{ type: "text", value: "<javascript:alert(1)>" }]);
+    expect(parseInline("<data:text/html,x>")).toEqual([{ type: "text", value: "<data:text/html,x>" }]);
+  });
+  test("not an autolink: spaces, unclosed, no scheme, empty", () => {
+    for (const s of ["<https://a.test b>", "<https://a.test", "<b>", "<>", "a < b > c"]) {
+      expect(parseInline(s).every((n) => n.type === "text")).toBe(true);
+    }
+  });
+  test("no autolink inside a label", () => {
+    expect(parseInline("[<https://a.test>](https://b.test)")).toEqual([
+      { type: "link", href: "https://b.test", children: [{ type: "text", value: "<https://a.test>" }] },
+    ]);
+  });
+});

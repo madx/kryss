@@ -5,6 +5,7 @@ import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { dueExtensions, resolveOnCommit, startCompletion } from "./due";
 import { wikilinkPreview } from "./wikilink";
+import { linkPaste } from "./link-paste";
 import { livePreview } from "./live-preview";
 import { singleLine } from "./single-line";
 import { settleDecision, toSingleLine } from "./text";
@@ -84,6 +85,7 @@ export function createEditor(
         livePreview,
         wikilinkPreview,
         dueExtensions,
+        linkPaste,
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ "aria-label": "Edit task" }),
         keymap.of([

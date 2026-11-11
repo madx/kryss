@@ -25,6 +25,8 @@ The file is created empty if it is missing.
 `VAULT_DIR` is the path of an Obsidian Vault.
 When it is set, `TODO_FILE` is ignored and Kryss manages every `.md` file of the Vault whose frontmatter has `kryss-enabled: true`, which `go` lets you switch between.
 `NEW_FILE_DIR` is the folder of the files that Kryss creates, `VAULT_DIR` by default, and it must be inside the Vault.
+In a Vault, an optional `.kryss.json` at its root holds link rules, for example `{ "links": [{ "match": "^https://github\\.com/([^/]+/[^/]+)/pull/(\\d+)", "label": "$1#$2", "icon": "git-pull-request" }] }`.
+A URL pasted in a task that matches a rule becomes `[label](url)`, and the icon, a Lucide name or a `data:image/svg+xml` URL, is shown before the label of such links.
 `PORT` is the listening port, `5173` by default.
 `HOST` is the listening address, `127.0.0.1` by default.
 Set `HOST=0.0.0.0` to expose the app, for example inside a container, and remember that there is no authentication.

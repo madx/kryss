@@ -1023,7 +1023,7 @@ Single-file mode keeps one file and has none of them.
 - A rule with an invalid regular expression, or no `match` or `label`, is skipped, and the statusline reports it once per load.
 - `icon` is either the name of a Lucide icon or a `data:image/svg+xml` URL.
   Any other value is ignored.
-  Both are drawn as a CSS mask, so they take the text color and follow the theme, and no script in an SVG can run.
+  Both are drawn as an inline SVG that the client rebuilds from an allow-list of shapes (`path`, `circle`, `ellipse`, `rect`, `line`, `polyline`, `polygon`, `g`) and attributes, with every fill and stroke set to the text color, so the icon follows the theme, and no script or external reference of an SVG can reach the page.
 - A Lucide name is read by the server from the installed package: `GET /api/icons/<name>` accepts only `[a-z0-9-]+` and returns the SVG or a `404`.
   A rule with no icon, an unknown name or a refused value shows the Lucide `Link` icon.
 - Kryss ships no rule and no brand icon, and the user writes them for Jira, Slack, Confluence, GitHub or anything else.
@@ -1034,15 +1034,28 @@ Single-file mode keeps one file and has none of them.
   A paste that is not a single `http` or `https` URL, after trimming, is the native paste of 5.8.
 - With some text selected, the paste inserts `[selection](url)`, whatever the rules say.
 - With no selection, if a rule matches the URL, the paste inserts `[label](url)` with the label of that rule.
-- With no selection and no matching rule, the URL is inserted as it is.
+- With no selection and no matching rule, the URL is inserted as an autolink, `<url>`, so that it renders as a link.
 - The paste is one step of the editor's own undo, so Ctrl+Z restores the previous text.
 - A URL pasted outside the editor, or in the filter bar or the search input, is never transformed.
 
 **Display**
 
-- A link whose URL matches a rule that has an icon shows that icon before its label, at the size of the text.
+- A link whose URL matches a rule shows an icon before its label, at the size of the text: the icon of the rule, or the Lucide `Link` icon when the rule has none or a refused one.
   It is the same rule on a link typed by hand, pasted from elsewhere or already in the file, so the file stays plain Markdown.
 - The label and the icon never change the stored text, and the Markdown view and the clipboard text (5.11, 5.12) are the stored Markdown.
+
+**Details**
+
+- `GET /api/config` returns `{ "links": [...], "problems": [...] }`: the valid rules in file order, and one sentence per problem (a malformed file, a missing `links` array, a skipped rule).
+  The client loads it once per page load and shows the first problem, with a count of the others, in the statusline for a short time.
+- A rule whose label comes out empty after filling the groups does not match, so a missing group never gives an empty link.
+- A missing capture group gives an empty string, and `$0` is the whole match.
+- A `data:image/svg+xml` value must be at most 20000 characters and hold no double quote, backslash or line break, since it ends up in a CSS `url("…")`.
+- An icon that is a Lucide name unknown to the server shows the `Link` icon, like a rule with no icon or a refused value.
+- The paste handles a single selection only, and the inserted label has its `[`, `]` and `\` escaped.
+  A URL with unbalanced parentheses has them percent-encoded, so that the Markdown link stays well formed.
+- The autolink `<scheme:…>` is only recognized outside a link label, and its content holds no space.
+- The editor's live preview does not draw the rule icon, which only appears in the rendered text.
 
 **Pure logic**
 

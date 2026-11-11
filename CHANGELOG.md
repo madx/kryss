@@ -19,6 +19,11 @@ Features that were added and later removed are listed in both places, so that th
 - `[[` opens a popup of the note index, filtered on names and aliases, which inserts the path format of `newLinkFormat` read from `.obsidian/app.json`, and the live preview hides the brackets away from the cursor.
 - `GET /api/notes` returns the note index and the link format, and `GET /api/files` carries the vault name in its `X-Vault-Name` header.
 
+- Link rules: `.kryss.json` at the root of the Vault holds `match` and `label` rules served by `GET /api/config`, and `GET /api/icons/<name>` serves Lucide icons.
+- A link that matches a rule shows its icon, or the `Link` icon, as an inline SVG in the text color, rebuilt from an allow-list of shapes.
+- Pasting one URL in the task editor gives `[selection](url)` with a selection, `[label](url)` when a rule matches, and `<url>` otherwise, in one undo step.
+- `<https://…>` autolinks render as links under the scheme rules.
+
 ### Changed
 
 - The saved filters now live in the `kryss-filters` key of the frontmatter instead of `filters`.
