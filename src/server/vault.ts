@@ -17,8 +17,8 @@ function isEnabled(frontmatter: string): boolean {
   return false;
 }
 
-/** Reads a file only up to the end of its frontmatter and tells whether it opts in. An unclosed frontmatter does not. */
-async function hasKryssFrontmatter(path: string): Promise<boolean> {
+/** Reads a file only up to the end of its frontmatter and returns that block, or "" when there is none or it is not closed. */
+export async function readFrontmatter(path: string): Promise<string> {
   let handle;
   try {
     handle = await open(path, "r");
@@ -31,19 +31,24 @@ async function hasKryssFrontmatter(path: string): Promise<boolean> {
       // A chunk that stops inside a line must not be taken for a closing delimiter.
       if (!complete) text = text.slice(0, text.lastIndexOf("\n") + 1);
       const frontmatter = frontmatterOf(text);
-      if (frontmatter !== "") return isEnabled(frontmatter);
-      if (complete || size >= MAX_FRONTMATTER) return false;
+      if (frontmatter !== "" || complete || size >= MAX_FRONTMATTER) return frontmatter;
       size *= 4;
     }
   } catch {
-    return false;
+    return "";
   } finally {
     await handle?.close();
   }
 }
 
-/** The relative paths (with `/`, sorted ignoring case) of the Kryss files of a Vault. */
-export async function scanVault(vaultDir: string): Promise<string[]> {
+/** Tells whether a file opts in. An unclosed frontmatter does not. */
+const hasKryssFrontmatter = async (path: string) => isEnabled(await readFrontmatter(path));
+
+/** Sorts paths alphabetically, ignoring case. */
+export const byName = (a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()) || (a < b ? -1 : a > b ? 1 : 0);
+
+/** The relative paths (with `/`, unsorted) of the Markdown files of a Vault, skipping the dot folders. It is the one walk of the Vault. */
+export async function listMarkdown(vaultDir: string): Promise<string[]> {
   const found: string[] = [];
   async function walk(dir: string, prefix: string): Promise<void> {
     let entries;
@@ -57,13 +62,20 @@ export async function scanVault(vaultDir: string): Promise<string[]> {
         if (entry.isDirectory()) {
           if (!entry.name.startsWith(".")) await walk(join(dir, entry.name), `${prefix}${entry.name}/`);
         } else if (entry.isFile() && entry.name.endsWith(".md")) {
-          if (await hasKryssFrontmatter(join(dir, entry.name))) found.push(`${prefix}${entry.name}`);
+          found.push(`${prefix}${entry.name}`);
         }
       }),
     );
   }
   await walk(vaultDir, "");
-  return found.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()) || (a < b ? -1 : a > b ? 1 : 0));
+  return found;
+}
+
+/** The relative paths (with `/`, sorted ignoring case) of the Kryss files of a Vault. */
+export async function scanVault(vaultDir: string): Promise<string[]> {
+  const files = await listMarkdown(vaultDir);
+  const enabled = await Promise.all(files.map((f) => hasKryssFrontmatter(join(vaultDir, f))));
+  return files.filter((_, i) => enabled[i]).sort(byName);
 }
 
 /** The real path of a Kryss file given by its path relative to the Vault, or null when it is not inside the Vault or not a Kryss file. */

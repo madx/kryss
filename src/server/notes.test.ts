@@ -71,7 +71,7 @@ describe("readObsidianSettings", () => {
 });
 
 describe("scanNotes", () => {
-  test("lists every Markdown file with name, path without extension and aliases, sorted", async () => {
+  test("lists every Markdown file with name, path without extension and aliases, sorted by path", async () => {
     put("b.md", fm("aliases: [Bee]"));
     put("Folder/A note.md", "no frontmatter\n");
     put("Folder/image.png", "x");
@@ -79,8 +79,8 @@ describe("scanNotes", () => {
     expect(await scanNotes(vault)).toEqual({
       newLinkFormat: "shortest",
       notes: [
-        { name: "A note", path: "Folder/A note", aliases: [] },
         { name: "b", path: "b", aliases: ["Bee"] },
+        { name: "A note", path: "Folder/A note", aliases: [] },
       ],
     });
   });
