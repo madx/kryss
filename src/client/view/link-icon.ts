@@ -25,7 +25,12 @@ function probe(name: string, src: string): Promise<boolean> {
 
 /** The Lucide `Link` icon as a data URL, so that a rule with no usable icon still shows one without any request. */
 function fallback(): string {
-  fallbackUrl ??= `url("data:image/svg+xml,${encodeURIComponent(createElement(Link, { stroke: "black" }).outerHTML)}")`;
+  if (fallbackUrl === undefined) {
+    const svg = createElement(Link, { stroke: "black" });
+    // Lucide builds the element in the SVG namespace, which the HTML serializer leaves out: as a standalone image the SVG needs it.
+    svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    fallbackUrl = `url("data:image/svg+xml,${encodeURIComponent(svg.outerHTML)}")`;
+  }
   return fallbackUrl;
 }
 
