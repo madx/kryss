@@ -1,4 +1,5 @@
 import type { TodoDocument } from "../../shared/types";
+import { completeDue } from "./complete";
 import { copyTask, type Register } from "./register";
 import {
   cloneDoc,
@@ -15,18 +16,31 @@ import {
  * Toggles a task or subtask with the PRD 5.3 rules.
  * Checking a parent checks its children, unchecking a parent changes only the parent.
  * A subtask toggle checks the parent when all children are checked and unchecks it otherwise.
+ * With `today`, every task that goes from unchecked to checked gets its due date rewritten (PRD 5.13): the task itself,
+ * the children that a checked parent checks, and a parent checked automatically.
  * Returns the same document if the path is invalid.
  */
-export function toggleDone(doc: TodoDocument, path: TaskPath): TodoDocument {
+export function toggleDone(doc: TodoDocument, path: TaskPath, today?: string): TodoDocument {
   if (!getNode(doc, path)) return doc;
   const next = cloneDoc(doc);
   const node = getNode(next, path)!;
-  node.done = !node.done;
   const task = next.lists[path.list]!.tasks[path.task]!;
+  const complete = (n: { text: string; done: boolean }) => {
+    n.done = true;
+    if (today !== undefined) n.text = completeDue(n.text, today);
+  };
+  if (node.done) {
+    node.done = false;
+    if (path.child !== undefined) task.done = false;
+    return next;
+  }
+  complete(node);
   if (path.child === undefined) {
-    if (node.done) for (const child of task.children ?? []) child.done = true;
-  } else {
-    task.done = task.children!.every((c) => c.done);
+    for (const child of task.children ?? []) if (!child.done) complete(child);
+  } else if (!task.children!.every((c) => c.done)) {
+    task.done = false;
+  } else if (!task.done) {
+    complete(task);
   }
   return next;
 }

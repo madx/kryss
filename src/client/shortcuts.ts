@@ -9,16 +9,19 @@ export type Overlay = "none" | "cheatsheet";
 export type { CursorMove } from "./logic/cursor";
 export type { AddAt } from "./logic/insert";
 export type Action =
-  | { type: "cursor"; to: CursorMove } | { type: "view"; dir: "next" | "prev" }
+  | { type: "cursor"; to: CursorMove }
   | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
   | { type: "move"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" };
+  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" }
+  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
+  /** A filter is active, so moves, indent and outdent do nothing (PRD 5.14). */
+  filtering: boolean;
 };
 export type Resolution = { action: Action | null; pending: Pending; preventDefault: boolean };
 
@@ -33,8 +36,6 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "G": return { type: "cursor", to: "last" };
     case "h": return { type: "cursor", to: "prev-header" };
     case "l": return { type: "cursor", to: "next-header" };
-    case "H": return { type: "view", dir: "prev" };
-    case "L": return { type: "view", dir: "next" };
     case "J": return { type: "move", dir: "down" };
     case "K": return { type: "move", dir: "up" };
     case "Delete": return { type: "delete" };
@@ -44,6 +45,7 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "N": return { type: "new-list" };
     case "p": return { type: "paste" };
     case "?": return { type: "toggle-help" };
+    case "/": return { type: "focus-filter" };
     case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
     case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
     case "I": return { type: "add", at: onHeader ? "list-start" : "first-child" };
@@ -64,18 +66,30 @@ function taskKey(key: string): Action | null {
   }
 }
 
+/** The second key of `g` that sets or opens a filter (PRD 5.14), or null. */
+function filterKey(key: string): Action | null {
+  switch (key) {
+    case "a": return { type: "set-filter", text: "" };
+    case "d": return { type: "set-filter", text: "due:today,overdue" };
+    case "w": return { type: "set-filter", text: "due:week,overdue" };
+    case "l": return { type: "filter-list" };
+    case "f": return { type: "filter-picker" };
+    default: return null;
+  }
+}
+
 /** Keys while the Markdown view is open (PRD 5.11): everything that changes a task is ignored. */
 function resolveMarkdownKey({ key, pending, altKey }: KeyInput): Resolution {
   if (altKey) return NOTHING;
   if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "g" && filterKey(key)) return done(filterKey(key));
   if (pending === "y" && key === "y") return done({ type: "copy-markdown" });
   if (pending) return NOTHING;
   if (key === "g") return { action: null, pending: "g", preventDefault: true };
   if (key === "y") return { action: null, pending: "y", preventDefault: true };
   switch (key) {
     case "Escape": return done({ type: "toggle-markdown" });
-    case "H": return done({ type: "view", dir: "prev" });
-    case "L": return done({ type: "view", dir: "next" });
+    case "/": return done({ type: "focus-filter" });
     case "?": return done({ type: "toggle-help" });
     default: return NOTHING;
   }
@@ -106,10 +120,12 @@ export function resolveKey(input: KeyInput): Resolution {
   }
   if (input.altKey) {
     if (key !== "ArrowDown" && key !== "ArrowUp") return NOTHING;
+    if (input.filtering) return done(null);
     return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
   }
 
   if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "g" && filterKey(key)) return done(filterKey(key));
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });
   if (pending === "c" && key === "c") return done({ type: "change" });
@@ -119,6 +135,7 @@ export function resolveKey(input: KeyInput): Resolution {
   if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s") return { action: null, pending: key, preventDefault: true };
 
   const action = commonKey(key, onHeader) ?? (onHeader ? null : taskKey(key));
+  if (action && input.filtering && (action.type === "move" || action.type === "indent" || action.type === "outdent")) return done(null);
   return action ? done(action) : NOTHING;
 }
 
