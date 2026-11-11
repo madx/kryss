@@ -80,7 +80,6 @@
   --tint-pill: 22%;
 }
 
-/* Dark palette: Sonokai, as in the Obsidian vault (snippet sonokai.css). */
 @media (prefers-color-scheme: dark) {
   :root {
     --color-bg: #181a1c;
