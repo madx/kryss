@@ -1,0 +1,72 @@
+/* The filter bar in the header: transparent, one line, tokens from theme.css only. */
+.filter-bar {
+  flex: 1;
+  min-width: 0;
+  height: calc(var(--icon-button-size) + 2 * var(--space-2));
+  padding: var(--space-2) var(--space-8);
+  border-radius: var(--radius-control);
+  background: var(--color-input);
+  font-size: var(--font-size-task);
+}
+
+/* Focused: the search look, the cursor look of a task row in orange (a tint and a 2 px bar), with no ring that would shrink the bar. */
+.filter-bar:focus-within {
+  background: color-mix(in srgb, var(--color-search) var(--tint-cursor), var(--color-input));
+  box-shadow: inset var(--bar-width) 0 0 0 var(--color-search);
+}
+
+.filter-bar .cm-editor {
+  height: 100%;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.filter-bar .cm-editor.cm-focused {
+  outline: none;
+}
+
+.filter-bar .cm-scroller {
+  overflow: hidden !important;
+  font-family: var(--font-sans);
+  line-height: var(--icon-button-size);
+  font-size: var(--font-size-task);
+}
+
+.filter-bar .cm-content,
+.filter-bar .cm-line {
+  padding: 0;
+  caret-color: var(--color-text) !important;
+}
+
+.filter-bar .cm-placeholder {
+  color: var(--color-muted);
+}
+
+/* The caret shows only while the bar has the focus. */
+.filter-bar .cm-editor:not(.cm-focused) .cm-content {
+  caret-color: transparent !important;
+}
+
+.filter-bar .cm-editor:not(.cm-focused) .cm-cursor {
+  display: none !important;
+}
+
+/* Pills of list: and due: terms: the key on a colored background, the value on a gray one. */
+.filter-bar .cm-filter-key,
+.filter-bar .cm-filter-value {
+  padding: var(--space-2) 0;
+}
+
+.filter-bar .cm-filter-key {
+  padding-left: var(--space-8);
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  background: color-mix(in srgb, var(--color-accent) var(--tint-pill), transparent);
+  color: var(--color-accent);
+}
+
+.filter-bar .cm-filter-value {
+  padding-right: var(--space-8);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: color-mix(in srgb, var(--color-text) 12%, transparent);
+}

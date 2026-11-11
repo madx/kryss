@@ -61,6 +61,16 @@ export function dueState(text: string, horizon: Period): DueState | null {
   return "now";
 }
 
+/** The ISO week (Monday to Sunday) that holds `today`. */
+export function weekPeriod(today: string): Period {
+  return duePeriod(resolveShortcut("W", today)!)!;
+}
+
+/** True when two periods share at least one day. */
+export function overlaps(a: Period, b: Period): boolean {
+  return a.start <= b.end && b.start <= a.end;
+}
+
 /** The horizon made of one day. */
 export function dayPeriod(day: string): Period {
   return { start: day, end: day };

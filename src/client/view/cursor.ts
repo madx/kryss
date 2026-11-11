@@ -1,6 +1,7 @@
 // The cursor is the focused row or list header (PRD 5.9). This module maps between DOM focus and the stop sequence of the pure logic.
-import { clampIndex, indexOfStop, parseStoredIndex, stops, type Stop } from "../logic/cursor";
-import { visibleRange } from "../logic/views";
+import { clampIndex, indexOfStop, parseStoredIndex, type Stop } from "../logic/cursor";
+import { visibleStops as stopsOf } from "../logic/filter";
+import { visibleOf } from "./visible";
 import type { TaskPath } from "../logic";
 import type { Store } from "../store";
 
@@ -47,8 +48,8 @@ export function createCursor(main: HTMLElement, store: Store, storage?: Storage)
   let last = -1;
 
   const visibleStops = (): Stop[] => {
-    const { doc, selected } = store.getState();
-    return doc ? stops(doc, visibleRange(selected, doc.lists.length)) : [];
+    const visible = visibleOf(store.getState());
+    return visible ? stopsOf(visible) : [];
   };
   const safe = <T>(fn: () => T): T | undefined => {
     try {

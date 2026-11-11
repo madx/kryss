@@ -41,7 +41,7 @@ The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
 The ETag is a quoted hash of the exact bytes of the file.
 The SSE event is named `change`, and its data is a JSON `ChangeEvent` (defined in `src/shared/types.ts`) carrying the whole new state, so the client updates without an extra `GET`.
 The `ChangeEvent` is `{ "etag": string, "doc": TodoDocument }` when the file is valid, or `{ "etag": string, "error": { "line": number, "reason": string } }` when it is invalid.
-`PUT` validates the body (non-empty single-line titles and texts, at most 2 levels, and the saved filters of 5.14), then serializes it, and returns the document parsed back from the canonical text, so surrounding whitespace is trimmed.
+`PUT` validates the body (non-empty single-line titles and texts, at most 2 levels, and the saved filters of 5.14, where a body without a `filters` array is a `400`), then serializes it, and returns the document parsed back from the canonical text, so surrounding whitespace is trimmed.
 The server serializes `PUT` and file-change handling, and writes through a temporary file in the same directory followed by a rename.
 The server watches the file's directory and, after a short debounce, compares the ETag of the file with the last one it knows, so its own writes and duplicate events emit nothing.
 An external change that makes the file invalid still emits a `change` event, with the error in place of the document.
@@ -320,6 +320,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 - There are two modes only, Normal and Insert.
   There is no Visual mode and no Command mode.
+  A focused filter bar is Insert mode too, but it has its own color and label, SEARCH (5.10, 5.14).
 - Normal is the default.
   Single keys act on the **cursor**, which is the focused row or list header.
 - Insert is active while a text field has focus (the task editor or a list name input).
@@ -332,7 +333,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   It stops at both ends and never wraps.
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
-- `/` focuses the filter bar, `ga`, `gd` and `gw` set the filter to the built-in views, `gl` starts a list filter and `gf` opens the saved filters (5.14).
+- `/` focuses the filter bar, `ga`, `gt` and `gw` set the filter to the built-in views, `gl` starts a list filter and `gf` opens the saved filters (5.14).
   `H` and `L` do not exist any more.
   When the filter is set by a key, the cursor goes to the first stop.
 - The cursor position is stored in `localStorage` as its index in the flat sequence of stops of the current view, next to the filter text, and it is restored on load.
@@ -408,7 +409,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 **Footer, statusline and cheat sheet**
 
-- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
+- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green and SEARCH in orange while the filter bar has the focus, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
   The mode badge is a corner block that reaches the left and bottom edges of the window.
 - The counts are those of the visible tasks of the current filter (5.14), and each visible list also shows its own done / total counts of visible tasks at the top right of its header.
   Subtasks count as tasks.
@@ -472,6 +473,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The cursor row and the cursor list header share one look: a tinted background and a 2 px bar on the left, in the color of the current mode.
   The mode color is accent blue in Normal mode and green in Insert mode, the same as the footer badge.
+  The focused filter bar is orange (`--color-search`), with the same tint and 2 px bar, and the footer badge says SEARCH in that color.
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
   This applies to the task editor and to the list name input (which edits the title in place).
@@ -539,7 +541,7 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 - A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
 - Both show the transient footer text of 5.12.
 - While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
-  `/`, `ga`, `gd`, `gw`, `gl`, `gf`, `gm`, `yy`, Escape and `?` keep working.
+  `/`, `ga`, `gt`, `gw`, `gl`, `gf`, `gm`, `yy`, Escape and `?` keep working.
 
 **Implementation decisions**
 
@@ -692,7 +694,8 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 
 **Implementation decisions**
 
-- The date logic is pure functions in `src/client/logic/due.ts`, with the immutable and `null` conventions of 5.7: parsing a date, its period, the state against a horizon, the rewrite of a text on completion, and the shortcut resolution and its list of entries.
+- The date logic is pure functions in `src/client/logic/due.ts`, with the immutable and `null` conventions of 5.7: parsing a date, its period, the state against a horizon, and the shortcut resolution and its list of entries.
+  The rewrite of a text on completion is `completeDue` in `src/client/logic/complete.ts`, a separate file because it needs the inline parser, which itself imports `due.ts`.
   The current date is a parameter, never read inside them.
 - The inline parser returns a node that holds the date text, and the view adds the state, so the parser stays independent of the clock.
 - The popup source, its entry rendering and the date coloring are the only CodeMirror parts, and they are verified by hand.
@@ -707,10 +710,10 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 
 - The header holds a one-line filter bar, always visible, with the placeholder `All` when it is empty (5.10).
   It is a single-line CodeMirror editor, so that it shares the popup mechanism of 5.13.
-- `/` focuses the bar and enters Insert mode, and a click on the bar does the same.
+- `/` focuses the bar and enters the search mode, shown as SEARCH in orange in the footer and on the bar, and a click on the bar does the same.
   The lists narrow live while typing.
 - Enter accepts the highlighted popup entry when the popup is open, and otherwise applies the text and returns to Normal mode, with the cursor on the first visible stop.
-  Escape closes the popup first, and a second Escape restores the text that the bar had when it was focused and returns to Normal mode.
+  Escape closes the popup first, and a second Escape does the same as Enter: it keeps the text and returns to Normal mode, like Escape in the task editor (5.9).
   A blur keeps the typed text.
 - The filter text is stored in `localStorage` with the cursor index (5.9) and restored on load.
   It is never sent to the server.
@@ -720,12 +723,12 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 | Key | Filter text |
 |---|---|
 | `ga` | empty, which shows everything |
-| `gd` | `due:today,overdue` |
+| `gt` | `due:today,overdue` |
 | `gw` | `due:week,overdue` |
 | `gl` | adds ` list:` at the end of the current text and opens the list popup |
 | `gf` | opens the saved filter picker |
 
-`ga`, `gd` and `gw` replace the whole text, and `gl` keeps the other terms.
+`ga`, `gt` and `gw` replace the whole text, and `gl` keeps the other terms.
 Nothing else marks a view: it is the text in the bar.
 There is no selector, no `H` / `L`, and no way to show a single list other than `list:`.
 
@@ -793,6 +796,10 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 - The filter parsing, the matching of a task (with today as a parameter) and the computation of the visible rows are pure functions in `src/client/logic/filter.ts`, with the immutable and `null` conventions of 5.7.
   The Markdown view of 5.11 and the counts of 5.9 use the same visible rows.
 - Pinned rows are paths, shifted by the add or paste that creates them, and the store clears them as described above.
+- The store holds the filter text and the pins, and `commit` takes the pin and whether it is an insertion.
+  The undo history keeps the lists and the filter text of each change, and never the saved filters, which `commitFilters` changes outside the history.
+- Today is read by the view at each render, and passed to the pure functions.
+- The filter bar is built once and never re-rendered with the lists, so that typing in it is not interrupted by the live narrowing.
 - The CodeMirror parts (the bar, the popups) and the picker are verified by hand.
 - The server reads and writes the `filters` block in a small module next to the parser, with no YAML dependency.
 

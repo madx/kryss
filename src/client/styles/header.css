@@ -1,10 +1,7 @@
 /* Header: layout and height come from base.css. */
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  flex: 1;
-  min-width: 0;
+.app-header {
+  position: relative;
+  gap: var(--space-8);
 }
 
 .header-markdown {
@@ -34,4 +31,15 @@
 
 .icon-button svg {
   display: block;
+}
+
+/* Shown in place of the lists when a filter matches nothing. */
+.no-match {
+  padding: var(--space-16) var(--row-padding);
+}
+
+.no-match-filter {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-faint);
 }

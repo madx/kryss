@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { addChild, addSibling, addTask, cutTask, deleteTask, editText, toggleDone } from "./index";
+import type { TodoDocument } from "../../shared/types";
 import { frozen, sample } from "./helpers.test-util";
 
 describe("toggleDone", () => {
@@ -29,6 +30,83 @@ describe("toggleDone", () => {
     const s = frozen(sample());
     expect(toggleDone(s, { list: 0, task: 0 }).lists[0]!.tasks[0]!.done).toBe(true);
     expect(toggleDone(s, { list: 9, task: 0 })).toBe(s);
+  });
+});
+
+describe("toggleDone: due date on completion (PRD 5.13)", () => {
+  const TODAY = "2026-11-11";
+  const d = (tasks: TodoDocument["lists"][number]["tasks"]): TodoDocument => ({ lists: [{ title: "L", tasks }], filters: [] });
+
+  test("checking a task rewrites its overdue date", () => {
+    const next = toggleDone(frozen(d([{ text: "a -> 2026-10-30", done: false }])), { list: 0, task: 0 }, TODAY);
+    expect(next.lists[0]!.tasks[0]).toEqual({ text: "a -> 2026-11-11 (was 2026-10-30)", done: true });
+  });
+
+  test("a date of today or later is left alone", () => {
+    const next = toggleDone(frozen(d([{ text: "a -> 2026-11-12", done: false }])), { list: 0, task: 0 }, TODAY);
+    expect(next.lists[0]!.tasks[0]!.text).toBe("a -> 2026-11-12");
+  });
+
+  test("unchecking restores nothing", () => {
+    const checked = toggleDone(frozen(d([{ text: "a -> 2026-10-30", done: false }])), { list: 0, task: 0 }, TODAY);
+    const unchecked = toggleDone(checked, { list: 0, task: 0 }, TODAY);
+    expect(unchecked.lists[0]!.tasks[0]).toEqual({ text: "a -> 2026-11-11 (was 2026-10-30)", done: false });
+  });
+
+  test("a checked parent rewrites its own date and the dates of the children it checks", () => {
+    const next = toggleDone(
+      frozen(d([{ text: "p -> 2026-W40", done: false, children: [{ text: "x -> 2026-10-01", done: false }, { text: "y -> 2026-10-02", done: true }, { text: "z", done: false }] }])),
+      { list: 0, task: 0 },
+      TODAY,
+    );
+    expect(next.lists[0]!.tasks[0]).toEqual({
+      text: "p -> 2026-11-11 (was 2026-W40)",
+      done: true,
+      children: [{ text: "x -> 2026-11-11 (was 2026-10-01)", done: true }, { text: "y -> 2026-10-02", done: true }, { text: "z", done: true }],
+    });
+  });
+
+  test("checking the last child rewrites the child and the parent that is checked automatically", () => {
+    const next = toggleDone(
+      frozen(d([{ text: "p -> 2026-10-01", done: false, children: [{ text: "x -> 2026-10-02", done: true }, { text: "y -> 2026-10-03", done: false }] }])),
+      { list: 0, task: 0, child: 1 },
+      TODAY,
+    );
+    expect(next.lists[0]!.tasks[0]).toEqual({
+      text: "p -> 2026-11-11 (was 2026-10-01)",
+      done: true,
+      children: [{ text: "x -> 2026-10-02", done: true }, { text: "y -> 2026-11-11 (was 2026-10-03)", done: true }],
+    });
+  });
+
+  test("checking a child that does not complete the parent leaves the parent alone", () => {
+    const next = toggleDone(
+      frozen(d([{ text: "p -> 2026-10-01", done: false, children: [{ text: "x -> 2026-10-02", done: false }, { text: "y", done: false }] }])),
+      { list: 0, task: 0, child: 0 },
+      TODAY,
+    );
+    expect(next.lists[0]!.tasks[0]!.text).toBe("p -> 2026-10-01");
+    expect(next.lists[0]!.tasks[0]!.children![0]!.text).toBe("x -> 2026-11-11 (was 2026-10-02)");
+  });
+
+  test("an already checked parent is not rewritten again when its last child is checked", () => {
+    const next = toggleDone(
+      frozen(d([{ text: "p -> 2026-10-01", done: true, children: [{ text: "x", done: false }] }])),
+      { list: 0, task: 0, child: 0 },
+      TODAY,
+    );
+    expect(next.lists[0]!.tasks[0]!.text).toBe("p -> 2026-10-01");
+  });
+
+  test("without a today, no date is rewritten", () => {
+    const next = toggleDone(frozen(d([{ text: "a -> 2026-10-30", done: false }])), { list: 0, task: 0 });
+    expect(next.lists[0]!.tasks[0]!.text).toBe("a -> 2026-10-30");
+  });
+
+  test("the result is one new document, so one history entry", () => {
+    const before = frozen(d([{ text: "a -> 2026-10-30", done: false }]));
+    expect(toggleDone(before, { list: 0, task: 0 }, TODAY)).not.toBe(before);
+    expect(before.lists[0]!.tasks[0]!.text).toBe("a -> 2026-10-30");
   });
 });
 

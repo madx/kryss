@@ -67,7 +67,7 @@ Work plan: `docs/TODO.md`.
   The server never normalizes states.
 - **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and only while the filter is empty (PRD 5.1, 5.4, 5.14).
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
-- **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
+- **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode (SEARCH in orange while the filter bar has the focus) and a statusline.
 - **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
 - **Register**: `dd` and `yy` put a task subtree or a list in an in-memory register and write its Markdown to the clipboard, `p` pastes it, and `cc` clears the text of a task or the name of a list to retype it (PRD 5.12).
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change, remembering the filter text of each change and never touching the saved filters.
@@ -77,7 +77,7 @@ Work plan: `docs/TODO.md`.
   Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `sd` in Normal mode opens the editor on the date and its popup.
 - **Filters and views** (PRD 5.14): there is no list selector and no `H` / `L`.
   The header filter bar (`/`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE`, `is:done|todo`, terms ANDed and commas for OR inside a term.
-  `ga`, `gd` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gf` opens the saved filters, whose first entry saves the current text under a name.
+  `ga`, `gt` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gf` opens the saved filters, whose first entry saves the current text under a name.
   A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent do nothing while a filter is active.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.

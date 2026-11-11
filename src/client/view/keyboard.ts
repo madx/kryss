@@ -1,9 +1,10 @@
 // The single global keydown listener: resolves the key with the pure `resolveKey`, then applies the action to the focused stop.
 import type { TodoDocument } from "../../shared/types";
-import { indent, moveDown, moveUp, outdent, toggleDone, type OpResult, type TaskPath } from "../logic";
-import { firstChanged, moveCursor, stops as stopsOf, type Stop } from "../logic/cursor";
+import { indent, moveDown, moveUp, outdent, type OpResult, type TaskPath } from "../logic";
+import { firstChanged, moveCursor, type Stop } from "../logic/cursor";
 import type { AddAt, Anchor } from "../logic/insert";
-import { cycleView, visibleRange } from "../logic/views";
+import { isFiltering, visibleStops } from "../logic/filter";
+import { visibleOf } from "./visible";
 import { isTextField, resolveKey, type Action, type Overlay, type Pending, type TargetKind } from "../shortcuts";
 import type { Store } from "../store";
 import type { Cursor } from "./cursor";
@@ -18,8 +19,10 @@ export type KeyboardEnv = {
   cheatsheet: { open(): void; close(): void; isOpen(): boolean };
   /** Applies a pure operation and focuses the task at its new path. */
   apply(result: OpResult | null): void;
-  /** Commits a document and focuses the given path. */
-  commitFocus(doc: TodoDocument, path: TaskPath): void;
+  /** Toggles the task at `path` (the due date rewrite and the pin included) and keeps the focus on it. */
+  toggle(path: TaskPath): void;
+  /** The filter bar and the saved filter picker (PRD 5.14). */
+  filters: { focus(): void; set(text: string): void; appendList(): void; openPicker(): void };
   renameList(list: number): void;
   /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
@@ -44,6 +47,9 @@ export function targetKind(target: EventTarget | null): TargetKind {
   return "none";
 }
 
+/** Actions that make sense when the page holds no document. */
+const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "set-filter", "filter-list", "filter-picker"]);
+
 export function installKeyboard(env: KeyboardEnv): void {
   const { store, cursor } = env;
   let pending: Pending = "";
@@ -66,15 +72,15 @@ export function installKeyboard(env: KeyboardEnv): void {
       pending,
       overlay,
       markdownView: env.markdown.isOpen(),
+      filtering: isFiltering(state.filter),
     });
     pending = res.pending;
     if (res.preventDefault) e.preventDefault();
-    if (res.action && (state.doc || res.action.type === "toggle-help" || res.action.type === "toggle-markdown" || res.action.type === "copy-markdown")) run(res.action);
+    if (res.action && (state.doc || NO_DOCUMENT_ACTIONS.has(res.action.type))) run(res.action);
   });
 
   function run(action: Action): void {
     const doc = store.getState().doc!;
-    const selected = store.getState().selected;
     switch (action.type) {
       case "toggle-help":
         if (env.cheatsheet.isOpen()) env.cheatsheet.close();
@@ -92,13 +98,19 @@ export function installKeyboard(env: KeyboardEnv): void {
       case "focus-cursor":
         cursor.focusIndex(cursor.last());
         return;
-      case "view": {
-        const next = cycleView(selected, doc.lists.length, action.dir);
-        store.select(next);
-        const first = visibleRange(next, doc.lists.length).first;
-        if (doc.lists[first]) cursor.focusStop({ kind: "header", list: first });
+      case "focus-filter":
+        env.filters.focus();
         return;
-      }
+      case "set-filter":
+        env.filters.set(action.text);
+        cursor.focusIndex(0); // the first visible stop
+        return;
+      case "filter-list":
+        env.filters.appendList();
+        return;
+      case "filter-picker":
+        env.filters.openPicker();
+        return;
       case "undo":
       case "redo": {
         const before = doc;
@@ -143,7 +155,7 @@ export function installKeyboard(env: KeyboardEnv): void {
     const path = current.path;
     switch (action.type) {
       case "toggle":
-        env.commitFocus(toggleDone(doc, path), path);
+        env.toggle(path);
         return;
       case "edit":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(BEGIN_EDIT));
@@ -165,7 +177,7 @@ export function installKeyboard(env: KeyboardEnv): void {
         env.apply(outdent(doc, path));
         return;
       case "move": {
-        const range = visibleRange(selected, doc.lists.length);
+        const range = { first: 0, last: doc.lists.length - 1 }; // moves only run with no filter
         env.apply(action.dir === "up" ? moveUp(doc, path, range) : moveDown(doc, path, range));
         return;
       }
@@ -173,7 +185,7 @@ export function installKeyboard(env: KeyboardEnv): void {
   }
 
   function cursorStops(): Stop[] {
-    const { doc, selected } = store.getState();
-    return doc ? stopsOf(doc, visibleRange(selected, doc.lists.length)) : [];
+    const visible = visibleOf(store.getState());
+    return visible ? visibleStops(visible) : [];
   }
 }

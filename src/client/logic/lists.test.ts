@@ -10,7 +10,7 @@ describe("lists", () => {
     expect(d.lists[2]).toEqual({ title: "New", tasks: [] });
   });
   test("addList works on an empty document and refuses an empty title", () => {
-    expect(addList({ lists: [] }, "A").lists).toHaveLength(1);
+    expect(addList({ lists: [], filters: [] }, "A").lists).toHaveLength(1);
     const s = frozen(sample());
     expect(addList(s, " ")).toBe(s);
   });
@@ -28,6 +28,7 @@ describe("lists", () => {
 });
 
 const four = (): TodoDocument => ({
+  filters: [],
   lists: ["A", "B", "C", "D"].map((title) => ({ title, tasks: [{ text: `${title.toLowerCase()}0`, done: true }] })),
 });
 const titles = (d: TodoDocument) => d.lists.map((l) => l.title).join("");

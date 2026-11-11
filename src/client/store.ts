@@ -1,9 +1,11 @@
-// Client state: document, ETag, sync status, selected list and undo history.
+// Client state: document, ETag, sync status, filter text, pinned rows and undo history.
 // Everything that changes the document goes through `commit`, everything that comes from the server through `replace`.
 // Dependencies (api, timers, storage) are injected so that the state machine can be tested without DOM or network.
-import type { ChangeEvent, ParseError, TodoDocument } from "../shared/types";
+import type { ChangeEvent, ParseError, SavedFilter, TodoDocument } from "../shared/types";
 import type { Api } from "./api";
 import { canRedo, canUndo, clear, createHistory, push, redo as redoHistory, undo as undoHistory } from "./logic";
+import { pinTask } from "./logic/filter";
+import type { TaskPath } from "./logic/paths";
 import { DEBOUNCE_MS, retryDelay, type SyncStatus } from "./sync";
 
 export type StoreState = {
@@ -13,8 +15,10 @@ export type StoreState = {
   status: SyncStatus;
   /** Set when the file on disk is invalid. The UI shows it in place of the lists. */
   invalid: ParseError | null;
-  /** Selected list index, or null for "All". Always valid for `doc`. */
-  selected: number | null;
+  /** The text of the filter bar (PRD 5.14). Empty shows everything. */
+  filter: string;
+  /** Tasks that stay visible until the filter text changes, even when they do not match. */
+  pins: TaskPath[];
   canUndo: boolean;
   canRedo: boolean;
 };
@@ -24,9 +28,23 @@ export type StoreState = {
 export type ChangeKind = "content" | "external" | "status";
 
 export type Timers = { set(fn: () => void, ms: number): unknown; clear(handle: unknown): void };
-type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
+type Storage = Pick<globalThis.Storage, "getItem" | "setItem" | "removeItem">;
 
-export const SELECTION_KEY = "todoapp.selectedList";
+export const FILTER_KEY = "todoapp.filter";
+/** The key of the list selector, which no longer exists. It is removed on start. */
+export const OLD_SELECTION_KEY = "todoapp.selectedList";
+
+/** What a local change says about the rows it touches, so that they stay visible under a filter. */
+export type CommitOptions = {
+  /** The task to keep visible until the filter text changes. */
+  pin?: TaskPath;
+  /** `pin` was just added or pasted: the pins at or after it shift. */
+  inserted?: boolean;
+  /** `pin` is a parent whose subtasks were just changed too (a cascade): they stay visible with it. */
+  pinChildren?: boolean;
+  /** A delete: the pins are dropped. */
+  clearPins?: boolean;
+};
 
 const realTimers: Timers = { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) };
 
@@ -40,7 +58,8 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let status: SyncStatus = "saving";
   let invalid: ParseError | null = null;
   let history = createHistory();
-  let selected = readSelection();
+  let filter = readFilter();
+  let pins: TaskPath[] = [];
   let dirty = false; // local changes not on disk yet
   let inFlight = false;
   let attempts = 0;
@@ -50,13 +69,19 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let externalEvent: ChangeEvent | null = null; // external change announced while a PUT was in flight
   const listeners = new Set<(state: StoreState, kind: ChangeKind) => void>();
 
-  function readSelection(): number | null {
+  function readFilter(): string {
     try {
-      const raw = storage?.getItem(SELECTION_KEY);
-      return raw != null && /^\d+$/.test(raw) ? Number(raw) : null;
+      storage?.removeItem(OLD_SELECTION_KEY);
+      return storage?.getItem(FILTER_KEY) ?? "";
     } catch {
-      return null;
+      return "";
     }
+  }
+
+  function storeFilter() {
+    try {
+      storage?.setItem(FILTER_KEY, filter);
+    } catch {}
   }
 
   function getState(): StoreState {
@@ -65,25 +90,14 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       etag,
       status,
       invalid,
-      selected: selected !== null && doc?.lists[selected] ? selected : null,
+      filter,
+      pins,
       canUndo: canUndo(history),
       canRedo: canRedo(history),
     };
   }
 
-  /** A stored index that no longer points to a list goes back to "All". */
-  function resetStaleSelection() {
-    if (selected !== null && doc && !doc.lists[selected]) storeSelection((selected = null));
-  }
-
-  function storeSelection(index: number | null) {
-    try {
-      storage?.setItem(SELECTION_KEY, index === null ? "all" : String(index));
-    } catch {}
-  }
-
   function emit(kind: ChangeKind) {
-    if (kind !== "status") resetStaleSelection();
     const state = getState();
     for (const fn of listeners) fn(state, kind);
   }
@@ -125,9 +139,15 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   }
 
   /** Applies a document produced by the UI. The single entry point for local changes. */
-  function commit(next: TodoDocument) {
+  function commit(next: TodoDocument, options: CommitOptions = {}) {
     if (!doc || next === doc) return;
-    history = push(history, doc, selected);
+    history = push(history, doc, filter);
+    if (options.clearPins) pins = [];
+    if (options.pin) pins = pinTask(pins, options.pin, options.inserted);
+    if (options.pin && options.pinChildren && options.pin.child === undefined) {
+      const { list, task } = options.pin;
+      next.lists[list]?.tasks[task]?.children?.forEach((_, child) => (pins = pinTask(pins, { list, task, child })));
+    }
     doc = next;
     markDirty();
     emit("content");
@@ -139,6 +159,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     doc = next;
     etag = nextEtag;
     history = clear();
+    pins = [];
     dirty = false;
     invalid = null;
     conflictEtag = externalEvent = null;
@@ -153,6 +174,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     doc = null;
     etag = null;
     history = clear();
+    pins = [];
     dirty = false;
     conflictEtag = externalEvent = null;
     invalid = error;
@@ -263,7 +285,9 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (!result) return false;
       history = result.history;
       doc = result.doc;
-      if (result.view !== selected) storeSelection((selected = result.view)); // back to the view of the change
+      filter = result.filter; // back to the filter text of the change
+      pins = [];
+      storeFilter();
       markDirty();
       emit("content");
       return true;
@@ -273,7 +297,9 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (!result) return false;
       history = result.history;
       doc = result.doc;
-      if (result.view !== selected) storeSelection((selected = result.view)); // back to the view of the change
+      filter = result.filter; // back to the filter text of the change
+      pins = [];
+      storeFilter();
       markDirty();
       emit("content");
       return true;
@@ -292,10 +318,19 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (status !== "conflict") return;
       void reload(true);
     },
-    /** Selects a list by index, or null for "All". Stored in localStorage. */
-    select(index: number | null) {
-      selected = index;
-      storeSelection(index);
+    /** Sets the filter text. It is not a change of the document: no history, no save. Pins are dropped when the text changes. */
+    setFilter(text: string) {
+      if (text === filter) return;
+      filter = text;
+      pins = [];
+      storeFilter();
+      emit("content");
+    },
+    /** Replaces the saved filters. Saved like any change of the document, but kept out of the history (PRD 5.14). */
+    commitFilters(filters: SavedFilter[]) {
+      if (!doc) return;
+      doc = { ...doc, filters };
+      markDirty();
       emit("content");
     },
   };

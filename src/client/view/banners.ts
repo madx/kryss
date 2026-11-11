@@ -52,3 +52,8 @@ export function renderUnreachable(): HTMLElement {
 export function renderEmptyState(onCreate: () => void): HTMLElement {
   return renderAlert("warning", [el("strong", {}, "No lists yet.")], [{ label: "Create your first list", onClick: onCreate }]);
 }
+
+/** Shown in place of the lists when a filter matches nothing, or when it has a bad value (PRD 5.14). */
+export function renderNoMatch(filter: string, error: string | null): HTMLElement {
+  return el("div", { class: "no-match muted", role: "status" }, el("p", {}, error ?? "No matching task"), el("p", { class: "no-match-filter" }, filter));
+}

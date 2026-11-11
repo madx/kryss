@@ -7,7 +7,7 @@ import { cloneDoc, normalizeText } from "./paths";
 export function addList(doc: TodoDocument, title: string): TodoDocument {
   const clean = normalizeText(title);
   if (clean === "") return doc;
-  return { lists: [...cloneDoc(doc).lists, { title: clean, tasks: [] }] };
+  return { ...doc, lists: [...cloneDoc(doc).lists, { title: clean, tasks: [] }] };
 }
 
 /** Renames a list. Empty title or unknown list: same document returned. */

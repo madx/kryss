@@ -3,6 +3,7 @@ import { serialize, serializeList, serializeTask } from "./serializer";
 import type { TodoDocument } from "./types";
 
 const doc: TodoDocument = {
+  filters: [],
   lists: [
     { title: "A", tasks: [{ text: "x", done: false, children: [{ text: "y", done: true }] }] },
     { title: "B", tasks: [] },

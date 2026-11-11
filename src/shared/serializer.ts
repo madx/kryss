@@ -17,6 +17,6 @@ export function serializeList(list: TodoList): string {
 }
 
 /** The lists separated by a blank line, with one final newline. An empty document is an empty string. */
-export function serialize(doc: TodoDocument): string {
+export function serialize(doc: Pick<TodoDocument, "lists">): string {
   return doc.lists.length === 0 ? "" : doc.lists.map(serializeList).join("\n\n") + "\n";
 }

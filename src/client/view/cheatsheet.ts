@@ -9,8 +9,7 @@ const GROUPS: Group[] = [
     rows: [
       ["j / k, ↓ / ↑", "next / previous row or list header"],
       ["gg / G", "first / last"],
-      ["h / l", "previous / next list header (All view)"],
-      ["H / L", "previous / next view"],
+      ["h / l", "previous / next list header"],
     ],
   },
   {
@@ -23,8 +22,8 @@ const GROUPS: Group[] = [
       ["cc", "clear the text to retype it (Escape restores it)"],
       ["sd", "set the due date: edit the date with its popup"],
       ["p", "paste the register below, after the subtasks"],
-      ["> / <", "indent / outdent"],
-      ["J / K, Alt+↓ / Alt+↑", "move down / up"],
+      ["> / <", "indent / outdent (no filter)"],
+      ["J / K, Alt+↓ / Alt+↑", "move down / up (no filter)"],
       ["u / U, Ctrl+Z / Ctrl+Shift+Z", "undo / redo"],
     ],
   },
@@ -36,8 +35,8 @@ const GROUPS: Group[] = [
       ["yy", "copy the list into the register"],
       ["cc", "clear the name to retype it"],
       ["p", "paste a task first, or a list after this one"],
-      ["J / K, Alt+↓ / Alt+↑", "move the list down / up (All view)"],
-      ["N", "new list, from anywhere"],
+      ["J / K, Alt+↓ / Alt+↑", "move the list down / up (no filter)"],
+      ["N", "new list, from anywhere (clears the filter)"],
     ],
   },
   {
@@ -48,6 +47,19 @@ const GROUPS: Group[] = [
       ["I / A", "first / last subtask (of the parent on a subtask)"],
       ["o, a, I (header)", "first task of the list"],
       ["A (header)", "last task of the list"],
+    ],
+  },
+  {
+    title: "Filters and views",
+    rows: [
+      ["/", "focus the filter bar (Enter or Escape applies)"],
+      ["ga / gt / gw", "all / due today or overdue / due this week or overdue"],
+      ["gl", "add list: to the filter, with a popup of the lists"],
+      ["gf", "saved filters (dd deletes one)"],
+      ["words", "match the task text, ignoring case"],
+      ["list:name due:today|week|overdue|DATE is:done|todo", "terms are ANDed, commas inside a term are OR"],
+      ["list:\"two words\"", "quote a name with spaces"],
+      ["checking", "sets a due date to today, keeping the old one as (was …)"],
     ],
   },
   {

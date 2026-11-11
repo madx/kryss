@@ -33,6 +33,11 @@
   color: var(--color-accent-text);
 }
 
+.mode-badge[data-mode="search"] {
+  background: var(--color-search);
+  color: var(--color-accent-text);
+}
+
 .statusline {
   font-family: var(--font-mono);
 }
