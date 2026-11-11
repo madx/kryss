@@ -177,10 +177,17 @@
   flex: none;
 }
 
+.due-alert { display: none; }
 .due[data-state="overdue"] { color: var(--color-due-overdue); }
+.due[data-state="overdue"] .due-arrow { display: none; }
+.due[data-state="overdue"] .due-alert { display: block; }
 .due[data-state="now"] { color: var(--color-due-now); }
 
 /* A completed task has a neutral pill, in the muted color of its text. */
 .task-row[data-done="true"] .due {
   color: inherit;
 }
+
+/* A completed task is never a warning: it keeps the arrow. */
+.task-row[data-done="true"] .due .due-arrow { display: block; }
+.task-row[data-done="true"] .due .due-alert { display: none; }

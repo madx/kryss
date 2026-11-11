@@ -13,6 +13,7 @@ export const checkIcon = () => icon(Check);
 export const markdownIcon = () => icon(SquareLetterM); // Lucide "square-m"
 export const copyIcon = () => icon(Copy);
 export const arrowRightIcon = () => icon(ArrowRight); // the due date pill
+export const overdueIcon = () => icon(CircleExclamationPoint); // the pill of an overdue date
 
 const STATUS_ICONS: Record<SyncStatus, IconNode> = {
   saved: Check,
