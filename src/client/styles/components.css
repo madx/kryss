@@ -157,6 +157,9 @@
   align-items: center;
   /* An inline flex box takes its baseline from the icon, so it is centered on the line instead. */
   vertical-align: middle;
+  /* `middle` aims at the x-height, which sits lower than the optical center of the digits, so nudge it up. */
+  position: relative;
+  top: calc(-1 * var(--hairline));
   box-sizing: border-box;
   height: calc(var(--icon-size) + var(--space-4));
   line-height: 1;
