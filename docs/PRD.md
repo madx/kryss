@@ -462,7 +462,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
   Text size and row height are the same at every window width.
 - Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
   The page gutter goes from 6 to 16 px, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
-- The header is fixed and about 32 px tall, the footer is fixed and about 24 px tall, and neither has a border or a separator.
+- The header is fixed and about 32 px tall, below a 4 px margin at the top of the page, the footer is fixed and about 24 px tall, and neither has a border or a separator.
 - The scrollbar of the scroll area appears only when the content overflows, and no space is reserved for it, so the layout stays centered and balanced.
   It is 10 px wide (an 8 px thumb with 1 px of padding).
   When it appears, the panels shrink by its width and their edges move a few pixels away from those of the header and the footer, which is accepted.
@@ -506,7 +506,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Filter bar and picker**
 
-- The filter bar is a one-line input at the left of the header, in the body size, with the muted placeholder `All` when it is empty.
+- The filter bar is a one-line input at the left of the header, in the body size, with 4 px of vertical padding, with the muted placeholder `All` when it is empty.
   It has no border or box of its own, like the other inputs, and the cursor look in Insert color is the only signal that it is focused.
 - The saved filter picker opens below the bar and uses the panel look (surface background, 6 px radius items), with a tint on the highlighted item.
   It is a listbox usable with ↑ / ↓, Enter and Escape, it closes on an outside click, and it adds no dependency.

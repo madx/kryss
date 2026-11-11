@@ -97,6 +97,7 @@ code {
   display: flex;
   align-items: center;
   height: var(--header-height);
+  margin-top: var(--space-4); /* a small margin above the filter bar */
 }
 
 /* The footer spans the whole window, its content keeps the column (see footer.css). */
