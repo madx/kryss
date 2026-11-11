@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import type { ChangeEvent, TodoDocument } from "../shared/types";
 import type { Api, LoadResult, SaveResult } from "./api";
-import { addTask } from "./logic";
+import { addTask, moveDown, moveList } from "./logic";
+import { visibleRows } from "./logic/filter";
 import { createStore, FILTER_KEY, OLD_SELECTION_KEY, SIBLINGS_KEY, type Timers } from "./store";
 import { DEBOUNCE_MS, retryDelay } from "./sync";
 
@@ -433,6 +434,37 @@ describe("pinned rows", () => {
     const withChildren: TodoDocument = { filters: [], lists: [{ title: "A", tasks: [{ text: "p", done: true, children: [{ text: "a", done: true }, { text: "b", done: true }] }] }] };
     store.commit(withChildren, { pin: path(0), pinChildren: true });
     expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 0 }, path(0, 0), path(0, 1)]);
+  });
+
+  test("a move pins the moved task and the other pins follow their tasks", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    store.commit(doc("C"), { pin: path(0), moves: [{ from: path(2), to: path(0) }, { from: path(0), to: path(1) }, { from: path(1), to: path(2) }] });
+    expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 2 }, { list: 0, task: 0 }]);
+  });
+
+  test("pins follow their tasks through a real move, and undo restores the filter text", () => {
+    const base: TodoDocument = { filters: [], lists: [{ title: "A", tasks: ["x0", "h1", "x2", "h3"].map((text) => ({ text, done: false })) }] };
+    store.replace(base, "e1");
+    store.setFilter("x");
+    store.commit(structuredClone(base), { pin: { list: 0, task: 3 }, moves: [] }); // h3 is pinned
+    const r = moveDown(base, { list: 0, task: 0 }, visibleRows(base, "x", "2026-11-11", store.getState().pins))!;
+    store.commit(r.doc, { pin: r.path, moves: r.moves });
+    const shown = visibleRows(r.doc, "x", "2026-11-11", store.getState().pins);
+    expect(shown.lists[0]!.tasks.map((v) => r.doc.lists[0]!.tasks[v.task]!.text)).toEqual(["x2", "x0", "h3"]);
+    store.setFilter("y");
+    store.undo();
+    expect(store.getState().filter).toBe("x");
+  });
+
+  test("a list move keeps the pins on their tasks", () => {
+    const base: TodoDocument = { filters: [], lists: [{ title: "A", tasks: [{ text: "h1", done: false }] }, { title: "B", tasks: [{ text: "x3", done: false }] }] };
+    store.replace(base, "e1");
+    store.setFilter("x");
+    store.commit(structuredClone(base), { pin: { list: 0, task: 0 }, moves: [] });
+    const r = moveList(base, 0, 1, "after")!;
+    store.commit(r.doc, { moves: r.moves });
+    expect(store.getState().pins).toEqual([{ list: 1, task: 0 }]);
   });
 
   test("an insertion shifts the earlier pins", () => {

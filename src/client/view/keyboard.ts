@@ -3,7 +3,7 @@ import type { TodoDocument } from "../../shared/types";
 import { indent, moveDown, moveUp, outdent, type OpResult, type TaskPath } from "../logic";
 import { firstChanged, moveCursor, type Stop } from "../logic/cursor";
 import type { AddAt, Anchor } from "../logic/insert";
-import { isFiltering, visibleStops } from "../logic/filter";
+import { visibleStops } from "../logic/filter";
 import { visibleOf } from "./visible";
 import { isTextField, resolveKey, type Action, type Overlay, type Pending, type TargetKind } from "../shortcuts";
 import type { Store } from "../store";
@@ -28,7 +28,7 @@ export type KeyboardEnv = {
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
   /** `cc` on a header: opens the name input with no text. */
   changeList(list: number): void;
-  /** `J` / `K` on a header: moves the list down or up, in the "All" view only. */
+  /** `J` / `K` on a header: moves the list down or up, over the visible lists under a filter. */
   moveList(list: number, dir: "up" | "down", focus?: Stop): void;
   beginAdd(at: AddAt, anchor: Anchor): void;
   newList(): void;
@@ -72,7 +72,6 @@ export function installKeyboard(env: KeyboardEnv): void {
       pending,
       overlay,
       markdownView: env.markdown.isOpen(),
-      filtering: isFiltering(state.filter),
     });
     pending = res.pending;
     if (res.preventDefault) e.preventDefault();
@@ -179,14 +178,14 @@ export function installKeyboard(env: KeyboardEnv): void {
         cursor.focusIndex(index); // same position: the next stop, or the previous one when the last was deleted
         return;
       case "indent":
-        env.apply(indent(doc, path));
+        env.apply(indent(doc, path, visibleOf(store.getState()) ?? undefined));
         return;
       case "outdent":
         env.apply(outdent(doc, path));
         return;
       case "move": {
-        const range = { first: 0, last: doc.lists.length - 1 }; // moves only run with no filter
-        env.apply(action.dir === "up" ? moveUp(doc, path, range) : moveDown(doc, path, range));
+        const visible = visibleOf(store.getState()) ?? undefined;
+        env.apply(action.dir === "up" ? moveUp(doc, path, visible) : moveDown(doc, path, visible));
         return;
       }
     }

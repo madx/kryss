@@ -20,8 +20,6 @@ export type Action =
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
-  /** A filter is active, so moves, indent and outdent do nothing (PRD 5.14). */
-  filtering: boolean;
 };
 export type Resolution = { action: Action | null; pending: Pending; preventDefault: boolean };
 
@@ -128,7 +126,6 @@ export function resolveKey(input: KeyInput): Resolution {
   }
   if (input.altKey) {
     if (key !== "ArrowDown" && key !== "ArrowUp") return NOTHING;
-    if (input.filtering) return done(null);
     return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
   }
 
@@ -143,7 +140,6 @@ export function resolveKey(input: KeyInput): Resolution {
   if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s") return { action: null, pending: key, preventDefault: true };
 
   const action = commonKey(key, onHeader) ?? (onHeader ? null : taskKey(key));
-  if (action && input.filtering && (action.type === "move" || action.type === "indent" || action.type === "outdent")) return done(null);
   return action ? done(action) : NOTHING;
 }
 

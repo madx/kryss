@@ -28,7 +28,7 @@ describe("undoActionFor", () => {
 
 const k = (key: string, o: Partial<KeyInput> = {}): KeyInput => ({
   key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
-  target: "task", pending: "", overlay: "none", markdownView: false, filtering: false, ...o,
+  target: "task", pending: "", overlay: "none", markdownView: false, ...o,
 });
 const act = (key: string, o: Partial<KeyInput> = {}) => resolveKey(k(key, o)).action;
 const onHeader = { target: "header" } as const;
@@ -561,24 +561,27 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     expect(act("w", { pending: "y" })).toBeNull();
   });
 
-  test("moves, indent and outdent do nothing while a filter is active, for tasks and headers", () => {
-    const f = { filtering: true } as const;
-    for (const [key, o] of [["J", { shiftKey: true }], ["K", { shiftKey: true }], [">", { shiftKey: true }], ["<", { shiftKey: true }], ["ArrowUp", { altKey: true }], ["ArrowDown", { altKey: true }]] as const) {
-      expect(act(key, { ...o, ...f })).toBeNull();
-      expect(act(key, { ...o, ...f, ...onHeader })).toBeNull();
-    }
-    expect(resolveKey(k("ArrowDown", { altKey: true, filtering: true })).preventDefault).toBe(true);
+  test("moves, indent and outdent resolve as usual while a filter is active, for tasks and headers", () => {
+    const move = (dir: "up" | "down") => ({ type: "move", dir }) as const;
+    expect(act("J", { shiftKey: true })).toEqual(move("down"));
+    expect(act("K", { shiftKey: true })).toEqual(move("up"));
+    expect(act("ArrowDown", { altKey: true })).toEqual(move("down"));
+    expect(act("ArrowUp", { altKey: true })).toEqual(move("up"));
+    expect(act(">", { shiftKey: true })).toEqual({ type: "indent" });
+    expect(act("<", { shiftKey: true })).toEqual({ type: "outdent" });
+    expect(act("J", { shiftKey: true, ...onHeader })).toEqual(move("down"));
+    expect(act("ArrowUp", { altKey: true, ...onHeader })).toEqual(move("up"));
   });
 
   test("the other task keys work as usual under a filter", () => {
-    const f = { filtering: true } as const;
+    const f = {};
     expect(act("x", f)).toEqual({ type: "toggle" });
     expect(act("i", f)).toEqual({ type: "edit" });
     expect(act("p", f)).toEqual({ type: "paste" });
     expect(act("o", f)).toEqual({ type: "add", at: "below" });
     expect(act("d", { pending: "d", ...f })).toEqual({ type: "delete" });
     expect(act("d", { pending: "s", ...f })).toEqual({ type: "set-due" });
-    expect(act("N", { shiftKey: true, ...f })).toEqual({ type: "new-list" });
+    expect(act("N", { shiftKey: true })).toEqual({ type: "new-list" });
   });
 
   test("the moves still work with no filter", () => {

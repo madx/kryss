@@ -4,7 +4,7 @@ import type { Task, TodoDocument } from "../../shared/types";
 import { findDueRange } from "../markdown/inline";
 import type { Stop } from "./cursor";
 import { duePeriod, overlaps, weekPeriod, dayPeriod } from "./due";
-import type { TaskPath } from "./paths";
+import { samePath, type PathMove, type TaskPath } from "./paths";
 
 export type DueValue = string; // "today", "week", "overdue" or a valid day, week or quarter
 export type Term =
@@ -191,6 +191,14 @@ export function pinTask(pins: TaskPath[], path: TaskPath, inserted = false): Tas
   }
   if (next.some((p) => p.list === path.list && p.task === path.task && p.child === path.child)) return next;
   return [...next, path];
+}
+
+/**
+ * The pins after a move: each one follows its task to the new path.
+ * The moves apply at once, so two tasks that swap each keep their pin.
+ */
+export function followPins(pins: TaskPath[], moves: PathMove[]): TaskPath[] {
+  return pins.map((p) => moves.find((m) => samePath(m.from, p))?.to ?? p);
 }
 
 export type Range = { from: number; to: number };

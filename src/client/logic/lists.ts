@@ -1,7 +1,6 @@
 import type { TodoDocument } from "../../shared/types";
-import type { Range } from "./cursor";
 import { copyList, type Register } from "./register";
-import { cloneDoc, normalizeText } from "./paths";
+import { changedPaths, cloneDoc, normalizeText, pathsByNode, type PathMove } from "./paths";
 
 /** Appends an empty list (its index is `lists.length - 1`). Empty title: same document returned. */
 export function addList(doc: TodoDocument, title: string): TodoDocument {
@@ -31,23 +30,25 @@ export type ListPlace = "before" | "after";
 
 /**
  * Moves a list before or after a target list (PRD 5.7).
- * Returns the new document and the new index of the moved list, or `null` when the order would not change.
+ * Returns the new document, the new index of the moved list and the tasks whose path changed (so that the pins follow), or `null` when the order would not change.
  */
-export function moveList(doc: TodoDocument, list: number, target: number, place: ListPlace): { doc: TodoDocument; list: number } | null {
+export function moveList(doc: TodoDocument, list: number, target: number, place: ListPlace): { doc: TodoDocument; list: number; moves: PathMove[] } | null {
   if (!doc.lists[list] || !doc.lists[target] || list === target) return null;
   const at = place === "before" ? target : target + 1;
   const index = at > list ? at - 1 : at; // the index once the list has left its old position
   if (index === list) return null;
   const next = cloneDoc(doc);
+  const before = pathsByNode(next);
   const [moved] = next.lists.splice(list, 1);
   next.lists.splice(index, 0, moved!);
-  return { doc: next, list: index };
+  return { doc: next, list: index, moves: changedPaths(before, next) };
 }
 
-/** Target of a keyboard move: the next (down) or previous (up) visible list, or `null` at the edge of the visible range. */
-export function listMoveTarget(list: number, dir: "up" | "down", range: Range): { target: number; place: ListPlace } | null {
-  const target = dir === "down" ? list + 1 : list - 1;
-  if (target < range.first || target > range.last) return null;
+/** Target of a keyboard move: the next (down) or previous (up) visible list, or `null` at the edge of the visible lists. `visible` is in document order. */
+export function listMoveTarget(list: number, dir: "up" | "down", visible: number[]): { target: number; place: ListPlace } | null {
+  const at = visible.indexOf(list);
+  const target = visible[at + (dir === "down" ? 1 : -1)];
+  if (at < 0 || target === undefined) return null;
   return { target, place: dir === "down" ? "after" : "before" };
 }
 
