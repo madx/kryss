@@ -28,7 +28,7 @@ describe("undoActionFor", () => {
 
 const k = (key: string, o: Partial<KeyInput> = {}): KeyInput => ({
   key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
-  target: "task", pending: "", overlay: "none", markdownView: false, ...o,
+  target: "task", pending: "", overlay: "none", markdownView: false, search: false, ...o,
 });
 const act = (key: string, o: Partial<KeyInput> = {}) => resolveKey(k(key, o)).action;
 const onHeader = { target: "header" } as const;
@@ -241,10 +241,10 @@ describe("resolveKey: undo and redo", () => {
   });
 });
 
-describe("resolveKey: N, help and target none", () => {
-  test("N creates a list from a task, a header and no target", () => {
+describe("resolveKey: +, help and target none", () => {
+  test("+ creates a list from a task, a header and no target", () => {
     for (const target of ["task", "header", "none"] as const) {
-      expect(act("N", { target, shiftKey: true })).toEqual({ type: "new-list" });
+      expect(act("+", { target, shiftKey: true })).toEqual({ type: "new-list" });
     }
   });
   test("g? toggles the cheat sheet, and a bare ? does nothing", () => {
@@ -265,7 +265,7 @@ describe("resolveKey: N, help and target none", () => {
 describe("resolveKey: target field (Insert mode)", () => {
   const field = { target: "field" } as const;
   test("plain keys resolve to nothing and are not prevented", () => {
-    for (const key of ["j", "x", "d", "g", "N", "?", " ", "Enter", "Delete", "Escape", "ArrowDown"]) {
+    for (const key of ["j", "x", "d", "g", "N", "+", "/", "?", " ", "Enter", "Delete", "Escape", "ArrowDown"]) {
       expect(resolveKey(k(key, field))).toEqual({ action: null, pending: "", preventDefault: false });
     }
   });
@@ -285,7 +285,7 @@ describe("resolveKey: target control", () => {
     });
   });
   test("other keys keep their native behavior", () => {
-    for (const key of ["j", "x", "Enter", " ", "d", "N", "?", "ArrowDown", "Delete"]) {
+    for (const key of ["j", "x", "Enter", " ", "d", "N", "+", "?", "ArrowDown", "Delete"]) {
       expect(resolveKey(k(key, control))).toEqual({ action: null, pending: "", preventDefault: false });
     }
   });
@@ -380,14 +380,19 @@ describe("resolveKey: result shape", () => {
 
 describe("resolveKey: Markdown view (PRD 5.11)", () => {
   const open = { markdownView: true } as const;
-  test("gm toggles the view, whether it is open or not", () => {
-    expect(resolveKey(k("g")).pending).toBe("g");
-    expect(act("m", { pending: "g" })).toEqual({ type: "toggle-markdown" });
-    expect(act("m", { pending: "g", ...open })).toEqual({ type: "toggle-markdown" });
+  test("sm toggles the view, whether it is open or not", () => {
+    expect(resolveKey(k("s")).pending).toBe("s");
+    expect(resolveKey(k("s", open)).pending).toBe("s");
+    expect(act("m", { pending: "s" })).toEqual({ type: "toggle-markdown" });
+    expect(act("m", { pending: "s", ...open })).toEqual({ type: "toggle-markdown" });
   });
-  test("gm works on a header and with no focus", () => {
-    expect(act("m", { pending: "g", ...onHeader })).toEqual({ type: "toggle-markdown" });
-    expect(act("m", { pending: "g", target: "none" })).toEqual({ type: "toggle-markdown" });
+  test("sm works on a header and with no focus", () => {
+    expect(act("m", { pending: "s", ...onHeader })).toEqual({ type: "toggle-markdown" });
+    expect(act("m", { pending: "s", target: "none" })).toEqual({ type: "toggle-markdown" });
+  });
+  test("gm does nothing any more", () => {
+    expect(act("m", { pending: "g" })).toBeNull();
+    expect(act("m", { pending: "g", ...open })).toBeNull();
   });
   test("a lone m does nothing", () => {
     expect(act("m")).toBeNull();
@@ -404,7 +409,7 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(r.pending).toBe("");
   });
   test("task keys are ignored while the view is open", () => {
-    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
+    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "+", "n", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
       expect(act(key, open)).toBeNull();
     }
   });
@@ -421,11 +426,12 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(act("ArrowDown", { altKey: true, ...open })).toBeNull();
     expect(act("z", { ctrlKey: true, ...open })).toBeNull();
   });
-  test("g? and gh keep working while the view is open, and H and L do nothing", () => {
+  test("g? and sh keep working while the view is open, and H and L do nothing", () => {
     expect(act("H", { shiftKey: true, ...open })).toBeNull();
     expect(act("L", { shiftKey: true, ...open })).toBeNull();
     expect(act("?", { pending: "g", ...open })).toEqual({ type: "toggle-help" });
-    expect(act("h", { pending: "g", ...open })).toEqual({ type: "toggle-siblings" });
+    expect(act("h", { pending: "s", ...open })).toEqual({ type: "toggle-siblings" });
+    expect(act("h", { pending: "g", ...open })).toBeNull();
   });
   test("Escape closes the view, also from a focused button", () => {
     expect(act("Escape", open)).toEqual({ type: "toggle-markdown" });
@@ -488,26 +494,32 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
   });
 });
 
-describe("resolveKey: sd (due date)", () => {
-  test("s sets the pending prefix without an action", () => {
+describe("resolveKey: cd (due date) and cl (list name)", () => {
+  test("s and c set the pending prefix without an action", () => {
     expect(resolveKey(k("s"))).toEqual({ action: null, pending: "s", preventDefault: true });
+    expect(resolveKey(k("c"))).toEqual({ action: null, pending: "c", preventDefault: true });
   });
-  test("s then d on a task sets the due date and clears the prefix", () => {
-    expect(resolveKey(k("d", { pending: "s" }))).toEqual({ action: { type: "set-due" }, pending: "", preventDefault: true });
+  test("c then d on a task sets the due date and clears the prefix", () => {
+    expect(resolveKey(k("d", { pending: "c" }))).toEqual({ action: { type: "set-due" }, pending: "", preventDefault: true });
+  });
+  test("s then d does nothing any more", () => {
+    expect(resolveKey(k("d", { pending: "s" }))).toEqual({ action: null, pending: "", preventDefault: false });
   });
   test("s then another key does nothing and clears the prefix", () => {
     expect(resolveKey(k("x", { pending: "s" }))).toEqual({ action: null, pending: "", preventDefault: false });
   });
-  test("sd has no effect on a header", () => {
-    expect(act("d", { pending: "s", ...onHeader })).toBeNull();
+  test("cd has no effect on a header", () => {
+    expect(act("d", { pending: "c", ...onHeader })).toBeNull();
   });
-  test("sd is ignored in the Markdown view and in a text field", () => {
-    expect(act("d", { pending: "s", markdownView: true })).toBeNull();
-    expect(act("s", { markdownView: true })).toBeNull();
-    expect(act("s", { target: "field" })).toBeNull();
+  test("cd and cl are ignored in the Markdown view, in a text field and behind the cheat sheet", () => {
+    for (const o of [{ markdownView: true }, { target: "field" }, { overlay: "cheatsheet" }] as const) {
+      expect(act("d", { pending: "c", ...o })).toBeNull();
+      expect(act("l", { pending: "c", ...o })).toBeNull();
+    }
   });
-  test("sd is ignored while the cheat sheet is open", () => {
-    expect(act("d", { pending: "s", overlay: "cheatsheet" })).toBeNull();
+  test("cl changes the name of the list, from a task and from a header", () => {
+    expect(resolveKey(k("l", { pending: "c" }))).toEqual({ action: { type: "change-list" }, pending: "", preventDefault: true });
+    expect(act("l", { pending: "c", ...onHeader })).toEqual({ type: "change-list" });
   });
 });
 
@@ -517,22 +529,27 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     ["t", { type: "set-filter", text: "due:today,overdue" }],
     ["w", { type: "set-filter", text: "due:week,overdue" }],
     ["l", { type: "filter-list" }],
-    ["f", { type: "filter-picker" }],
-    ["h", { type: "toggle-siblings" }],
+    ["f", { type: "focus-filter" }],
+    ["F", { type: "filter-picker" }],
   ] as const;
 
-  test("/ focuses the filter bar, on a task, on a header and with nothing focused", () => {
-    expect(resolveKey(k("/"))).toEqual({ action: { type: "focus-filter" }, pending: "", preventDefault: true });
-    expect(act("/", onHeader)).toEqual({ type: "focus-filter" });
-    expect(act("/", { target: "none" })).toEqual({ type: "focus-filter" });
+  test("gf focuses the filter bar, on a task, on a header and with nothing focused", () => {
+    expect(resolveKey(k("f", { pending: "g" }))).toEqual({ action: { type: "focus-filter" }, pending: "", preventDefault: true });
+    expect(act("f", { pending: "g", ...onHeader })).toEqual({ type: "focus-filter" });
+    expect(act("f", { pending: "g", target: "none" })).toEqual({ type: "focus-filter" });
   });
 
-  test("/ is typed as is in a text field, and ignored on a control", () => {
-    expect(resolveKey(k("/", { target: "field" }))).toEqual({ action: null, pending: "", preventDefault: false });
-    expect(act("/", { target: "control" })).toBeNull();
+  test("gF opens the saved filter picker", () => {
+    expect(resolveKey(k("F", { pending: "g", shiftKey: true }))).toEqual({ action: { type: "filter-picker" }, pending: "", preventDefault: true });
   });
 
-  test("g sets the prefix, then a, d, w, l and f resolve the built-in views", () => {
+  test("gh does nothing any more, and sh toggles the siblings", () => {
+    expect(act("h", { pending: "g" })).toBeNull();
+    expect(act("h", { pending: "s" })).toEqual({ type: "toggle-siblings" });
+    expect(act("h", { pending: "s", ...onHeader })).toEqual({ type: "toggle-siblings" });
+  });
+
+  test("g sets the prefix, then a, t, w, l, f and F resolve the filter keys", () => {
     for (const [second, action] of views) {
       expect(resolveKey(k(second, { pending: "g" }))).toEqual({ action, pending: "", preventDefault: true });
     }
@@ -543,12 +560,11 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
       expect(act(second, { pending: "g", ...onHeader })).toEqual(action);
       expect(act(second, { pending: "g", markdownView: true })).toEqual(action);
     }
-    expect(act("/", { markdownView: true })).toEqual({ type: "focus-filter" });
   });
 
-  test("gg and gm still work", () => {
+  test("gg and sm still work", () => {
     expect(act("g", { pending: "g" })).toEqual({ type: "cursor", to: "first" });
-    expect(act("m", { pending: "g" })).toEqual({ type: "toggle-markdown" });
+    expect(act("m", { pending: "s" })).toEqual({ type: "toggle-markdown" });
   });
 
   test("the view keys do nothing in a text field or behind the cheat sheet", () => {
@@ -580,12 +596,70 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     expect(act("p", f)).toEqual({ type: "paste" });
     expect(act("o", f)).toEqual({ type: "add", at: "below" });
     expect(act("d", { pending: "d", ...f })).toEqual({ type: "delete" });
-    expect(act("d", { pending: "s", ...f })).toEqual({ type: "set-due" });
-    expect(act("N", { shiftKey: true })).toEqual({ type: "new-list" });
+    expect(act("d", { pending: "c", ...f })).toEqual({ type: "set-due" });
+    expect(act("+", { shiftKey: true })).toEqual({ type: "new-list" });
   });
 
   test("the moves still work with no filter", () => {
     expect(act("J", { shiftKey: true })).toEqual({ type: "move", dir: "down" });
     expect(act("ArrowUp", { altKey: true })).toEqual({ type: "move", dir: "up" });
+  });
+});
+
+describe("resolveKey: incremental search (PRD 5.15)", () => {
+  const active = { search: true } as const;
+  test("/ starts a search on a task, on a header and with nothing focused, active or not", () => {
+    expect(resolveKey(k("/"))).toEqual({ action: { type: "search-start" }, pending: "", preventDefault: true });
+    for (const o of [onHeader, { target: "none" }, active, { ...active, ...onHeader }] as const) {
+      expect(act("/", o)).toEqual({ type: "search-start" });
+    }
+  });
+  test("/ is typed as is in a text field and ignored on a control", () => {
+    expect(resolveKey(k("/", { target: "field" }))).toEqual({ action: null, pending: "", preventDefault: false });
+    expect(act("/", { target: "control" })).toBeNull();
+  });
+  test("/ is ignored in the Markdown view", () => {
+    expect(act("/", { markdownView: true })).toBeNull();
+    expect(act("/", { markdownView: true, ...active })).toBeNull();
+  });
+  test("n and N jump to the next and previous match while a search is active", () => {
+    for (const o of [active, { ...active, ...onHeader }] as const) {
+      expect(act("n", o)).toEqual({ type: "search-next" });
+      expect(act("N", { ...o, shiftKey: true })).toEqual({ type: "search-prev" });
+    }
+    expect(resolveKey(k("n", active)).preventDefault).toBe(true);
+  });
+  test("n and N do nothing with no active search", () => {
+    expect(resolveKey(k("n"))).toEqual({ action: null, pending: "", preventDefault: false });
+    expect(act("N", { shiftKey: true })).toBeNull();
+    expect(act("N", { shiftKey: true, ...onHeader })).toBeNull();
+  });
+  test("n and N do nothing in the Markdown view, in a field and behind the cheat sheet", () => {
+    for (const o of [{ markdownView: true }, { target: "field" }, { overlay: "cheatsheet" }] as const) {
+      expect(act("n", { ...o, ...active })).toBeNull();
+      expect(act("N", { ...o, ...active, shiftKey: true })).toBeNull();
+    }
+  });
+  test("Escape ends the active search in Normal mode, and does nothing with none", () => {
+    expect(resolveKey(k("Escape", active))).toEqual({ action: { type: "search-end" }, pending: "", preventDefault: true });
+    expect(act("Escape", { ...active, ...onHeader })).toEqual({ type: "search-end" });
+    expect(resolveKey(k("Escape"))).toEqual({ action: null, pending: "", preventDefault: false });
+  });
+  test("Escape on a focused control still puts the focus back on the cursor", () => {
+    expect(act("Escape", { target: "control", ...active })).toEqual({ type: "focus-cursor" });
+  });
+  test("Escape closes the Markdown view, whether a search is active or not", () => {
+    expect(act("Escape", { markdownView: true, ...active })).toEqual({ type: "toggle-markdown" });
+  });
+  test("Escape cancels a pending prefix without ending the search", () => {
+    expect(act("Escape", { pending: "g", ...active })).toBeNull();
+  });
+  test("Backspace does nothing in Normal mode, with or without a search", () => {
+    expect(act("Backspace")).toBeNull();
+    expect(act("Backspace", active)).toBeNull();
+  });
+  test("the other keys are unchanged while a search is active", () => {
+    expect(act("j", active)).toEqual({ type: "cursor", to: "next" });
+    expect(act("+", { ...active, shiftKey: true })).toEqual({ type: "new-list" });
   });
 });
