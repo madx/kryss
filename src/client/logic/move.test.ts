@@ -387,3 +387,16 @@ describe("an outdented subtask under a filter", () => {
     expect(pinned.lists[0]!.tasks.map((v) => v.task)).toEqual([0, 1]);
   });
 });
+
+describe("check rules under a filter", () => {
+  test("an unchecked subtask moved under a checked visible task unchecks it", () => {
+    const d = frozen<TodoDocument>({ filters: [], lists: [{ title: "A", tasks: [{ text: "pa", done: true, children: [{ text: "xa", done: true }] }, t("hz"), { text: "pb", done: true, children: [{ text: "xb", done: false }, { text: "xc", done: true }] }] }] });
+    const r = moveUp(d, { list: 0, task: 2, child: 0 }, rows(d))!;
+    expect(r.doc.lists[0]!.tasks[0]!.done).toBe(false);
+  });
+  test("a subtask leaving a parent whose other subtasks are checked checks the parent", () => {
+    const d = frozen<TodoDocument>({ filters: [], lists: [{ title: "A", tasks: [{ text: "pb", done: false, children: [{ text: "xb", done: true }, { text: "xc", done: false }] }, t("pc", "xd")] }] });
+    const r = moveDown(d, { list: 0, task: 0, child: 1 }, rows(d))!;
+    expect(r.doc.lists[0]!.tasks[0]!.done).toBe(true);
+  });
+});

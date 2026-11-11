@@ -51,18 +51,18 @@ function nextSibling(siblings: Task[], target: Task, skip: Task): Task | undefin
 }
 
 /**
- * Moves a node of a cloned document to the destination computed by `locate`, and applies the check rules.
+ * Moves a node of a cloned document to the destination computed by `where`, and applies the check rules.
  * The destination is resolved by identity before the removal, since indices shift.
  * Dropping an unchecked task under a different parent unchecks that parent (PRD 5.3).
  * The old parent is recomputed: all remaining subtasks checked means checked.
  * Reordering under the same parent never changes a check state.
  */
-function relocate(doc: TodoDocument, source: TaskPath, locate: (next: TodoDocument, node: Task) => Dest): OpResult {
+function relocate(doc: TodoDocument, source: TaskPath, where: (next: TodoDocument, node: Task) => Dest): OpResult {
   const next = cloneDoc(doc);
   const before = pathsByNode(next);
   const node = getNode(next, source)!;
   const oldParent = source.child === undefined ? undefined : next.lists[source.list]!.tasks[source.task]!;
-  const dest = locate(next, node);
+  const dest = where(next, node);
 
   const origin = oldParent ? oldParent.children! : next.lists[source.list]!.tasks;
   origin.splice(origin.indexOf(node), 1);

@@ -175,7 +175,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       // The rename is keyed by list index, which shifts.
       ctx.renaming = null;
       // `focus` is the task the cursor was on: it keeps the cursor, in the moved list.
-      commitFocus(result.doc, stopSelector(focus && focus.kind === "task" ? { kind: "task", path: { ...focus.path, list: result.list } } : { kind: "header", list: result.list }));
+      commitFocus(result.doc, stopSelector(focus && focus.kind === "task" ? { kind: "task", path: { ...focus.path, list: result.list } } : { kind: "header", list: result.list }), { moves: result.moves }); // the pins follow their lists
       return true;
     },
     moveByKey(list: number, dir: "up" | "down", focus?: Stop) {

@@ -77,6 +77,16 @@ describe("moveList", () => {
   });
 });
 
+describe("moveList moves", () => {
+  test("reports the tasks of every list whose index changed", () => {
+    const r = moveList(frozen(sample()), 0, 1, "after")!;
+    expect(r.moves).toEqual(expect.arrayContaining([
+      { from: { list: 0, task: 0 }, to: { list: 1, task: 0 } },
+      { from: { list: 0, task: 1, child: 1 }, to: { list: 1, task: 1, child: 1 } },
+    ]));
+  });
+});
+
 describe("listMoveTarget", () => {
   const all = [0, 1, 2, 3];
   test("down targets the next visible list, after it", () => {
