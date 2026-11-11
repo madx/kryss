@@ -37,7 +37,7 @@ import { createFilterBar } from "../editor/filter-bar";
 import { createHeader } from "./header";
 import { createFilterPicker } from "./filter-picker";
 import { visibleOf } from "./visible";
-import { firstMatch, matchingStops, searchLabel, stepMatch } from "../logic/search";
+import { firstMatch, matchingStops, searchCounter, stepMatch } from "../logic/search";
 import { visibleStops } from "../logic/filter";
 import { createSearchBar } from "./search-bar";
 import { highlight, markCurrent } from "./search-highlight";
@@ -266,7 +266,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     const active = search !== null && !markdownOpen;
     highlight(roots.main, active ? search : null);
     markCurrent(roots.main, active ? stopElement(searchCursor()) : null);
-    footer.setSearch(active ? searchLabel(search!, searchMatches(), searchCursor()) : "");
+    footer.setSearch(active ? search : null, searchCounter(searchMatches(), searchCursor()));
   }
   function startSearch() {
     if (markdownOpen) return;

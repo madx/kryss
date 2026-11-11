@@ -41,9 +41,14 @@ export function stepMatch(matches: number[], from: number, dir: "next" | "prev")
   return { index: dir === "next" ? matches[0]! : matches[matches.length - 1]!, wrapped: true };
 }
 
-/** The muted line shown while the search is active: `/query  3/12`, `/query  12` off a match, or `/query  no match`. */
-export function searchLabel(query: string, matches: number[], cursor: number): string {
-  if (matches.length === 0) return `/${query}  no match`;
+/** The counter of the search: `3/12` (cursor row among the matches), `12` off a match, or `no match`. */
+export function searchCounter(matches: number[], cursor: number): string {
+  if (matches.length === 0) return "no match";
   const position = matches.indexOf(cursor);
-  return `/${query}  ${position >= 0 ? `${position + 1}/` : ""}${matches.length}`;
+  return `${position >= 0 ? `${position + 1}/` : ""}${matches.length}`;
+}
+
+/** The text of the search in the footer: `/query  3/12`, `/query  12` off a match, or `/query  no match`. */
+export function searchLabel(query: string, matches: number[], cursor: number): string {
+  return `/${query}  ${searchCounter(matches, cursor)}`;
 }

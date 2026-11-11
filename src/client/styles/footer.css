@@ -60,6 +60,10 @@
   font-family: var(--font-mono);
 }
 
+.search-query {
+  color: var(--color-match);
+}
+
 .copy-feedback {
   margin-left: var(--space-8);
   font-family: var(--font-mono);
