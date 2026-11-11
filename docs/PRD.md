@@ -18,13 +18,16 @@ No virtualization needed.
   The serializer is a pure function in `src/shared/`, used by the server to write the file and by the client to build the Markdown view and the clipboard text.
 - **Front end**: vanilla TypeScript, built by Bun from `index.ts`.
   No framework.
-- **Configuration**: the file is set by the `TODO_FILE` environment variable, defaulting to `./todo.md`, and created empty if missing.
-  One instance manages one file.
+- **Configuration**: with no `VAULT_DIR`, the file is set by the `TODO_FILE` environment variable, defaulting to `./todo.md`, and created empty if missing.
+  This single-file mode is the default, and in it one instance manages one file.
+  With `VAULT_DIR` set to an Obsidian Vault, the instance manages every file of the Vault that opts in, `TODO_FILE` is ignored, and a few more settings apply (5.16, 5.17, 5.18).
+  Kryss reads two Vault settings and never writes to them: `.obsidian/app.json` (5.17) and `.kryss.json` at the root of the Vault (5.18).
 - **Network**: listens on `127.0.0.1` by default, **without authentication**.
   The `HOST` environment variable overrides the listening address, for example `HOST=0.0.0.0` when the app runs inside a container.
   Exposing the app beyond the loopback interface is an explicit opt-in.
 - **Dependencies**: `xit-parse` is removed.
   `lucide` provides the icons (Markdown view toggle, sync status, due date arrow), and only the icons in use are bundled.
+  The icons that the link rules of 5.18 name are the one exception: the server reads them from the installed package at runtime.
   `@codemirror/autocomplete`, from the CodeMirror 6 family already in use, provides the due date popup (5.13).
 
 ### 2.1 API
@@ -34,6 +37,14 @@ No virtualization needed.
 | `GET /api/todos` | Returns the JSON document and an `ETag` header (hash of the file contents). Returns `422` if the file is invalid. |
 | `PUT /api/todos` | Replaces the whole document. Requires `If-Match` with the known ETag. Returns `200` and the new ETag, `409` if the file changed, `422` if the file on disk is invalid. |
 | `GET /api/events` | SSE stream: an event is emitted whenever the file changes and the change was not caused by the server itself. |
+| `GET /api/files` | Vault mode only. Scans the Vault and returns the files that opt in (5.16). |
+| `POST /api/files` | Vault mode only. Creates a file from a name (5.16). |
+| `GET /api/notes` | Vault mode only. Scans the Vault and returns the note index for the `[[` popup (5.17). |
+| `GET /api/config` | Vault mode only. Returns the link rules of `.kryss.json` (5.18). |
+| `GET /api/icons/<name>` | Vault mode only. Returns the SVG of a Lucide icon named by a link rule (5.18). |
+
+In Vault mode, `GET` and `PUT /api/todos` and `GET /api/events` take a `file` query parameter, the path of the file relative to `VAULT_DIR` (5.16).
+In single-file mode they ignore it, and the five routes marked "Vault mode only" do not exist.
 
 `GET` and `PUT` return the JSON document as the body and the `ETag` header, so the client always holds the canonical state.
 The `422` body is `{ "line": number, "reason": string }`, with 1-based lines.
@@ -106,21 +117,22 @@ Accepted on read, then normalized on the next `PUT`: `-` or `*` bullets, upperca
 
 ### 3.2.1 Frontmatter
 
-Obsidian adds a YAML frontmatter to notes, so a leading block opened by `---` on the first line and closed by `---` or `...` is ignored on read, except for one key, `filters`.
+Obsidian adds a YAML frontmatter to notes, so a leading block opened by `---` on the first line and closed by `---` or `...` is ignored on read, except for one key, `kryss-filters`.
+A second key, `kryss-enabled: true`, is read only by the Vault scan (5.16): it marks a file as a Kryss file, never reaches the client, and is kept byte for byte like the rest of the block.
 The blank lines that follow it are part of the block.
-The server keeps the block byte for byte and writes it back unchanged in front of the serialized lists on every `PUT`, except for the `filters` block described below.
+The server keeps the block byte for byte and writes it back unchanged in front of the serialized lists on every `PUT`, except for the `kryss-filters` block described below.
 Every other line of the frontmatter never reaches the client, and error lines still count the frontmatter lines.
 A block that is not closed is rejected (`422`, line 1).
 
 **Saved filters**
 
-- The saved filters of 5.14 live in one top-level key, `filters`, written as `filters:` alone on its line and followed by one indented line per filter, `  "name": "text"`.
+- The saved filters of 5.14 live in one top-level key, `kryss-filters`, written as `kryss-filters:` alone on its line and followed by one indented line per filter, `  "name": "text"`.
 - The name and the text are JSON double-quoted strings, which are valid YAML, so the server needs no YAML library and reads and writes only this block, line by line.
 - The block ends at the first line that is not indented.
-  `filters:` followed by nothing is an empty list, and an absent key means no saved filters.
-- A second `filters` key, a line of the block that is not `"name": "text"`, an empty name or text, or a duplicate name is rejected (`422`, with that line).
-  A `filters` key written by hand in another YAML style (a flow map, single quotes) is rejected the same way instead of being rewritten.
-- On `PUT`, a `filters` equal to the one on disk leaves the block untouched, byte for byte.
+  `kryss-filters:` followed by nothing is an empty list, and an absent key means no saved filters.
+- A second `kryss-filters` key, a line of the block that is not `"name": "text"`, an empty name or text, or a duplicate name is rejected (`422`, with that line).
+  A `kryss-filters` key written by hand in another YAML style (a flow map, single quotes) is rejected the same way instead of being rewritten.
+- On `PUT`, saved filters equal to those on disk leave the block untouched, byte for byte.
   Otherwise the server replaces the block in place, or adds it before the closing delimiter when the key was absent.
   With no frontmatter at all, it creates one in front of the lists, followed by a blank line.
   Deleting the last filter removes the key, and a frontmatter left with nothing else in it is removed too.
@@ -128,7 +140,7 @@ A block that is not closed is rejected (`422`, line 1).
 
 ```markdown
 ---
-filters:
+kryss-filters:
   "Work this week": "list:Work due:week"
 ---
 
@@ -138,7 +150,7 @@ filters:
 
 ### 3.3 Rejection (`422`)
 
-Everything else is rejected with line and reason: an unclosed frontmatter, a malformed `filters` block, free text, `#` or `###` headings, text before the first `##`, empty list name, tasks nested 3 or more levels deep, multi-line description under a task, inconsistent indentation.
+Everything else is rejected with line and reason: an unclosed frontmatter, a malformed `kryss-filters` block, free text, `#` or `###` headings, text before the first `##`, empty list name, tasks nested 3 or more levels deep, multi-line description under a task, inconsistent indentation.
 **The server never writes to an invalid file.**
 
 Indentation is read with a unit fixed by the first indented task of the file (one tab, 2 spaces or 4 spaces), and every later indent must be a whole multiple of that unit using the same characters.
@@ -250,6 +262,9 @@ A whole document is its lists joined by a blank line, followed by that final new
 - Links are not nested, and inline syntax inside a link label is supported.
 - A due date (`-> 2026-11-22`) is recognized by the same inline parser, as one more node, and rendered as a pill (5.13).
   It is not Markdown syntax, so the file stays plain text.
+- An autolink, `<https://example.com>`, is recognized by the same parser and rendered as a link whose label is the URL, under the same scheme rules as `[label](url)`.
+  Its scheme is checked like any other, so `<javascript:alert(1)>` stays literal text.
+- A wikilink, `[[Note]]` or `[[Note|alias]]`, is one more node, rendered as a link that opens Obsidian (5.17).
 
 ### 5.6 Undo
 
@@ -261,7 +276,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   Undoing a move made under a filter returns to that filter, with the task or list back at its place.
 - The snapshots hold the lists only, so undo and redo never change the saved filters, and saving or deleting a saved filter is not part of the history.
   The text typed in the filter bar is not part of it either.
-- The stack is cleared on page reload and on any detected external change.
+- The stack is cleared on page reload, on any detected external change and on a switch to another file (5.16).
 - The shortcut handler is global and does nothing while a task editor or a text input has focus, so that they keep their own undo.
   It is the same handler as the Normal mode handler of 5.9, so there is one global `keydown` listener and no second one.
 
@@ -335,6 +350,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   It stops at both ends and never wraps.
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
+- `go` opens the file picker in Vault mode (5.16).
 - `gf` focuses the filter bar, `gF` opens the saved filters, `ga`, `gt` and `gw` set the filter to the built-in views, and `gl` starts a list filter (5.14).
   `sh` toggles the display of the siblings of a match (5.14).
   `/` starts an incremental search, `n` / `N` jump to the next / previous match and Escape ends it (5.15).
@@ -372,6 +388,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `o` / `O` | add a sibling below / above, always at the same level |
 | `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
 | `I` / `A` | add the first / last subtask of the task. On a subtask, of its parent. |
+| `go` | open the file picker, in Vault mode only (5.16) |
 | `g?` | open or close the cheat sheet |
 | `/` | start an incremental search (5.15) |
 | `n` / `N` | next / previous match of the active search (5.15) |
@@ -843,7 +860,7 @@ There is no selector, and no way to show a single list other than `list:`.
 - Today is read by the view at each render, and passed to the pure functions.
 - The filter bar is built once and never re-rendered with the lists, so that typing in it is not interrupted by the live narrowing.
 - The CodeMirror parts (the bar, the popups) and the picker are verified by hand.
-- The server reads and writes the `filters` block in a small module next to the parser, with no YAML dependency.
+- The server reads and writes the `kryss-filters` block in a small module next to the parser, with no YAML dependency.
 
 ### 5.15 Incremental search
 
@@ -892,14 +909,150 @@ It is separate from the filter of 5.14: a filter hides rows, a search only highl
 - The view highlights by walking the text nodes of the rendered rows after each render, and the search input is built once, like the filter bar of 5.14.
 - The input and the highlight are verified by hand.
 
+### 5.16 Several files
+
+These rules apply in Vault mode, that is when `VAULT_DIR` is set (2).
+Single-file mode keeps one file and has none of them.
+
+**Which files**
+
+- A file is a Kryss file when it is a `.md` file inside `VAULT_DIR`, at any depth, whose frontmatter has the line `kryss-enabled: true`.
+- The scan skips every folder whose name starts with a dot (`.obsidian`, `.git`, `.trash`), reads each file only up to the end of its frontmatter, and ignores a file whose frontmatter is not closed.
+- The scan runs on demand, each time `GET /api/files` is called, and nothing watches the Vault for new files.
+  `GET /api/files` returns the paths relative to `VAULT_DIR`, with `/` separators, sorted alphabetically ignoring case.
+- A file is identified by its path relative to `VAULT_DIR`.
+- A file that is listed keeps its own saved filters in its `kryss-filters` key (3.2.1), so each file has its own.
+
+**Which file is open**
+
+- The client carries the open file in the URL, as `?file=Projects/Work.md`, and sends it as the `file` parameter of every API call (2.1).
+  Two tabs can show two files, and a reload or a bookmark returns to the same file.
+- The server accepts a `file` only if its real path, after resolving symbolic links, is inside `VAULT_DIR` and the file is a Kryss file at that moment.
+  Anything else is a `404`, so no path outside the Vault can be read or written.
+- With no `file` in the URL, the client opens the last file it used, kept in `localStorage`, if it is still listed.
+  Otherwise it opens the first file of the list, and when the Vault has no Kryss file it shows an empty state that explains how to create one.
+- The server watches only the files that have an open SSE stream, and each stream carries the events of its own file.
+- The ETag, `409`, `422` and the conflict banner (4) work per file.
+- The filter text and the cursor position in `localStorage` (5.8, 5.9) are stored per file, and the history is cleared on a switch (5.6).
+
+**Switching**
+
+- `go` (go to file) in Normal mode opens the file picker, a list with the same look and keys as the saved filter picker of 5.14: ↑ and ↓ move, Enter opens the file, Escape closes it.
+  Its first entry is "New file…", which asks for a name in a plain input.
+- The picker fetches the list each time it opens, so a file marked in Obsidian appears at once.
+- The header shows the name of the open file, without its folder or extension, and the whole relative path as tooltip.
+- A switch is a navigation to the new `?file=`, after the pending changes of the current file are saved.
+  While a save is failing or in conflict, the switch is refused with a message.
+
+**Creating a file**
+
+- The folder for new files is the `NEW_FILE_DIR` environment variable, which defaults to `VAULT_DIR`.
+  The server refuses to start when it lies outside `VAULT_DIR`, since the scan would never list the new files.
+- `POST /api/files` takes `{ "name": string }`.
+  The server trims the name, adds `.md` unless the name already ends with it, and writes the file in `NEW_FILE_DIR`.
+- The name is refused with a `400` when it is empty, starts with a dot, or contains one of `* " \ / < > : | ? # ^ [ ]`, which are the characters that Obsidian refuses in a note name or that break its links.
+  The list comes from memory and must be checked against Obsidian before it is implemented.
+  An existing file is refused with a `409`, and nothing is ever overwritten.
+- The new file holds exactly `---`, `kryss-enabled: true`, `---` and a trailing newline, with no list, which is a valid file (3).
+  The response is `201` with its path, and the client opens it.
+- The picker shows the error under the input and keeps the typed name.
+- There is no way to rename, move or delete a file from Kryss: it is done in Obsidian, and the next scan reflects it.
+
+### 5.17 Wikilinks
+
+**Rendering**
+
+- `[[Note]]` and `[[Note|alias]]` render as a link whose label is the alias, or the note name when there is no alias.
+  `[[Note#Heading]]`, `[[Note#^block]]` and `[[Note#Heading|alias]]` render with the label `Note > Heading`, or the alias, and the target is passed to Obsidian as it is.
+- The link is `obsidian://open?vault=<vault>&file=<target>`, where `<vault>` is the basename of `VAULT_DIR`, URL-encoded, and `<target>` is the text before `|`, URL-encoded.
+  It opens in a new tab like any other link (5.5).
+- Kryss does not check that the note exists, so a link to a missing note looks like any other, and Obsidian resolves the name itself.
+- A wikilink needs a non-empty target and no `[`, `]` or `|` inside it, otherwise it is literal text.
+  In single-file mode there is no vault name, so wikilinks stay literal text.
+- Inside the editor, the live preview hides the brackets away from the cursor like for any other link.
+
+**Note index and popup**
+
+- `GET /api/notes` returns one entry per Markdown file of the Vault, `{ "name", "path", "aliases" }`, where `name` is the basename without `.md`, `path` is relative to `VAULT_DIR` and without `.md`, and `aliases` come from the `aliases` key of its frontmatter (a YAML list, an inline array or a single string).
+- The server builds it with the scan of 5.16, in the same pass, and it keeps nothing between two calls.
+  It leaves out the dot folders and the folders of `userIgnoreFilters` (below), and attachments are not notes.
+- Typing `[[` in the task editor opens a popup of the index, fetched when the popup opens and filtered as you type, ignoring case, on the name and on every alias.
+  It is a CodeMirror autocomplete popup with the same look as the due date popup (5.13).
+- A suggestion that matches the name inserts `[[Note]]`, and one that matches an alias inserts `[[Note|alias]]`, so the label stays the alias that was typed.
+  Two entries with the same name show their folder next to the name.
+- Which path is inserted follows the Obsidian setting `newLinkFormat` (below).
+  There is no completion after `#` or `^`.
+
+**Obsidian settings**
+
+- The server reads `.obsidian/app.json` at each scan.
+  A missing, unreadable or malformed file means the defaults, and nothing fails.
+- `newLinkFormat` is `shortest` (the default when absent), `relative` or `absolute`.
+  `shortest` inserts the name alone, or its shortest path that tells it from the other notes of the same name, `relative` inserts the path from the folder of the open file, and `absolute` inserts the path from the Vault root.
+- `userIgnoreFilters` lists folders that the note index leaves out.
+  The scan for `kryss-enabled` still reads them.
+- `useMarkdownLinks` is ignored: a suggestion always inserts a wikilink.
+
+**Pure logic**
+
+- The label and target of a wikilink, the `obsidian://` URL, the filtering of the index and the choice of the inserted text for each `newLinkFormat` are pure functions with tests.
+
+### 5.18 Link rules and pasted URLs
+
+**Rules**
+
+- `.kryss.json` at the root of `VAULT_DIR` holds the rules, and `GET /api/config` returns them, read at each call.
+  A missing file means no rules, and a malformed file is reported in the statusline and means no rules.
+  The app never writes it.
+
+```json
+{
+  "links": [
+    { "match": "^https://[^/]+\\.atlassian\\.net/browse/([A-Z]+-\\d+)", "label": "$1", "icon": "jira" }
+  ]
+}
+```
+
+- `match` is a regular expression tested on the URL, `label` is a template where `$1`, `$2`… stand for the capture groups, and `icon` is optional.
+  The first rule that matches wins.
+- A rule with an invalid regular expression, or no `match` or `label`, is skipped, and the statusline reports it once per load.
+- `icon` is either the name of a Lucide icon or a `data:image/svg+xml` URL.
+  Any other value is ignored.
+  Both are drawn as a CSS mask, so they take the text color and follow the theme, and no script in an SVG can run.
+- A Lucide name is read by the server from the installed package: `GET /api/icons/<name>` accepts only `[a-z0-9-]+` and returns the SVG or a `404`.
+  A rule with no icon, an unknown name or a refused value shows the Lucide `Link` icon.
+- Kryss ships no rule and no brand icon, and the user writes them for Jira, Slack, Confluence, GitHub or anything else.
+
+**Pasting a URL**
+
+- In the task editor, a paste is handled in this order.
+  A paste that is not a single `http` or `https` URL, after trimming, is the native paste of 5.8.
+- With some text selected, the paste inserts `[selection](url)`, whatever the rules say.
+- With no selection, if a rule matches the URL, the paste inserts `[label](url)` with the label of that rule.
+- With no selection and no matching rule, the URL is inserted as it is.
+- The paste is one step of the editor's own undo, so Ctrl+Z restores the previous text.
+- A URL pasted outside the editor, or in the filter bar or the search input, is never transformed.
+
+**Display**
+
+- A link whose URL matches a rule that has an icon shows that icon before its label, at the size of the text.
+  It is the same rule on a link typed by hand, pasted from elsewhere or already in the file, so the file stays plain Markdown.
+- The label and the icon never change the stored text, and the Markdown view and the clipboard text (5.11, 5.12) are the stored Markdown.
+
+**Pure logic**
+
+- Matching a URL against the rules, building a label, validating an icon value and the decision of the paste (selection, rule, none) are pure functions with tests.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
-- **Frontmatter filters**: the `filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
+- **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
 - **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
+- **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
+- **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `filters` key, and file-based settings other than the saved filters; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); due dates on lists; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
