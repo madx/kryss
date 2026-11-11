@@ -1,5 +1,5 @@
 {
-  "name": "todoapp",
+  "name": "kryss",
   "module": "src/server/index.ts",
   "devDependencies": {
     "@types/bun": "latest"

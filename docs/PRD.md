@@ -1,4 +1,4 @@
-# PRD — todoapp
+# PRD — Kryss
 
 ## 1. Goal
 
