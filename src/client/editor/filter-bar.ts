@@ -103,7 +103,11 @@ export function createFilterBar(options: FilterBarOptions) {
     /** Shows a text that came from outside (a built-in view, an undo, a saved filter). */
     setText: (text: string) => replace(text, false),
     focus: () => view.focus(),
-    blur: () => view.contentDOM.blur(),
+    /** Leaves the bar and drops its selection: some browsers keep drawing a blinking caret in an editable that lost the focus to a plain element. */
+    blur() {
+      view.contentDOM.blur();
+      view.contentDOM.ownerDocument.getSelection()?.removeAllRanges();
+    },
     isFocused: () => view.hasFocus,
     /** `gl`: focuses the bar, appends `list:` to the other terms and opens the popup. */
     appendListTerm() {
