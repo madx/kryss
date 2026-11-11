@@ -6,7 +6,18 @@ Features that were added and later removed are listed in both places, so that th
 
 ## Unreleased
 
-Nothing yet: the work plan in `docs/TODO.md` is empty.
+### Added
+
+- Vault mode: with `VAULT_DIR` set, Kryss manages every `.md` file of an Obsidian Vault whose frontmatter has `kryss-enabled: true`, and `NEW_FILE_DIR` says where new files go.
+- `GET /api/files` and `POST /api/files`, and a `file` parameter on `GET` and `PUT /api/todos` and on `GET /api/events`, with a `404` for any path outside the Vault, symbolic links included.
+- The ETag, `409`, `422`, the watcher and the SSE stream work per file, and a file is watched only while it has an open stream.
+- `go` opens a file picker whose first entry creates a file, the header shows the open file with its path as tooltip, and an empty state explains how to start when the Vault has no Kryss file.
+- The open file lives in `?file=`, the last file is remembered, and the filter text and cursor position are stored per file.
+- A transparent dark layer behind the pickers and the `list:` popup, pickers pinned to the top of the window in the column of the app, and a slight shadow on the editor popups.
+
+### Changed
+
+- The saved filters now live in the `kryss-filters` key of the frontmatter instead of `filters`.
 
 ## 2026-11-11
 
