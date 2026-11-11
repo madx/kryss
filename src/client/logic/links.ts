@@ -66,11 +66,11 @@ function safeTarget(url: string): string {
 
 /**
  * The text a paste inserts (PRD 5.18), or null for the native paste.
- * A selection becomes the label whatever the rules say, otherwise a matching rule gives it, otherwise the URL goes in as it is.
+ * A selection becomes the label whatever the rules say, otherwise a matching rule gives it, otherwise the URL goes in as an autolink, `<url>`.
  */
 export function pasteInsertion(clipboard: string, selection: string, rules: readonly LinkRule[]): string | null {
   const url = singleUrl(clipboard);
   if (url === null) return null;
   const label = selection !== "" ? selection : matchLink(url, rules)?.label;
-  return label === undefined ? url : `[${escapeLabel(label)}](${safeTarget(url)})`;
+  return label === undefined ? `<${url}>` : `[${escapeLabel(label)}](${safeTarget(url)})`;
 }

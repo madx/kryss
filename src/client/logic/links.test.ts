@@ -96,8 +96,9 @@ describe("pasteInsertion", () => {
   test("with no selection a matching rule gives its label", () => {
     expect(pasteInsertion(" https://acme.atlassian.net/browse/PROJ-1\n", "", rules)).toBe("[PROJ-1](https://acme.atlassian.net/browse/PROJ-1)");
   });
-  test("with no selection and no rule the URL is inserted as it is", () => {
-    expect(pasteInsertion("https://example.com/x", "", rules)).toBe("https://example.com/x");
+  test("with no selection and no rule the URL becomes an autolink", () => {
+    expect(pasteInsertion("https://example.com/x", "", rules)).toBe("<https://example.com/x>");
+    expect(pasteInsertion("  https://example.com/x\n", "", [])).toBe("<https://example.com/x>");
   });
   test("brackets in a label are escaped", () => {
     expect(pasteInsertion("https://example.com", "a [b] c", [])).toBe("[a \\[b\\] c](https://example.com)");

@@ -1034,7 +1034,7 @@ Single-file mode keeps one file and has none of them.
   A paste that is not a single `http` or `https` URL, after trimming, is the native paste of 5.8.
 - With some text selected, the paste inserts `[selection](url)`, whatever the rules say.
 - With no selection, if a rule matches the URL, the paste inserts `[label](url)` with the label of that rule.
-- With no selection and no matching rule, the URL is inserted as it is.
+- With no selection and no matching rule, the URL is inserted as an autolink, `<url>`, so that it renders as a link.
 - The paste is one step of the editor's own undo, so Ctrl+Z restores the previous text.
 - A URL pasted outside the editor, or in the filter bar or the search input, is never transformed.
 
