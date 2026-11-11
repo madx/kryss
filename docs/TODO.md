@@ -308,6 +308,7 @@
   - [x] Remove `H` / `L` and the view cycling logic and tests
   - [x] `/`, `ga`, `gt`, `gw`, `gl` and `gf` in the pure key function, also while the Markdown view is open
   - [x] `h` / `l` between visible list headers in every view
+  - [x] `H` / `L` move the focused list up / down, from a header or a task, with tests
   - [x] Moves, indent and outdent do nothing while a filter is active
   - [x] `N` and the paste of a list clear the filter
   - [x] Pin a task after an add, a paste, an edit and a check

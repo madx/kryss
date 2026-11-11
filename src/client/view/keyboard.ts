@@ -29,7 +29,7 @@ export type KeyboardEnv = {
   /** `cc` on a header: opens the name input with no text. */
   changeList(list: number): void;
   /** `J` / `K` on a header: moves the list down or up, in the "All" view only. */
-  moveList(list: number, dir: "up" | "down"): void;
+  moveList(list: number, dir: "up" | "down", focus?: Stop): void;
   beginAdd(at: AddAt, anchor: Anchor): void;
   newList(): void;
   markdown: { isOpen(): boolean; toggle(): void; copy(): void };
@@ -145,6 +145,11 @@ export function installKeyboard(env: KeyboardEnv): void {
     }
     if (action.type === "yank") return env.registerKeys.yank(current);
     if (action.type === "paste") return env.registerKeys.paste(current);
+    if (action.type === "move-list") {
+      const list = current.kind === "header" ? current.list : current.path.list;
+      env.moveList(list, action.dir, current.kind === "header" ? undefined : current);
+      return;
+    }
     if (current.kind === "header") {
       if (action.type === "edit") env.renameList(current.list);
       else if (action.type === "change") env.changeList(current.list);

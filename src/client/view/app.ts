@@ -167,18 +167,19 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
         if (!doc().lists[index]) return;
       store.commit(next ?? deleteList(doc(), index), { clearPins: true });
     },
-    /** Moves a list (never under a filter, PRD 5.14) and leaves the cursor on its header. */
-    move(list: number, target: number, place: ListPlace): boolean {
+    /** Moves a list (over the visible lists under a filter, PRD 5.14) and leaves the cursor on its header, or on the task it was on. */
+    move(list: number, target: number, place: ListPlace, focus?: Stop): boolean {
       const result = moveList(doc(), list, target, place);
       if (!result) return false;
       // The rename is keyed by list index, which shifts.
       ctx.renaming = null;
-      commitFocus(result.doc, stopSelector({ kind: "header", list: result.list }));
+      // `focus` is the task the cursor was on: it keeps the cursor, in the moved list.
+      commitFocus(result.doc, stopSelector(focus && focus.kind === "task" ? { kind: "task", path: { ...focus.path, list: result.list } } : { kind: "header", list: result.list }));
       return true;
     },
-    moveByKey(list: number, dir: "up" | "down") {
+    moveByKey(list: number, dir: "up" | "down", focus?: Stop) {
       const step = listMoveTarget(list, dir, allLists());
-      if (step) lists.move(list, step.target, step.place);
+      if (step) lists.move(list, step.target, step.place, focus);
     },
   };
 

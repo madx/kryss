@@ -53,9 +53,17 @@ describe("resolveKey: cursor navigation", () => {
     expect(act("h")).toEqual({ type: "cursor", to: "prev-header" });
     expect(act("l")).toEqual({ type: "cursor", to: "next-header" });
   });
-  test("H and L no longer select a view", () => {
-    expect(act("H", { shiftKey: true })).toBeNull();
-    expect(act("L", { shiftKey: true })).toBeNull();
+  test("H and L move the whole list up and down, from a task or a header", () => {
+    for (const o of [{}, onHeader]) {
+      expect(act("H", { ...o, shiftKey: true })).toEqual({ type: "move-list", dir: "up" });
+      expect(act("L", { ...o, shiftKey: true })).toEqual({ type: "move-list", dir: "down" });
+    }
+  });
+  test("H and L do nothing in Insert mode or in the Markdown view", () => {
+    for (const o of [{ target: "field" }, { markdownView: true }] as const) {
+      expect(act("H", { ...o, shiftKey: true })).toBeNull();
+      expect(act("L", { ...o, shiftKey: true })).toBeNull();
+    }
   });
   test("navigation arrows prevent the default scroll", () => {
     expect(resolveKey(k("ArrowDown")).preventDefault).toBe(true);
@@ -396,7 +404,7 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(r.pending).toBe("");
   });
   test("task keys are ignored while the view is open", () => {
-    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "h", "l", "G", "ArrowDown", "p"]) {
+    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
       expect(act(key, open)).toBeNull();
     }
   });
