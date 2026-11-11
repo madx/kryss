@@ -3,6 +3,7 @@ import type { CreateFileResult } from "../api";
 import { fileEntries, fileLabel, type FileEntry } from "../logic/files";
 import { pickerKey } from "../logic/saved-filters";
 import { el } from "./dom";
+import { setScrim } from "./scrim";
 
 export type FilePickerEnv = {
   /** The Kryss files of the Vault, or null when the list cannot be fetched. */
@@ -91,6 +92,7 @@ export function createFilePicker(env: FilePickerEnv) {
   async function open() {
     if (!menu.hidden) return;
     menu.hidden = false;
+    setScrim("file-picker", true);
     naming = false;
     files = (await env.list()) ?? [];
     active = Math.max(files.indexOf(env.current() ?? ""), -1) + 1; // the open file, else "New file…"
@@ -102,6 +104,7 @@ export function createFilePicker(env: FilePickerEnv) {
   function close(notify = true) {
     if (menu.hidden) return;
     menu.hidden = true;
+    setScrim("file-picker", false);
     naming = false;
     document.removeEventListener("pointerdown", onOutside);
     if (notify) env.closed();
