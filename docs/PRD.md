@@ -880,7 +880,7 @@ It is separate from the filter of 5.14: a filter hides rows, a search only highl
   It has the chip radius, and no underline or bold, so the layout never shifts.
   An occurrence that spans several inline elements, for example across a bold marker, still matches but is not highlighted.
 - The search input is stacked right above the footer, with the same width, the 12 px font, the input tint and a 2 px bar in `--color-match`, like the focused filter bar of 5.10.
-  It takes no space when it is closed, and the page grows by its height and a 4 px gap above the footer while it is shown, so that the last rows stay reachable.
+  It takes no space when it is closed, and the page grows by its height and an 8 px gap above the footer while it is shown, so that the last rows stay reachable.
 - While the search is active, the footer statusline shows `/query  3/12` after the counts, in the muted color and with `no match` in place of the counter when nothing matches, whether the input is open or closed.
   It disappears when the search ends.
   The counter is the position of the cursor row among the matching rows, or the number of matching rows when the cursor is not on one.

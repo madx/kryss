@@ -3,7 +3,7 @@
   flex: none;
   width: 100%;
   max-width: var(--content-width);
-  margin: 0 auto var(--space-4);
+  margin: 0 auto var(--space-8);
   padding: 0 var(--gutter);
   font-size: var(--font-size-task);
 }
