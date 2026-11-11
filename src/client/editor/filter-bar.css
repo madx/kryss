@@ -2,8 +2,8 @@
 .filter-bar {
   flex: 1;
   min-width: 0;
-  height: var(--icon-button-size);
-  padding: 0 var(--space-8);
+  height: calc(var(--icon-button-size) + 2 * var(--space-2));
+  padding: var(--space-2) var(--space-8);
   border-radius: var(--radius-control);
   background: var(--color-input);
   font-size: var(--font-size-task);
