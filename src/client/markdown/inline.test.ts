@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { astToHtml, isAllowedUrl, parseInline } from "./inline";
+import { astToHtml, findDueRange, isAllowedUrl, parseInline } from "./inline";
 
 const html = (s: string) => astToHtml(parseInline(s));
 
@@ -175,6 +175,33 @@ describe("parseInline: due dates", () => {
   test("other inline syntax still works around a date", () => {
     expect(parseInline("**b** -> 2026-11-22")).toEqual([
       { type: "strong", children: [{ type: "text", value: "b" }] }, { type: "text", value: " " }, due("2026-11-22"),
+    ]);
+  });
+});
+
+describe("findDueRange", () => {
+  test("gives the range of the last valid `-> DATE`, with the date text", () => {
+    expect(findDueRange("Renew -> 2026-12-01")).toEqual({ from: 6, to: 19, dateFrom: 9, value: "2026-12-01" });
+    expect(findDueRange("a -> 2026-11-01 b -> 2026-W47 c")).toEqual({ from: 18, to: 29, dateFrom: 21, value: "2026-W47" });
+  });
+  test("null without a valid date, for a bare arrow or a prose arrow", () => {
+    expect(findDueRange("a ->")).toBeNull();
+    expect(findDueRange("A -> B")).toBeNull();
+    expect(findDueRange("a -> 2026-02-30")).toBeNull();
+    expect(findDueRange("a->2026-11-22")).toBeNull();
+  });
+  test("agrees with the parser: code spans, link labels and emphasis are literal", () => {
+    expect(findDueRange("`run -> 2026-11-22 now`")).toBeNull();
+    expect(findDueRange("[x -> 2026-11-22 y](https://a.b)")).toBeNull();
+    expect(findDueRange("**a -> 2026-11-22**")).toBeNull();
+  });
+  test("a valid date after a bare arrow is found", () => {
+    expect(findDueRange("a -> -> 2026-11-22")).toEqual({ from: 5, to: 18, dateFrom: 8, value: "2026-11-22" });
+    expect(parseInline("a -> -> 2026-11-22")).toEqual([{ type: "text", value: "a -> " }, { type: "due", value: "2026-11-22" }]);
+  });
+  test("a date inside emphasis is plain text", () => {
+    expect(parseInline("**a -> 2026-11-22**")).toEqual([
+      { type: "strong", children: [{ type: "text", value: "a -> 2026-11-22" }] },
     ]);
   });
 });

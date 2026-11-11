@@ -3,8 +3,7 @@
 // - `.task-text` holds the rendered text and is what the editor replaces while editing.
 import type { Task } from "../../shared/types";
 import type { TaskPath } from "../logic";
-import { findDue } from "../logic/due";
-import { renderInline } from "../markdown/inline";
+import { findDueRange, renderInline } from "../markdown/inline";
 import { el } from "./dom";
 import { renderDuePill } from "./due-pill";
 import { startEdit, type EditEnd } from "./edit-text";
@@ -46,7 +45,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   const text = el("span", { class: "task-text" });
   text.append(renderInline(task.text, renderDuePill));
   const beginEdit = (at?: { x: number; y: number }, empty = false, due = false) => {
-    const match = due ? findDue(task.text) : null;
+    const match = due ? findDueRange(task.text) : null;
     startEdit(
       text,
       empty ? "" : task.text,

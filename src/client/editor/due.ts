@@ -2,7 +2,8 @@
 import { autocompletion, startCompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import type { Extension } from "@codemirror/state";
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
-import { dayPeriod, dueEntries, dueState, findDue, resolveTrailing } from "../logic/due";
+import { dayPeriod, dueEntries, dueState, resolveTrailing } from "../logic/due";
+import { findDueRange } from "../markdown/inline";
 import { localToday } from "../today";
 
 /** The popup source: after `->` (preceded by whitespace or the start) and a space-free word. Accepting writes `-> DATE`. */
@@ -37,7 +38,7 @@ const resolveOnSpace = EditorView.inputHandler.of((view, from, to, text) => {
 });
 
 function colorDate(view: EditorView): DecorationSet {
-  const match = findDue(view.state.doc.toString());
+  const match = findDueRange(view.state.doc.toString());
   const state = match ? dueState(match.value, dayPeriod(localToday())) : null;
   return match && state
     ? Decoration.set([Decoration.mark({ class: `cm-due cm-due-${state}` }).range(match.from, match.to)])

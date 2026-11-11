@@ -101,7 +101,10 @@ function keepLastDue(nodes: InlineNode[]): InlineNode[] {
   return out;
 }
 
-function parse(s: string, allowLinks: boolean, topLevel = false): InlineNode[] {
+/** Where the due node sits in the source: the whole `-> DATE`, where the date starts, and the date. */
+export type DueRange = { from: number; to: number; dateFrom: number; value: string };
+
+function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRange[]): InlineNode[] {
   const nodes: InlineNode[] = [];
   const pushText = (value: string) => {
     const last = nodes[nodes.length - 1];
@@ -117,6 +120,7 @@ function parse(s: string, allowLinks: boolean, topLevel = false): InlineNode[] {
       const date = dueAt(s, i);
       if (date) {
         nodes.push({ type: "due", value: date });
+        ranges?.push({ from: i, to: i + 3 + date.length, dateFrom: i + 3, value: date });
         i += 3 + date.length;
         continue;
       }
@@ -209,6 +213,13 @@ function parse(s: string, allowLinks: boolean, topLevel = false): InlineNode[] {
     i++;
   }
   return topLevel ? keepLastDue(nodes) : nodes;
+}
+
+/** The range of the due date that `parseInline` recognizes (the last valid one), so the editor agrees with the view. */
+export function findDueRange(text: string): DueRange | null {
+  const ranges: DueRange[] = [];
+  parse(text, true, true, ranges);
+  return ranges[ranges.length - 1] ?? null;
 }
 
 /** Parses one line of inline Markdown into a small AST. Pure, no DOM. */
