@@ -11,8 +11,8 @@
 
 /* Focused: the search look, the cursor look of a task row in orange (a tint and a 2 px bar), with no ring that would shrink the bar. */
 .filter-bar:focus-within {
-  background: color-mix(in srgb, var(--color-search) var(--tint-cursor), var(--color-input));
-  box-shadow: inset var(--bar-width) 0 0 0 var(--color-search);
+  background: color-mix(in srgb, var(--color-filter) var(--tint-cursor), var(--color-input));
+  box-shadow: inset var(--bar-width) 0 0 0 var(--color-filter);
 }
 
 .filter-bar .cm-editor {

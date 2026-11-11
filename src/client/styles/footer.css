@@ -2,6 +2,10 @@
 .app-footer {
   font-size: var(--font-size-sm);
   color: var(--color-muted);
+  /* The footer is the column: centered, own background, nothing drawn outside it. */
+  max-width: var(--content-width);
+  margin: 0 auto;
+  background: var(--color-surface);
 }
 
 .footer-content {
@@ -9,19 +13,17 @@
   align-items: center;
   flex: 1;
   min-width: 0;
-  max-width: var(--content-width);
-  margin: 0 auto;
   padding: 0 var(--gutter);
 }
 
-/* The badge is a corner block: it reaches the left and bottom edges of the window. */
+/* The badge is rounded on all corners; on a narrow window it is a corner block touching the left and bottom edges, rounded on its top-right corner only. */
 .mode-badge {
   display: flex;
   flex: none;
   align-items: center;
   align-self: stretch;
   padding: 0 var(--space-8);
-  border-top-right-radius: var(--radius-chip);
+  border-radius: var(--radius-chip);
   font-family: var(--font-mono);
   font-weight: 600;
   background: var(--color-accent);
@@ -33,9 +35,20 @@
   color: var(--color-accent-text);
 }
 
-.mode-badge[data-mode="search"] {
-  background: var(--color-search);
+.mode-badge[data-mode="filter"] {
+  background: var(--color-filter);
   color: var(--color-accent-text);
+}
+
+.mode-badge[data-mode="search"] {
+  background: var(--color-match);
+  color: var(--color-match-text);
+}
+
+@media (max-width: 720px) {
+  .mode-badge {
+    border-radius: 0 var(--radius-chip) 0 0;
+  }
 }
 
 .statusline {

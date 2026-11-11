@@ -99,7 +99,7 @@
 /* Grammar is not a key: orange, like the search it belongs to, with no chip. */
 .cheatsheet-list code {
   padding: 0;
-  color: var(--color-search);
+  color: var(--color-filter);
 }
 
 .cheatsheet-sep {

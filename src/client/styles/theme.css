@@ -15,8 +15,11 @@
   --color-input: color-mix(in srgb, var(--color-bg) 88%, black);
   --color-done-text: #5b6b5b;
   --color-success: #2e7d32;
-  /* Search mode: the focused filter bar and its footer badge. */
-  --color-search: #d9730d;
+  /* Filter mode: the focused filter bar and its footer badge. */
+  --color-filter: #d9730d;
+  /* Search mode: the match highlight and its footer badge, with a dark text on it. */
+  --color-match: #edc763;
+  --color-match-text: #1f2328;
   --color-danger: #c0392b;
   --color-warning-bg: #fff4d6;
   --color-warning-text: #5c4400;
@@ -93,7 +96,9 @@
     --color-hover: #2b2d3a;
     --color-done-text: #7e8284;
     --color-success: #9ed06c;
-    --color-search: #f89860;
+    --color-filter: #f89860;
+    --color-match: #edc763;
+    --color-match-text: #1f2328;
     --color-danger: #fb617e;
     --color-warning-bg: color-mix(in srgb, var(--color-warning-text) 16%, var(--color-surface));
     --color-warning-text: #edc763;

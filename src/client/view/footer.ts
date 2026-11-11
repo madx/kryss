@@ -1,8 +1,8 @@
-// Footer: mode badge (NORMAL / INSERT / SEARCH), the done / total counts of the current view and the sync status symbol.
+// Footer: mode badge (NORMAL / INSERT / FILTER / SEARCH), the done / total counts of the current view and the sync status symbol.
 import { el } from "./dom";
 
 import type { Counts } from "../logic/stats";
-export type FooterState = { mode: "normal" | "insert" | "search"; view: Counts };
+export type FooterState = { mode: "normal" | "insert" | "filter" | "search"; view: Counts };
 
 const FEEDBACK_MS = 2000;
 
