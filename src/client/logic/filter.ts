@@ -204,7 +204,7 @@ export function followPins(pins: TaskPath[], moves: PathMove[]): TaskPath[] {
 export type Range = { from: number; to: number };
 export type Pill = { key: Range; value: Range };
 
-/** The `list:` and `due:` terms of the text, as the range of the key (with its colon) and of its value, for the pills of the bar. */
+/** The `list:`, `due:` and `is:` terms of the text, as the range of the key (with its colon) and of its value, for the pills of the bar. */
 export function filterPills(text: string): Pill[] {
   const pills: Pill[] = [];
   let quoted = false;
@@ -213,7 +213,7 @@ export function filterPills(text: string): Pill[] {
     if (start < 0) return;
     const token = text.slice(start, to);
     const key = text[start] === '"' ? undefined : KEY.exec(token)?.[1]!.toLowerCase();
-    if (key === "list" || key === "due") {
+    if (key === "list" || key === "due" || key === "is") {
       const split = start + key.length + 1;
       pills.push({ key: { from: start, to: split }, value: { from: split, to } });
     }
