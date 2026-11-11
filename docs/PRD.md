@@ -929,9 +929,12 @@ Single-file mode keeps one file and has none of them.
   Two tabs can show two files, and a reload or a bookmark returns to the same file.
 - The server accepts a `file` only if its real path, after resolving symbolic links, is inside `VAULT_DIR` and the file is a Kryss file at that moment.
   Anything else is a `404`, so no path outside the Vault can be read or written.
-- With no `file` in the URL, the client opens the last file it used, kept in `localStorage`, if it is still listed.
-  Otherwise it opens the first file of the list, and when the Vault has no Kryss file it shows an empty state that explains how to create one.
+- With no `file` in the URL, or one that is not listed, the client opens the last file it used, kept in `localStorage`, if it is still listed.
+  Otherwise it opens the first file of the list, and when the Vault has no Kryss file it shows an empty state that explains how to create one, with a "New file…" button and `go` working as in the picker.
+  The client then writes the file it opened into the URL, so a reload or a bookmark returns to it.
+- The scan does not follow symbolic links, so a link is not listed, but a `file` that names a link is accepted when its target is a Kryss file inside the Vault.
 - The server watches only the files that have an open SSE stream, and each stream carries the events of its own file.
+  It stops watching a file when its last stream closes.
 - The ETag, `409`, `422` and the conflict banner (4) work per file.
 - The filter text and the cursor position in `localStorage` (5.8, 5.9) are stored per file, and the history is cleared on a switch (5.6).
 
@@ -942,7 +945,7 @@ Single-file mode keeps one file and has none of them.
 - The picker fetches the list each time it opens, so a file marked in Obsidian appears at once.
 - The header shows the name of the open file, without its folder or extension, and the whole relative path as tooltip.
 - A switch is a navigation to the new `?file=`, after the pending changes of the current file are saved.
-  While a save is failing or in conflict, the switch is refused with a message.
+  While a save is failing or in conflict, the switch is refused with a message in the statusline, and the file stays open.
 
 **Creating a file**
 
@@ -950,8 +953,8 @@ Single-file mode keeps one file and has none of them.
   The server refuses to start when it lies outside `VAULT_DIR`, since the scan would never list the new files.
 - `POST /api/files` takes `{ "name": string }`.
   The server trims the name, adds `.md` unless the name already ends with it, and writes the file in `NEW_FILE_DIR`.
-- The name is refused with a `400` when it is empty, starts with a dot, or contains one of `* " \ / < > : | ? # ^ [ ]`, which are the characters that Obsidian refuses in a note name or that break its links.
-  The list comes from memory and must be checked against Obsidian before it is implemented.
+- The name is refused with a `400` when it is empty, starts with a dot, or contains a control character or one of `* " \ / < > : | ? # ^ [ ]`, which are the characters that Obsidian refuses in a note name or that break its links.
+  The list comes from memory and is checked against Obsidian by hand.
   An existing file is refused with a `409`, and nothing is ever overwritten.
 - The new file holds exactly `---`, `kryss-enabled: true`, `---` and a trailing newline, with no list, which is a valid file (3).
   The response is `201` with its path, and the client opens it.
