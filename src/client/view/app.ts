@@ -63,7 +63,7 @@ export type VaultEnv = {
   linkProblems?: string[];
 };
 
-export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage, vault?: VaultEnv): void {
+export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage, vault?: VaultEnv): { refresh(): void } {
   const ctx: ListContext = { renaming: null, placeholder: null };
   const footer = createFooter();
   const cheatsheet = createCheatsheet();
@@ -512,4 +512,10 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     markdown: { isOpen: () => markdownOpen, toggle: toggleMarkdown, copy: markdownView.copy },
   });
   renderAll(store.getState());
+  return {
+    /** Draws the lists again, for what changed outside the document (the link rules). It waits while a task or a list name is being typed. */
+    refresh() {
+      if (!isEditing() && !ctx.renaming && !ctx.placeholder) renderAll(store.getState());
+    },
+  };
 }
