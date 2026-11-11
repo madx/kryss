@@ -1,5 +1,7 @@
 // Client entry point, built by Bun.
-import { createApi, createFile, listFiles, subscribeEvents } from "./api";
+import { createApi, createFile, getLinkConfig, listFiles, subscribeEvents } from "./api";
+import { setLinkRules } from "./link-rules";
+import "./view/link-icon"; // installs the icon of the link rules
 import { chooseFile, fileHref, LAST_FILE_KEY } from "./logic/files";
 import { setWikilinkFile } from "./editor/wikilink";
 import { setVaultName } from "./markdown/inline";
@@ -45,9 +47,16 @@ if (listing.kind === "vault") {
   }
 }
 
+let linkProblems: string[] = [];
+if (listing.kind === "vault") {
+  const config = await getLinkConfig();
+  setLinkRules(config.links);
+  linkProblems = config.problems;
+}
+
 if (listing.kind !== "vault" || file !== null) {
   const store = createStore({ api: createApi(file), storage: localStorage, file });
-  mountApp(roots, store, localStorage, file === null ? undefined : { file, ...vaultCalls });
+  mountApp(roots, store, localStorage, file === null ? undefined : { file, ...vaultCalls, linkProblems });
 
   window.addEventListener("beforeunload", (e) => {
     if (store.hasPendingChanges()) {

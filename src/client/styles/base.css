@@ -62,6 +62,18 @@ a {
   color: var(--color-accent);
 }
 
+/* The icon of a link rule: a mask in the text color, at the size of the text (PRD 5.18). */
+.link-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.25em;
+  vertical-align: -0.125em;
+  background-color: currentColor;
+  -webkit-mask: var(--link-icon) center / contain no-repeat;
+  mask: var(--link-icon) center / contain no-repeat;
+}
+
 em {
   color: var(--color-muted);
 }

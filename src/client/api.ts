@@ -1,6 +1,7 @@
 // Thin fetch / EventSource wrapper around the server API. It never throws: failures become result values.
 import type { ChangeEvent, ParseError, TodoDocument } from "../shared/types";
 import type { NewLinkFormat, Note } from "./logic/wikilink";
+import type { LinkRule } from "./logic/links";
 
 export type LoadResult =
   | { kind: "ok"; doc: TodoDocument; etag: string }
@@ -47,6 +48,17 @@ export async function fetchNotes(): Promise<NotesResult | null> {
     if (res.status === 200) return await res.json();
   } catch {}
   return null;
+}
+
+export type LinkConfig = { links: LinkRule[]; problems: string[] };
+
+/** The link rules of the Vault (PRD 5.18). A failure means no rules. */
+export async function getLinkConfig(): Promise<LinkConfig> {
+  try {
+    const res = await fetch("/api/config", { cache: "no-store" });
+    if (res.status === 200) return await res.json();
+  } catch {}
+  return { links: [], problems: [] };
 }
 
 export async function createFile(name: string): Promise<CreateFileResult> {

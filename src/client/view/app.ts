@@ -54,7 +54,14 @@ import { isTextField } from "../shortcuts";
 const NEW_LIST_NAME = "New list";
 
 /** What the app needs in Vault mode (PRD 5.16): the open file and the calls of the file picker. */
-export type VaultEnv = { file: string; list: FilePickerEnv["list"]; create: FilePickerEnv["create"]; open(path: string): void };
+export type VaultEnv = {
+  file: string;
+  list: FilePickerEnv["list"];
+  create: FilePickerEnv["create"];
+  open(path: string): void;
+  /** What is wrong in `.kryss.json` (PRD 5.18), reported once in the statusline. */
+  linkProblems?: string[];
+};
 
 export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage, vault?: VaultEnv): void {
   const ctx: ListContext = { renaming: null, placeholder: null };
@@ -96,6 +103,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       })
     : null;
   if (filePicker) roots.header.append(filePicker.el);
+  if (vault?.linkProblems?.length) footer.flash(`.kryss.json: ${vault.linkProblems[0]}${vault.linkProblems.length > 1 ? ` (+${vault.linkProblems.length - 1})` : ""}`, true);
 
   /** A switch is a navigation, after the pending changes are saved, and it is refused while a save fails or is in conflict. */
   async function switchFile(path: string) {

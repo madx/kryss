@@ -1044,6 +1044,19 @@ Single-file mode keeps one file and has none of them.
   It is the same rule on a link typed by hand, pasted from elsewhere or already in the file, so the file stays plain Markdown.
 - The label and the icon never change the stored text, and the Markdown view and the clipboard text (5.11, 5.12) are the stored Markdown.
 
+**Details**
+
+- `GET /api/config` returns `{ "links": [...], "problems": [...] }`: the valid rules in file order, and one sentence per problem (a malformed file, a missing `links` array, a skipped rule).
+  The client loads it once per page load and shows the first problem, with a count of the others, in the statusline for a short time.
+- A rule whose label comes out empty after filling the groups does not match, so a missing group never gives an empty link.
+- A missing capture group gives an empty string, and `$0` is the whole match.
+- A `data:image/svg+xml` value must be at most 20000 characters and hold no double quote, backslash or line break, since it ends up in a CSS `url("…")`.
+- An icon that is a Lucide name unknown to the server shows the `Link` icon, like a rule with no icon or a refused value.
+- The paste handles a single selection only, and the inserted label has its `[`, `]` and `\` escaped.
+  A URL with unbalanced parentheses has them percent-encoded, so that the Markdown link stays well formed.
+- The autolink `<scheme:…>` is only recognized outside a link label, and its content holds no space.
+- The editor's live preview does not draw the rule icon, which only appears in the rendered text.
+
 **Pure logic**
 
 - Matching a URL against the rules, building a label, validating an icon value and the decision of the paste (selection, rule, none) are pure functions with tests.

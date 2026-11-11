@@ -280,6 +280,10 @@ export function astToHtml(nodes: InlineNode[]): string {
     .join("");
 }
 
+/** Builds what goes before the label of a link (its rule icon, PRD 5.18). Set by the view, so this module stays free of the rules. */
+let linkDecorator: ((href: string) => HTMLElement | null) | undefined;
+export const setLinkDecorator = (fn: (href: string) => HTMLElement | null) => void (linkDecorator = fn);
+
 /** Builds the element of a due node from its date text. */
 export type DueRenderer = (value: string) => HTMLElement;
 
@@ -308,6 +312,8 @@ function build(nodes: InlineNode[], parent: Node, renderDue?: DueRenderer): void
         el.setAttribute("href", n.href);
         el.setAttribute("target", "_blank");
         el.setAttribute("rel", "noopener noreferrer");
+        const icon = linkDecorator?.(n.href);
+        if (icon) el.appendChild(icon);
       }
       build(n.children, el, renderDue);
     }
