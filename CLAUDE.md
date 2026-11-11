@@ -42,6 +42,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 - **API**: `GET /api/todos` (JSON + `ETag`), `PUT /api/todos` (`If-Match`, `409` on conflict), `GET /api/events` (SSE for external file changes).
   Invalid file: `422` with line and reason; the server never writes to an invalid file.
 - **File location**: `TODO_FILE` environment variable, default `./todo.md`.
+  With `VAULT_DIR` set (Vault mode, PRD 5.16), the server manages every `.md` file of the Vault whose frontmatter has `kryss-enabled: true`, selected by `?file=` (a path relative to the Vault), and `NEW_FILE_DIR` (default `VAULT_DIR`) says where new files go.
 - **Libraries**: CodeMirror 6 (single line, live preview, autocomplete popup for due dates) for task editing, a sanitized inline Markdown renderer.
   `xit-parse` is to be removed.
 
@@ -54,8 +55,8 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 ```
 
 - Only `## List` sections containing tasks, after an optional leading frontmatter block.
-  The frontmatter (`---` … `---`) is ignored on read and kept byte for byte on write, except for its `filters` key, which holds the saved filters (`"name": "text"` lines) and is the only part that reaches the client.
-  Anything else is rejected (`422`): an unclosed frontmatter, a malformed `filters` block, free text, `#` / `###` headings, empty list name, a third nesting level, multi-line tasks.
+  The frontmatter (`---` … `---`) is ignored on read and kept byte for byte on write, except for its `kryss-filters` key, which holds the saved filters (`"name": "text"` lines) and is the only part that reaches the client.
+  Anything else is rejected (`422`): an unclosed frontmatter, a malformed `kryss-filters` block, free text, `#` / `###` headings, empty list name, a third nesting level, multi-line tasks.
 - A task is exactly one line, with non-empty text that may contain inline Markdown, stored as-is.
 - Lists are identified by position, not by name (names are not unique).
   Empty lists and an empty file are valid.
@@ -87,10 +88,14 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
+- **Vault features** (PRD 5.16 to 5.18): `go` opens the file picker, whose first entry creates a file.
+  Wikilinks `[[Note|alias]]` render as `obsidian://open` links, and typing `[[` opens a popup of the note index (names and aliases) from `GET /api/notes`, inserting the path format of `newLinkFormat` read from `.obsidian/app.json`.
+  `.kryss.json` at the Vault root holds the link rules (`match` regex, `label` template, `icon` as a Lucide name or an SVG data URL), applied when a URL is pasted in the editor, with no network call.
+  Both files are read only.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter other than the `filters` key, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, a desktop shell, custom checkbox states (deferred), due dates on lists, Yjs / CRDT, offline mode, editing the frontmatter other than the `kryss-filters` and `kryss-enabled` keys, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 
