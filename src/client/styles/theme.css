@@ -96,9 +96,9 @@
     --color-success: #9ed06c;
     --color-search: #f89860;
     --color-danger: #fb617e;
-    --color-warning-bg: #393635;
+    --color-warning-bg: color-mix(in srgb, var(--color-warning-text) 16%, var(--color-surface));
     --color-warning-text: #edc763;
-    --color-error-bg: #3a2c38;
+    --color-error-bg: color-mix(in srgb, var(--color-error-text) 16%, var(--color-surface));
     --color-error-text: #fb617e;
     --color-focus: #508bf1;
   }
