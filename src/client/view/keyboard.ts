@@ -103,7 +103,7 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "set-filter":
         env.filters.set(action.text);
-        return;
+        cursor.focusIndex(0); // the first visible stop
       case "filter-list":
         env.filters.appendList();
         return;

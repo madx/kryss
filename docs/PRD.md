@@ -692,7 +692,8 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 
 **Implementation decisions**
 
-- The date logic is pure functions in `src/client/logic/due.ts`, with the immutable and `null` conventions of 5.7: parsing a date, its period, the state against a horizon, the rewrite of a text on completion, and the shortcut resolution and its list of entries.
+- The date logic is pure functions in `src/client/logic/due.ts`, with the immutable and `null` conventions of 5.7: parsing a date, its period, the state against a horizon, and the shortcut resolution and its list of entries.
+  The rewrite of a text on completion is `completeDue` in `src/client/logic/complete.ts`, a separate file because it needs the inline parser, which itself imports `due.ts`.
   The current date is a parameter, never read inside them.
 - The inline parser returns a node that holds the date text, and the view adds the state, so the parser stays independent of the clock.
 - The popup source, its entry rendering and the date coloring are the only CodeMirror parts, and they are verified by hand.
@@ -793,6 +794,10 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 - The filter parsing, the matching of a task (with today as a parameter) and the computation of the visible rows are pure functions in `src/client/logic/filter.ts`, with the immutable and `null` conventions of 5.7.
   The Markdown view of 5.11 and the counts of 5.9 use the same visible rows.
 - Pinned rows are paths, shifted by the add or paste that creates them, and the store clears them as described above.
+- The store holds the filter text and the pins, and `commit` takes the pin and whether it is an insertion.
+  The undo history keeps the lists and the filter text of each change, and never the saved filters, which `commitFilters` changes outside the history.
+- Today is read by the view at each render, and passed to the pure functions.
+- The filter bar is built once and never re-rendered with the lists, so that typing in it is not interrupted by the live narrowing.
 - The CodeMirror parts (the bar, the popups) and the picker are verified by hand.
 - The server reads and writes the `filters` block in a small module next to the parser, with no YAML dependency.
 
