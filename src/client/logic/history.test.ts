@@ -37,18 +37,30 @@ describe("history", () => {
     let h = createHistory();
     for (let i = 0; i < MAX_HISTORY + 10; i++) h = push(h, doc(i));
     expect(h.past).toHaveLength(MAX_HISTORY);
-    expect(h.past[0]?.doc).toEqual(doc(10));
+    expect(h.past[0]?.lists).toEqual(doc(10).lists);
   });
-  test("undo and redo return the view the change was made in", () => {
-    const h = push(createHistory(), doc(0), 2);
+  test("undo and redo return the filter text the change was made under", () => {
+    const h = push(createHistory(), doc(0), "due:today");
     const u = undo(h, doc(1))!;
-    expect(u.view).toBe(2);
-    expect(redo(u.history, u.doc)!.view).toBe(2);
+    expect(u.filter).toBe("due:today");
+    expect(redo(u.history, u.doc)!.filter).toBe("due:today");
   });
-  test("the view defaults to All and is kept per change", () => {
-    const h = push(push(createHistory(), doc(0)), doc(1), 3);
+  test("the filter text defaults to empty and is kept per change", () => {
+    const h = push(push(createHistory(), doc(0)), doc(1), "is:todo");
     const u = undo(h, doc(2))!;
-    expect(u.view).toBe(3);
-    expect(undo(u.history, u.doc)!.view).toBeNull();
+    expect(u.filter).toBe("is:todo");
+    expect(undo(u.history, u.doc)!.filter).toBe("");
+  });
+  test("snapshots hold the lists only: undo and redo never touch the saved filters", () => {
+    const withFilters = (n: number, names: string[]): TodoDocument => ({ ...doc(n), filters: names.map((name) => ({ name, text: "x" })) });
+    const h = push(createHistory(), withFilters(0, ["old"]));
+    const current = withFilters(1, ["old", "added"]);
+    const u = undo(h, current)!;
+    expect(u.doc.lists).toEqual(doc(0).lists);
+    expect(u.doc.filters).toEqual(current.filters);
+    const r = redo(u.history, { ...u.doc, filters: [] })!;
+    expect(r.doc.lists).toEqual(doc(1).lists);
+    expect(r.doc.filters).toEqual([]);
+    expect(h.past[0]).not.toHaveProperty("filters");
   });
 });

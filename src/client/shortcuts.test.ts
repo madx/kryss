@@ -28,7 +28,7 @@ describe("undoActionFor", () => {
 
 const k = (key: string, o: Partial<KeyInput> = {}): KeyInput => ({
   key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
-  target: "task", pending: "", overlay: "none", markdownView: false, ...o,
+  target: "task", pending: "", overlay: "none", markdownView: false, filtering: false, ...o,
 });
 const act = (key: string, o: Partial<KeyInput> = {}) => resolveKey(k(key, o)).action;
 const onHeader = { target: "header" } as const;
@@ -53,9 +53,9 @@ describe("resolveKey: cursor navigation", () => {
     expect(act("h")).toEqual({ type: "cursor", to: "prev-header" });
     expect(act("l")).toEqual({ type: "cursor", to: "next-header" });
   });
-  test("H and L select the previous and next view", () => {
-    expect(act("H", { shiftKey: true })).toEqual({ type: "view", dir: "prev" });
-    expect(act("L", { shiftKey: true })).toEqual({ type: "view", dir: "next" });
+  test("H and L no longer select a view", () => {
+    expect(act("H", { shiftKey: true })).toBeNull();
+    expect(act("L", { shiftKey: true })).toBeNull();
   });
   test("navigation arrows prevent the default scroll", () => {
     expect(resolveKey(k("ArrowDown")).preventDefault).toBe(true);
@@ -402,9 +402,9 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(act("ArrowDown", { altKey: true, ...open })).toBeNull();
     expect(act("z", { ctrlKey: true, ...open })).toBeNull();
   });
-  test("H, L and ? keep working while the view is open", () => {
-    expect(act("H", { shiftKey: true, ...open })).toEqual({ type: "view", dir: "prev" });
-    expect(act("L", { shiftKey: true, ...open })).toEqual({ type: "view", dir: "next" });
+  test("? keeps working while the view is open, and H and L do nothing", () => {
+    expect(act("H", { shiftKey: true, ...open })).toBeNull();
+    expect(act("L", { shiftKey: true, ...open })).toBeNull();
     expect(act("?", open)).toEqual({ type: "toggle-help" });
   });
   test("Escape closes the view, also from a focused button", () => {
@@ -488,5 +488,80 @@ describe("resolveKey: sd (due date)", () => {
   });
   test("sd is ignored while the cheat sheet is open", () => {
     expect(act("d", { pending: "s", overlay: "cheatsheet" })).toBeNull();
+  });
+});
+
+describe("resolveKey: filters and views (PRD 5.14)", () => {
+  const views = [
+    ["a", { type: "set-filter", text: "" }],
+    ["d", { type: "set-filter", text: "due:today,overdue" }],
+    ["w", { type: "set-filter", text: "due:week,overdue" }],
+    ["l", { type: "filter-list" }],
+    ["f", { type: "filter-picker" }],
+  ] as const;
+
+  test("/ focuses the filter bar, on a task, on a header and with nothing focused", () => {
+    expect(resolveKey(k("/"))).toEqual({ action: { type: "focus-filter" }, pending: "", preventDefault: true });
+    expect(act("/", onHeader)).toEqual({ type: "focus-filter" });
+    expect(act("/", { target: "none" })).toEqual({ type: "focus-filter" });
+  });
+
+  test("/ is typed as is in a text field, and ignored on a control", () => {
+    expect(resolveKey(k("/", { target: "field" }))).toEqual({ action: null, pending: "", preventDefault: false });
+    expect(act("/", { target: "control" })).toBeNull();
+  });
+
+  test("g sets the prefix, then a, d, w, l and f resolve the built-in views", () => {
+    for (const [second, action] of views) {
+      expect(resolveKey(k(second, { pending: "g" }))).toEqual({ action, pending: "", preventDefault: true });
+    }
+  });
+
+  test("the view keys work on a header and with the Markdown view open", () => {
+    for (const [second, action] of views) {
+      expect(act(second, { pending: "g", ...onHeader })).toEqual(action);
+      expect(act(second, { pending: "g", markdownView: true })).toEqual(action);
+    }
+    expect(act("/", { markdownView: true })).toEqual({ type: "focus-filter" });
+  });
+
+  test("gg and gm still work", () => {
+    expect(act("g", { pending: "g" })).toEqual({ type: "cursor", to: "first" });
+    expect(act("m", { pending: "g" })).toEqual({ type: "toggle-markdown" });
+  });
+
+  test("the view keys do nothing in a text field or behind the cheat sheet", () => {
+    expect(act("a", { pending: "g", target: "field" })).toBeNull();
+    expect(act("d", { pending: "g", overlay: "cheatsheet" })).toBeNull();
+  });
+
+  test("a prefix other than g does not start a view", () => {
+    expect(act("a", { pending: "d" })).toBeNull();
+    expect(act("w", { pending: "y" })).toBeNull();
+  });
+
+  test("moves, indent and outdent do nothing while a filter is active, for tasks and headers", () => {
+    const f = { filtering: true } as const;
+    for (const [key, o] of [["J", { shiftKey: true }], ["K", { shiftKey: true }], [">", { shiftKey: true }], ["<", { shiftKey: true }], ["ArrowUp", { altKey: true }], ["ArrowDown", { altKey: true }]] as const) {
+      expect(act(key, { ...o, ...f })).toBeNull();
+      expect(act(key, { ...o, ...f, ...onHeader })).toBeNull();
+    }
+    expect(resolveKey(k("ArrowDown", { altKey: true, filtering: true })).preventDefault).toBe(true);
+  });
+
+  test("the other task keys work as usual under a filter", () => {
+    const f = { filtering: true } as const;
+    expect(act("x", f)).toEqual({ type: "toggle" });
+    expect(act("i", f)).toEqual({ type: "edit" });
+    expect(act("p", f)).toEqual({ type: "paste" });
+    expect(act("o", f)).toEqual({ type: "add", at: "below" });
+    expect(act("d", { pending: "d", ...f })).toEqual({ type: "delete" });
+    expect(act("d", { pending: "s", ...f })).toEqual({ type: "set-due" });
+    expect(act("N", { shiftKey: true, ...f })).toEqual({ type: "new-list" });
+  });
+
+  test("the moves still work with no filter", () => {
+    expect(act("J", { shiftKey: true })).toEqual({ type: "move", dir: "down" });
+    expect(act("ArrowUp", { altKey: true })).toEqual({ type: "move", dir: "up" });
   });
 });

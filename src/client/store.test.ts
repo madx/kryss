@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import type { ChangeEvent, TodoDocument } from "../shared/types";
 import type { Api, LoadResult, SaveResult } from "./api";
 import { addTask } from "./logic";
-import { createStore, SELECTION_KEY, type Timers } from "./store";
+import { createStore, FILTER_KEY, OLD_SELECTION_KEY, type Timers } from "./store";
 import { DEBOUNCE_MS, retryDelay } from "./sync";
 
 const doc = (...titles: string[]): TodoDocument => ({ lists: titles.map((title) => ({ title, tasks: [] })), filters: [] });
@@ -62,12 +62,13 @@ let clock: ReturnType<typeof fakeTimers>;
 let api: ReturnType<typeof fakeApi>;
 let store: ReturnType<typeof createStore>;
 const mem = new Map<string, string>();
+const storageOf = () => ({ getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) });
 
 beforeEach(async () => {
   clock = fakeTimers();
   api = fakeApi();
   mem.clear();
-  store = createStore({ api, timers: clock.timers, storage: { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => void mem.set(k, v) } });
+  store = createStore({ api, timers: clock.timers, storage: storageOf() });
   await store.load();
 });
 
@@ -302,25 +303,35 @@ describe("history", () => {
     expect(store.undo() && store.undo()).toBe(false);
   });
 
-  test("undo and redo switch back to the view the change was made in", () => {
+  test("undo and redo switch back to the filter text the change was made under", () => {
     store.replace(doc("A", "B", "C"), '"x"');
-    store.select(2);
+    store.setFilter("is:todo");
     store.commit(doc("D", "B", "C"));
-    store.select(null);
+    store.setFilter("due:today");
     store.undo();
-    expect(store.getState().selected).toBe(2);
-    expect(mem.get(SELECTION_KEY)).toBe("2");
-    store.select(0);
+    expect(store.getState().filter).toBe("is:todo");
+    expect(mem.get(FILTER_KEY)).toBe("is:todo");
+    store.setFilter("");
     store.redo();
-    expect(store.getState().selected).toBe(2);
+    expect(store.getState().filter).toBe("is:todo");
   });
 
-  test("a change made in the All view brings undo back to All", () => {
+  test("a change made with no filter brings undo back to an empty filter", () => {
     store.replace(doc("A", "B"), '"x"');
     store.commit(doc("X", "B"));
-    store.select(1);
+    store.setFilter("list:A");
     store.undo();
-    expect(store.getState().selected).toBeNull();
+    expect(store.getState().filter).toBe("");
+  });
+
+  test("undo never touches the saved filters", () => {
+    store.replace(doc("A"), '"x"');
+    store.commit(doc("B"));
+    store.commitFilters([{ name: "N", text: "is:todo" }]);
+    store.undo();
+    expect(store.getState().doc).toEqual({ ...doc("A"), filters: [{ name: "N", text: "is:todo" }] });
+    store.redo();
+    expect(store.getState().doc).toEqual({ ...doc("B"), filters: [{ name: "N", text: "is:todo" }] });
   });
 
   test("replace clears the history", () => {
@@ -330,32 +341,123 @@ describe("history", () => {
   });
 });
 
-describe("selection", () => {
-  test("is persisted by index and falls back to All when the index no longer exists", () => {
-    store.replace(doc("A", "B"), '"x"');
-    store.select(1);
-    expect(mem.get(SELECTION_KEY)).toBe("1");
-    expect(store.getState().selected).toBe(1);
-    store.commit(doc("A"));
-    expect(store.getState().selected).toBeNull();
-    expect(mem.get(SELECTION_KEY)).toBe("all");
-    store.commit(doc("A", "B")); // a list appearing at the old index is not selected again
-    expect(store.getState().selected).toBeNull();
-    store.select(null);
-    expect(mem.get(SELECTION_KEY)).toBe("all");
+describe("filter text", () => {
+  test("is stored in localStorage and restored on load", () => {
+    store.setFilter("due:today");
+    expect(store.getState().filter).toBe("due:today");
+    expect(mem.get(FILTER_KEY)).toBe("due:today");
+    const s = createStore({ api, timers: clock.timers, storage: storageOf() });
+    expect(s.getState().filter).toBe("due:today");
   });
 
-  test("is restored from storage, ignoring garbage", () => {
-    mem.set(SELECTION_KEY, "1");
-    const s = createStore({ api, timers: clock.timers, storage: { getItem: (k) => mem.get(k) ?? null, setItem: () => {} } });
-    s.replace(doc("A", "B"), '"x"');
-    expect(s.getState().selected).toBe(1);
-    mem.set(SELECTION_KEY, "banana");
-    const t = createStore({ api, timers: clock.timers, storage: { getItem: (k) => mem.get(k) ?? null, setItem: () => {} } });
-    t.replace(doc("A", "B"), '"x"');
-    expect(t.getState().selected).toBeNull();
+  test("starts empty with nothing stored, and the filter is not part of the document", async () => {
+    expect(store.getState().filter).toBe("");
+    store.setFilter("x");
+    await clock.advance(DEBOUNCE_MS);
+    expect(api.calls).toHaveLength(0);
   });
 
+  test("setting a filter is not a change of the document: no history, no save", async () => {
+    store.setFilter("x");
+    expect(store.getState().canUndo).toBe(false);
+    expect(store.hasPendingChanges()).toBe(false);
+  });
+
+  test("the old selector index key is dropped", () => {
+    mem.set(OLD_SELECTION_KEY, "2");
+    createStore({ api, timers: clock.timers, storage: storageOf() });
+    expect(mem.has(OLD_SELECTION_KEY)).toBe(false);
+  });
+
+  test("a storage that throws leaves an empty filter", () => {
+    const broken = { getItem: () => { throw new Error("no"); }, setItem: () => { throw new Error("no"); }, removeItem: () => { throw new Error("no"); } };
+    const s = createStore({ api, timers: clock.timers, storage: broken });
+    expect(s.getState().filter).toBe("");
+    s.setFilter("x");
+    expect(s.getState().filter).toBe("x");
+  });
+
+  test("notifies a content change so that the lists are rendered again", () => {
+    const kinds: string[] = [];
+    store.subscribe((_s, kind) => kinds.push(kind));
+    store.setFilter("x");
+    expect(kinds).toEqual(["content"]);
+    store.setFilter("x");
+    expect(kinds).toEqual(["content"]);
+  });
+});
+
+describe("pinned rows", () => {
+  const path = (task: number, child?: number) => ({ list: 0, task, child });
+  const strip = (pins: { list: number; task: number; child?: number }[]) => pins.map((p) => (p.child === undefined ? { list: p.list, task: p.task } : p));
+
+  test("a commit with a pin keeps that task visible", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 1 }]);
+  });
+
+  test("an insertion shifts the earlier pins", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    store.commit(doc("C"), { pin: path(0), inserted: true });
+    expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 2 }, { list: 0, task: 0 }]);
+  });
+
+  test("a change of the filter text clears them, the same text does not", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    store.setFilter("x");
+    expect(store.getState().pins).toHaveLength(1);
+    store.setFilter("y");
+    expect(store.getState().pins).toEqual([]);
+  });
+
+  test("a delete, an undo, a redo and an external change clear them", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    store.commit(doc("C"), { clearPins: true });
+    expect(store.getState().pins).toEqual([]);
+    for (const clear of [() => store.undo(), () => store.redo(), () => store.replace(doc("Z"), '"z"')]) {
+      store.commit(doc("D"), { pin: path(1) });
+      clear();
+      expect(store.getState().pins).toEqual([]);
+    }
+  });
+
+  test("another commit leaves them", () => {
+    store.setFilter("x");
+    store.commit(doc("B"), { pin: path(1) });
+    store.commit(doc("C"));
+    expect(store.getState().pins).toHaveLength(1);
+  });
+});
+
+describe("saved filters", () => {
+  test("commitFilters replaces them, saves, and leaves the history alone", async () => {
+    store.commitFilters([{ name: "N", text: "is:todo" }]);
+    expect(store.getState().doc!.filters).toEqual([{ name: "N", text: "is:todo" }]);
+    expect(store.getState().canUndo).toBe(false);
+    expect(store.hasPendingChanges()).toBe(true);
+    await clock.advance(DEBOUNCE_MS);
+    expect(api.calls[0]!.doc.filters).toEqual([{ name: "N", text: "is:todo" }]);
+  });
+
+  test("a conflict while saving them shows the conflict state as for any change", async () => {
+    api.saveResults.push({ kind: "conflict", etag: '"9"' });
+    store.commitFilters([{ name: "N", text: "x" }]);
+    await clock.advance(DEBOUNCE_MS);
+    expect(store.getState().status).toBe("conflict");
+  });
+
+  test("commitFilters without a document does nothing", () => {
+    const s = createStore({ api, timers: clock.timers });
+    s.commitFilters([{ name: "N", text: "x" }]);
+    expect(s.getState().doc).toBeNull();
+  });
+});
+
+describe("commit works with logic operations", () => {
   test("commit works with logic operations", () => {
     store.commit(addTask(store.getState().doc!, 0, "Task")!.doc);
     expect(store.getState().doc!.lists[0]!.tasks).toHaveLength(1);
