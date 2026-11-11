@@ -126,7 +126,7 @@ describe("isAllowedUrl", () => {
 });
 
 describe("parseInline: due dates", () => {
-  const due = (value: string) => ({ type: "due", value });
+  const due = (value: string) => ({ type: "due" as const, value });
   test("a trailing valid date becomes a due node", () => {
     expect(parseInline("Buy milk -> 2026-11-22")).toEqual([{ type: "text", value: "Buy milk " }, due("2026-11-22")]);
   });
