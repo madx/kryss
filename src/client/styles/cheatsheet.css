@@ -41,33 +41,69 @@
   overflow-y: auto;
 }
 
+/* Wide window: the groups flow in as many columns as fit. */
+.cheatsheet-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 var(--space-16);
+  align-content: start;
+}
+
 .cheatsheet-group h3 {
-  margin: var(--space-12) 0 var(--space-4);
+  margin: var(--space-12) 0 var(--space-6);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--hairline) solid var(--color-border);
   font-size: var(--font-size-sm);
   font-weight: 600;
-  color: var(--color-muted);
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
   text-transform: uppercase;
 }
 
-/* Wide window: two columns, keys then description. */
+/* Keys, then description. */
 .cheatsheet-list {
   display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--space-4) var(--space-12);
+  grid-template-columns: minmax(max-content, 40%) 1fr;
+  align-items: baseline;
+  gap: var(--space-6) var(--space-12);
   margin: 0;
+}
+
+.cheatsheet-list dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
 }
 
 .cheatsheet-list dd {
   margin: 0;
-  color: var(--color-muted);
+  color: var(--color-text);
+}
+
+/* Each key is a chip in the accent color; the separators between chips are faint. */
+.cheatsheet-list kbd,
+.cheatsheet-list code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-chip);
 }
 
 .cheatsheet-list kbd {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  padding: 0 var(--space-4);
-  background: var(--color-hover);
-  border-radius: var(--radius-chip);
+  background: color-mix(in srgb, var(--color-accent) var(--tint-pill), transparent);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* Grammar is not a key: orange, like the search it belongs to, with no chip. */
+.cheatsheet-list code {
+  padding: 0;
+  color: var(--color-search);
+}
+
+.cheatsheet-sep {
+  color: var(--color-faint);
 }
 
 /* Narrow window (breakpoint chosen at implementation time, PRD 5.10): each entry is stacked, keys above the description. */

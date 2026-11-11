@@ -16,7 +16,7 @@ export type Action =
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
   | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" }
-  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" };
+  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
@@ -44,7 +44,6 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "U": return { type: "redo" };
     case "N": return { type: "new-list" };
     case "p": return { type: "paste" };
-    case "?": return { type: "toggle-help" };
     case "/": return { type: "focus-filter" };
     case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
     case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
@@ -66,7 +65,7 @@ function taskKey(key: string): Action | null {
   }
 }
 
-/** The second key of `g` that sets or opens a filter (PRD 5.14), or null. */
+/** The second key of `g` that sets or opens a filter, toggles the siblings (PRD 5.14) or opens the cheat sheet, or null. */
 function filterKey(key: string): Action | null {
   switch (key) {
     case "a": return { type: "set-filter", text: "" };
@@ -74,6 +73,8 @@ function filterKey(key: string): Action | null {
     case "w": return { type: "set-filter", text: "due:week,overdue" };
     case "l": return { type: "filter-list" };
     case "f": return { type: "filter-picker" };
+    case "h": return { type: "toggle-siblings" };
+    case "?": return { type: "toggle-help" };
     default: return null;
   }
 }
@@ -90,20 +91,25 @@ function resolveMarkdownKey({ key, pending, altKey }: KeyInput): Resolution {
   switch (key) {
     case "Escape": return done({ type: "toggle-markdown" });
     case "/": return done({ type: "focus-filter" });
-    case "?": return done({ type: "toggle-help" });
     default: return NOTHING;
   }
 }
+
+const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "AltGraph", "Meta", "CapsLock"]);
 
 /** Resolves a key press into an action, the next pending prefix and whether to prevent the default. */
 export function resolveKey(input: KeyInput): Resolution {
   const { key, target, pending, overlay } = input;
   const onHeader = target === "header";
 
+  // Pressing Shift for the second key of `g?` is a key press of its own: it must not drop the prefix.
+  if (MODIFIER_KEYS.has(key)) return { action: null, pending, preventDefault: false };
+
   if (overlay === "cheatsheet") {
-    if (key === "?" || key === "Escape") return done({ type: "toggle-help" });
-    // The overlay holds no focus, so plain keys are swallowed to keep the page behind it still.
-    return { action: null, pending: "", preventDefault: !input.ctrlKey && !input.metaKey && !input.altKey };
+    if (key === "Escape" || (pending === "g" && key === "?")) return done({ type: "toggle-help" });
+    // The overlay holds no focus, so plain keys are swallowed to keep the page behind it still. `g` still starts `g?`.
+    const plain = !input.ctrlKey && !input.metaKey && !input.altKey;
+    return { action: null, pending: plain && key === "g" ? "g" : "", preventDefault: plain };
   }
   if (target === "field") return NOTHING;
   if (target === "control") {

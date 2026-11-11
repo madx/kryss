@@ -58,11 +58,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     listTitles: () => store.getState().doc?.lists.map((l) => l.title) ?? [],
     onInput: (text) => store.setFilter(text),
     onEnter() {
+      store.setFilter(store.getState().filter); // applying the same text drops the pins: the view is refreshed
       bar.blur();
       cursor.focusIndex(0); // the first visible stop
     },
   });
-  const header = createHeader(roots.header, bar, () => toggleMarkdown());
+  const header = createHeader(roots.header, bar, () => toggleMarkdown(), () => store.toggleSiblings());
   const picker = createFilterPicker({
     saved: () => store.getState().doc?.filters ?? [],
     text: () => store.getState().filter,
@@ -232,6 +233,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   function renderAll(state: StoreState, focus: string | null = null) {
     if (focus) pendingFocus = focus;
     header.setMarkdownOpen(markdownOpen);
+    header.setSiblings(state.showSiblings);
     bar.setText(state.filter);
     renderStatus(state);
     renderBanners(roots.banners, state, { keepMine: store.keepMine, takeDisk: store.takeDisk });
@@ -378,7 +380,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     filters: {
       focus: () => bar.focus(),
       set: (text) => store.setFilter(text),
-      appendList: () => bar.appendListTerm(),
+      startList: () => bar.startListTerm(),
       openPicker: () => picker.open(),
     },
     renameList: lists.rename,

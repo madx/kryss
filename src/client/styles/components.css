@@ -78,6 +78,18 @@
   cursor: default;
 }
 
+/* The subtasks that the filter hides: a muted eye and their count, at the end of the row. */
+.task-hidden {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--line-height-task);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-faint);
+}
+
 /* The empty row of a positional add has no checkbox: its text lines up with the others. */
 .task-new .task-text {
   margin-left: calc(var(--checkbox-size) + var(--checkbox-gap));

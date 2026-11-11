@@ -98,12 +98,10 @@ export function createFilterBar(options: FilterBarOptions) {
       view.contentDOM.ownerDocument.getSelection()?.removeAllRanges();
     },
     isFocused: () => view.hasFocus,
-    /** `gl`: focuses the bar, appends `list:` to the other terms and opens the popup. */
-    appendListTerm() {
+    /** `gl`: focuses the bar, replaces the whole text with `list:` and opens the popup, like `ga`, `gt` and `gw` replace it. */
+    startListTerm() {
       view.focus();
-      const text = view.state.doc.toString();
-      const insert = text === "" || /\s$/.test(text) ? "list:" : " list:";
-      view.dispatch({ changes: { from: text.length, insert }, selection: { anchor: text.length + insert.length } });
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: "list:" }, selection: { anchor: 5 } });
       startCompletion(view);
     },
   };

@@ -35,10 +35,10 @@ export function renderListSection(
 ): HTMLElement {
   const ul = el("ul", { class: "tasks", "data-list": String(index) });
   const ph = ctx.placeholder;
-  for (const { task: t, children } of visible.tasks) {
+  for (const { task: t, children, hidden } of visible.tasks) {
     const task = list.tasks[t]!;
     const item = el("li", { class: "task-item" });
-    item.append(renderTaskRow(task, { list: index, task: t }, tasks));
+    item.append(renderTaskRow(task, { list: index, task: t }, tasks, hidden));
     const newChild = ph && ph.target.list === index && ph.target.parent === t ? ph : null;
     if (children.length || newChild) {
       const sub = el("ul", { class: "subtasks" });

@@ -224,29 +224,43 @@ describe("visibleRows", () => {
     expect(v.filtering).toBe(false);
     expect(v.error).toBeNull();
     expect(v.lists).toEqual([
-      { list: 0, tasks: [{ task: 0, children: [] }, { task: 1, children: [0, 1] }, { task: 2, children: [] }] },
-      { list: 1, tasks: [{ task: 0, children: [] }, { task: 1, children: [] }, { task: 2, children: [] }] },
+      { list: 0, tasks: [{ task: 0, children: [], hidden: 0 }, { task: 1, children: [0, 1], hidden: 0 }, { task: 2, children: [], hidden: 0 }] },
+      { list: 1, tasks: [{ task: 0, children: [], hidden: 0 }, { task: 1, children: [], hidden: 0 }, { task: 2, children: [], hidden: 0 }] },
       { list: 2, tasks: [] },
     ]);
   });
 
   test("a matching task is shown, the others are not", () => {
-    expect(rows("report").lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [] }] }]);
+    expect(rows("report").lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [], hidden: 0 }] }]);
   });
 
   test("a matching parent shows its whole subtree", () => {
-    expect(rows("sprint").lists).toEqual([{ list: 0, tasks: [{ task: 1, children: [0, 1] }] }]);
+    expect(rows("sprint").lists).toEqual([{ list: 0, tasks: [{ task: 1, children: [0, 1], hidden: 0 }] }]);
   });
 
   test("a matching subtask shows its parent, but not its siblings", () => {
-    expect(rows("room").lists).toEqual([{ list: 0, tasks: [{ task: 1, children: [0] }] }]);
+    expect(rows("room").lists).toEqual([{ list: 0, tasks: [{ task: 1, children: [0], hidden: 1 }] }]);
+  });
+
+  test("showSiblings shows every subtask of a task that has a matching subtask, and changes nothing else", () => {
+    const all = (text: string, pins: { list: number; task: number; child?: number }[] = []) => visibleRows(frozen(doc()), text, TODAY, pins, true).lists;
+    expect(all("room")).toEqual([{ list: 0, tasks: [{ task: 1, children: [0, 1], hidden: 0 }] }]);
+    expect(all("report")).toEqual(rows("report").lists);
+    expect(all("")).toEqual(rows("").lists);
+    // A pinned subtask alone is not a match, so it does not open the siblings.
+    expect(all("report", [{ list: 0, task: 1, child: 1 }])).toEqual(rows("report", [{ list: 0, task: 1, child: 1 }]).lists);
+  });
+
+  test("the hidden count is the number of subtasks that are not shown", () => {
+    expect(rows("room").lists[0]!.tasks[0]!.hidden).toBe(1);
+    expect(rows("sprint").lists[0]!.tasks[0]!.hidden).toBe(0);
   });
 
   test("is: applies to the box of each task, with no inheritance", () => {
     // The parent "Plan the sprint" is todo, so it matches and shows its subtree, done child included.
-    expect(rows("is:todo list:Work").lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [] }, { task: 1, children: [0, 1] }] }]);
+    expect(rows("is:todo list:Work").lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [], hidden: 0 }, { task: 1, children: [0, 1], hidden: 0 }] }]);
     // Only the done subtask matches, so only it and its parent as context.
-    expect(rows("is:done list:Work").lists).toEqual([{ list: 0, tasks: [{ task: 1, children: [1] }, { task: 2, children: [] }] }]);
+    expect(rows("is:done list:Work").lists).toEqual([{ list: 0, tasks: [{ task: 1, children: [1], hidden: 1 }, { task: 2, children: [], hidden: 0 }] }]);
   });
 
   test("a list with no visible task is hidden under a filter", () => {
@@ -280,16 +294,16 @@ describe("visibleRows", () => {
 
   test("a pinned task stays visible even if it no longer matches", () => {
     const v = rows("report", [{ list: 1, task: 2 }]);
-    expect(v.lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [] }] }, { list: 1, tasks: [{ task: 2, children: [] }] }]);
+    expect(v.lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [], hidden: 0 }] }, { list: 1, tasks: [{ task: 2, children: [], hidden: 0 }] }]);
   });
 
   test("a pinned subtask is shown with its parent", () => {
     const v = rows("report", [{ list: 0, task: 1, child: 1 }]);
-    expect(v.lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [] }, { task: 1, children: [1] }] }]);
+    expect(v.lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [], hidden: 0 }, { task: 1, children: [1], hidden: 1 }] }]);
   });
 
   test("a pin that points nowhere is ignored", () => {
-    expect(rows("report", [{ list: 9, task: 0 }, { list: 0, task: 9 }, { list: 0, task: 0, child: 5 }]).lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [] }] }]);
+    expect(rows("report", [{ list: 9, task: 0 }, { list: 0, task: 9 }, { list: 0, task: 0, child: 5 }]).lists).toEqual([{ list: 0, tasks: [{ task: 0, children: [], hidden: 0 }] }]);
   });
 
   test("a pin is not needed when there is no filter", () => {

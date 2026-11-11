@@ -1,7 +1,9 @@
 // Cheat sheet: static overlay listing every key of PRD 5.9. Keys are handled by the global key handler.
 import { el } from "./dom";
 
-type Group = { title: string; rows: [string, string][] };
+/** A row is its keys and what they do. Keys are drawn as one chip each, split at " / " and ", "; a grammar row is drawn as code. */
+type Row = [keys: string, text: string, grammar?: true];
+type Group = { title: string; rows: Row[] };
 
 const GROUPS: Group[] = [
   {
@@ -54,12 +56,13 @@ const GROUPS: Group[] = [
     rows: [
       ["/", "focus the filter bar (Enter or Escape applies)"],
       ["ga / gt / gw", "all / due today or overdue / due this week or overdue"],
-      ["gl", "add list: to the filter, with a popup of the lists"],
+      ["gl", "replace the filter with list:, with a popup of the lists"],
       ["gf", "saved filters (dd deletes one)"],
-      ["words", "match the task text, ignoring case"],
-      ["list:name due:today|week|overdue|DATE is:done|todo", "terms are ANDed, commas inside a term are OR"],
-      ["list:\"two words\"", "quote a name with spaces"],
-      ["checking", "sets a due date to today, keeping the old one as (was …)"],
+      ["gh", "tasks with a matching subtask: show all their subtasks / only the matching ones"],
+      ["words", "match the task text, ignoring case", true],
+      ["list:name due:today|week|overdue|DATE is:done|todo", "terms are ANDed, commas inside a term are OR", true],
+      ["list:\"two words\"", "quote a name with spaces", true],
+      ["checking", "sets a due date to today, keeping the old one as (was …)", true],
     ],
   },
   {
@@ -75,10 +78,15 @@ const GROUPS: Group[] = [
     rows: [
       ["Escape", "commit and leave Insert mode"],
       ["Enter (Insert)", "commit and add a sibling below"],
-      ["?", "open / close this cheat sheet"],
+      ["g?", "open / close this cheat sheet"],
     ],
   },
 ];
+
+function renderKeys(keys: string, grammar?: true): Node[] {
+  if (grammar) return [el("code", {}, keys)];
+  return keys.split(/( \/ |, )/).map((part) => (part === " / " || part === ", " ? el("span", { class: "cheatsheet-sep" }, part.trim()) : el("kbd", {}, part)));
+}
 
 export function createCheatsheet(): { el: HTMLElement; open(): void; close(): void; isOpen(): boolean } {
   const panel = el("div", { class: "cheatsheet-panel", role: "dialog", "aria-label": "Keyboard shortcuts", "aria-modal": "true" });
@@ -86,7 +94,7 @@ export function createCheatsheet(): { el: HTMLElement; open(): void; close(): vo
   const columns = el("div", { class: "cheatsheet-groups" });
   for (const group of GROUPS) {
     const dl = el("dl", { class: "cheatsheet-list" });
-    for (const [keys, text] of group.rows) dl.append(el("dt", {}, el("kbd", {}, keys)), el("dd", {}, text));
+    for (const [keys, text, grammar] of group.rows) dl.append(el("dt", {}, ...renderKeys(keys, grammar)), el("dd", {}, text));
     columns.append(el("section", { class: "cheatsheet-group" }, el("h3", {}, group.title), dl));
   }
   panel.append(columns);

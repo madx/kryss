@@ -5,5 +5,5 @@ import { localToday } from "../today";
 
 /** The visible rows of the state, or null when the page holds no document. */
 export function visibleOf(state: StoreState): Visible | null {
-  return state.doc ? visibleRows(state.doc, state.filter, localToday(), state.pins) : null;
+  return state.doc ? visibleRows(state.doc, state.filter, localToday(), state.pins, state.showSiblings) : null;
 }

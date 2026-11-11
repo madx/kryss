@@ -4,8 +4,12 @@
   gap: var(--space-8);
 }
 
-.header-markdown {
+.header-siblings {
   margin-left: auto;
+}
+
+.icon-button[aria-pressed="true"] {
+  color: var(--color-accent);
 }
 
 /* Icon buttons are 22 px squares holding a 14 px icon. */
