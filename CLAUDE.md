@@ -53,8 +53,8 @@ Work plan: `docs/TODO.md`.
 ```
 
 - Only `## List` sections containing tasks, after an optional leading frontmatter block.
-  The frontmatter (`---` … `---`) is ignored on read and kept byte for byte on write, and never reaches the client.
-  Anything else is rejected (`422`): an unclosed frontmatter, free text, `#` / `###` headings, empty list name, a third nesting level, multi-line tasks.
+  The frontmatter (`---` … `---`) is ignored on read and kept byte for byte on write, except for its `filters` key, which holds the saved filters (`"name": "text"` lines) and is the only part that reaches the client.
+  Anything else is rejected (`422`): an unclosed frontmatter, a malformed `filters` block, free text, `#` / `###` headings, empty list name, a third nesting level, multi-line tasks.
 - A task is exactly one line, with non-empty text that may contain inline Markdown, stored as-is.
 - Lists are identified by position, not by name (names are not unique).
   Empty lists and an empty file are valid.
@@ -65,21 +65,27 @@ Work plan: `docs/TODO.md`.
 
 - **Checking**: checking a parent checks its children; when all children are checked, the parent is checked; unchecking a child, adding a child or moving an unchecked task under a parent unchecks the parent.
   The server never normalizes states.
-- **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and lists are reordered in the "All" view only (PRD 5.1, 5.4).
+- **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and only while the filter is empty (PRD 5.1, 5.4, 5.14).
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode and a statusline.
 - **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
 - **Register**: `dd` and `yy` put a task subtree or a list in an in-memory register and write its Markdown to the clipboard, `p` pastes it, and `cc` clears the text of a task or the name of a list to retype it (PRD 5.12).
-- **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change.
-- **UI details**: list selector ("All" or one list) stored in `localStorage` by index; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and rows and list headers have no action buttons (delete, add, move are keys only), hovering a row highlights it slightly, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
+- **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change, remembering the filter text of each change and never touching the saved filters.
+- **UI details**: filter bar in the header (PRD 5.14), its text stored in `localStorage`; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and rows and list headers have no action buttons (delete, add, move are keys only), hovering a row highlights it slightly, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
 - **Due dates**: plain task text, `-> 2026-11-22`, `-> 2026-W47` (ISO week) or `-> 2026-Q4`, only the last valid one counts, and invalid ones are plain text (PRD 5.13).
   The server and the JSON model do not know about them: the inline parser recognizes them and the client renders a pill with a state (overdue, due now, later) computed by a pure function against a horizon that is today by default.
   Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `sd` in Normal mode opens the editor on the date and its popup.
+- **Filters and views** (PRD 5.14): there is no list selector and no `H` / `L`.
+  The header filter bar (`/`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE`, `is:done|todo`, terms ANDed and commas for OR inside a term.
+  `ga`, `gd` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gf` opens the saved filters, whose first entry saves the current text under a name.
+  A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent do nothing while a filter is active.
+- **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
+  It is done by the client only, and undo restores it.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter, the `xit` format, automatic merging, reordering lists outside the "All" view, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting and filtering by due date, tags, priorities, search, filters, hiding completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter other than the `filters` key, the `xit` format, automatic merging, moving tasks and lists under a filter, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 

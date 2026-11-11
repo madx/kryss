@@ -273,3 +273,51 @@
   - [x] Add `sd` to the cheat sheet
   - [x] Tests of the key resolution
 - [x] Verify by hand: each shortcut, `sd` with and without a date, Escape behavior, undo of a date change, light and dark, a window from 240 to 720 px wide, and a date typed from an external editor
+
+## Filters and views
+- [x] Update the PRD, `CLAUDE.md` and this file for filters and views
+- [ ] Saved filters in the frontmatter, on the server
+  - [ ] Add `filters` (name and text) to `TodoDocument` in `src/shared/types.ts`
+  - [ ] Read the `filters` block line by line and leave every other frontmatter line untouched
+  - [ ] `422` with the line for a duplicate key, a malformed line, an empty name or text, a duplicate name and another YAML style
+  - [ ] Write the block on `PUT`: untouched when unchanged, replaced in place, added, removed, and the frontmatter created or removed when it becomes empty
+  - [ ] Validate `filters` in `PUT` (`400`) and return them in `GET`, `PUT` and the SSE event
+  - [ ] Tests: each `422` case, byte for byte round-trip, add, replace, remove, create and remove the frontmatter, the rest of the frontmatter untouched
+- [ ] Pure filter logic in `src/client/logic/filter.ts`
+  - [ ] Parse the text: words, quotes (also unclosed), `list:`, `due:`, `is:`, commas, unknown keys as words, bad values reported, empty values ignored
+  - [ ] Match a task against the terms, with today as a parameter: `due:today`, `week`, `overdue`, a literal period, `is:done`, `is:todo`
+  - [ ] Visible rows: match, ancestor or descendant, hidden empty lists under a filter, pinned rows
+  - [ ] Tests for every term, the tree rule, empty lists, pins and bad values
+- [ ] Due date rewrite on completion
+  - [ ] Pure `completeDue(text, today)` in `due.ts`: overdue day, week and quarter become today, with the `(was …)` suffix and the existing suffix kept
+  - [ ] Call it from the checking logic for a direct check, the children of a checked parent and an auto-checked parent
+  - [ ] Tests: each date form, today, a future day, no date, text after the date, cascade, auto-checked parent, undo as one change
+- [ ] Store and history
+  - [ ] Hold the filter text and the pinned rows in the store, and clear the pins as the PRD says
+  - [ ] Undo entries remember the filter text, and snapshots hold the lists only
+  - [ ] `commitFilters` saves without touching the history
+  - [ ] Tests
+- [ ] Filter bar
+  - [ ] Replace the selector with a one-line CodeMirror bar and the `All` placeholder, with the Markdown toggle on the right
+  - [ ] `/` focuses it, narrowing is live, Enter applies, the first Escape closes the popup and the second restores the text, and a blur keeps it
+  - [ ] Store the text in `localStorage` with the cursor index, and drop the old selector index key
+  - [ ] Popups for `list:` and `due:`, with commas, quoting and a typed literal entry
+  - [ ] "No matching task" and the bad value reason in place of the lists
+  - [ ] Visible counts in the footer and in the list headers
+- [ ] Keys
+  - [ ] Remove `H` / `L` and the view cycling logic and tests
+  - [ ] `/`, `ga`, `gd`, `gw`, `gl` and `gf` in the pure key function, also while the Markdown view is open
+  - [ ] `h` / `l` between visible list headers in every view
+  - [ ] Moves, indent and outdent do nothing while a filter is active
+  - [ ] `N` and the paste of a list clear the filter
+  - [ ] Pin a task after an add, a paste, an edit and a check
+  - [ ] Update the cheat sheet with the new keys, the grammar and the completion rule
+  - [ ] Tests of the key resolution
+- [ ] Saved filter picker
+  - [ ] Listbox below the bar with "Save current filter…" first, then the saved filters
+  - [ ] Name input, overwrite on an existing name, and cancel on Escape or an empty name
+  - [ ] Apply on Enter, and delete at once with `dd`
+  - [ ] Markdown view and export use the visible rows
+- [ ] Remove the list selector component, its styles, its tests and the 16 px font token
+- [ ] Run `bun test` and `bun run build`, and fix the tests that referred to the removed code
+- [ ] Verify by hand: each built-in view, `gl` and `gf`, tick of an overdue task, a cascade, an Obsidian edit of the frontmatter, a conflict while saving a filter, light and dark, a window from 240 to 720 px wide
