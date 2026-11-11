@@ -140,3 +140,22 @@ export function dueEntries(word: string, today: string): DueEntry[] {
   }
   return entries;
 }
+
+export type DueMatch = { from: number; to: number; dateFrom: number; value: string };
+
+/** The last valid `-> DATE` of a text: its range, where the date starts, and the date. */
+export function findDue(text: string): DueMatch | null {
+  let found: DueMatch | null = null;
+  for (const m of text.matchAll(/(?<=^|\s)-> (\S+)(?=\s|$)/g)) {
+    if (!duePeriod(m[1]!)) continue;
+    found = { from: m.index!, to: m.index! + m[0].length, dateFrom: m.index! + 3, value: m[1]! };
+  }
+  return found;
+}
+
+/** Replaces a trailing `->shortcut` with `-> DATE`, or null when there is none or the word is unknown. */
+export function resolveTrailing(text: string, today: string): string | null {
+  const m = /(?<=^|\s)->(\S+)$/.exec(text);
+  const date = m ? resolveShortcut(m[1]!, today) : null;
+  return m && date ? text.slice(0, m.index) + "-> " + date : null;
+}

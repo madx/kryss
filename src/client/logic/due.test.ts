@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dayPeriod, dueEntries, duePeriod, dueState, resolveShortcut } from "./due";
+import { dayPeriod, dueEntries, duePeriod, dueState, findDue, resolveShortcut, resolveTrailing } from "./due";
 
 const TODAY = "2026-11-11"; // a Wednesday
 const r = (word: string, today = TODAY) => resolveShortcut(word, today);
@@ -225,5 +225,33 @@ describe("dueEntries", () => {
     expect(labels("foo")).toEqual([]);
     expect(labels("yesterday")).toEqual([]);
     expect(labels("2026-02-30")).toEqual([]);
+  });
+});
+
+describe("findDue", () => {
+  test("gives the range of the last valid `-> DATE`, with the date text", () => {
+    expect(findDue("Renew -> 2026-12-01")).toEqual({ from: 6, to: 19, dateFrom: 9, value: "2026-12-01" });
+    expect(findDue("a -> 2026-11-01 b -> 2026-W47 c")).toEqual({ from: 18, to: 29, dateFrom: 21, value: "2026-W47" });
+  });
+  test("null without a valid date, for a bare arrow or a prose arrow", () => {
+    expect(findDue("a ->")).toBeNull();
+    expect(findDue("A -> B")).toBeNull();
+    expect(findDue("a -> 2026-02-30")).toBeNull();
+    expect(findDue("a->2026-11-22")).toBeNull();
+  });
+});
+
+describe("resolveTrailing", () => {
+  test("replaces a trailing valid shortcut with `-> DATE`", () => {
+    expect(resolveTrailing("Pay rent ->tomorrow", TODAY)).toBe("Pay rent -> 2026-11-12");
+    expect(resolveTrailing("->+1w", TODAY)).toBe("-> 2026-11-18");
+    expect(resolveTrailing("a ->2026-W52", TODAY)).toBe("a -> 2026-W52");
+  });
+  test("null for an unknown word, a bare arrow, a spaced arrow or no arrow", () => {
+    expect(resolveTrailing("a ->foo", TODAY)).toBeNull();
+    expect(resolveTrailing("a ->", TODAY)).toBeNull();
+    expect(resolveTrailing("a -> 2026-11-22", TODAY)).toBeNull();
+    expect(resolveTrailing("a->today", TODAY)).toBeNull();
+    expect(resolveTrailing("plain", TODAY)).toBeNull();
   });
 });
