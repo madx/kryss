@@ -32,8 +32,8 @@ export type ChangeKind = "content" | "external" | "status";
 export type Timers = { set(fn: () => void, ms: number): unknown; clear(handle: unknown): void };
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem" | "removeItem">;
 
-export const FILTER_KEY = "todoapp.filter";
-export const SIBLINGS_KEY = "todoapp.showSiblings";
+export const FILTER_KEY = "kryss.filter";
+export const SIBLINGS_KEY = "kryss.showSiblings";
 /** The key of the list selector, which no longer exists. It is removed on start. */
 export const OLD_SELECTION_KEY = "todoapp.selectedList";
 
