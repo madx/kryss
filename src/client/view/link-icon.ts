@@ -6,6 +6,22 @@ import { iconRef, matchLink } from "../logic/links";
 import { setLinkDecorator } from "../markdown/inline";
 
 let fallbackUrl: string | undefined;
+/** Whether the server knows a Lucide name, probed once per name and page load so that a render sends no request. */
+const known = new Map<string, Promise<boolean>>();
+
+function probe(name: string, src: string): Promise<boolean> {
+  let result = known.get(name);
+  if (!result) {
+    result = new Promise<boolean>((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve(true);
+      image.onerror = () => resolve(false);
+      image.src = src;
+    });
+    known.set(name, result);
+  }
+  return result;
+}
 
 /** The Lucide `Link` icon as a data URL, so that a rule with no usable icon still shows one without any request. */
 function fallback(): string {
@@ -25,9 +41,7 @@ export function linkIcon(href: string): HTMLElement | null {
   if (ref?.kind === "lucide") {
     // The server answers `404` for an unknown name, in which case the fallback stays.
     const src = `/api/icons/${ref.name}`;
-    const probe = new Image();
-    probe.onload = () => span.style.setProperty("--link-icon", `url("${src}")`);
-    probe.src = src;
+    void probe(ref.name, src).then((ok) => ok && span.style.setProperty("--link-icon", `url("${src}")`));
   }
   return span;
 }

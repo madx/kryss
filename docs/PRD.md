@@ -1040,7 +1040,7 @@ Single-file mode keeps one file and has none of them.
 
 **Display**
 
-- A link whose URL matches a rule that has an icon shows that icon before its label, at the size of the text.
+- A link whose URL matches a rule shows an icon before its label, at the size of the text: the icon of the rule, or the Lucide `Link` icon when the rule has none or a refused one.
   It is the same rule on a link typed by hand, pasted from elsewhere or already in the file, so the file stays plain Markdown.
 - The label and the icon never change the stored text, and the Markdown view and the clipboard text (5.11, 5.12) are the stored Markdown.
 

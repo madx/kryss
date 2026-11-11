@@ -230,7 +230,7 @@ export function createApp(options: AppOptions) {
     if (vault && pathname === "/api/config" && req.method === "GET") return json(await readLinkConfig(vault.vaultDir), 200, { "Cache-Control": "no-store" });
     if (vault && pathname.startsWith("/api/icons/") && req.method === "GET") {
       const svg = await lucideSvg(pathname.slice("/api/icons/".length));
-      return svg === null ? notFound() : new Response(svg, { headers: { "Content-Type": "image/svg+xml" } });
+      return svg === null ? notFound() : new Response(svg, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "max-age=3600" } });
     }
     if (pathname === "/api/todos") {
       if (req.method !== "GET" && req.method !== "PUT") return json({ error: "Method not allowed" }, 405, { Allow: "GET, PUT" });
