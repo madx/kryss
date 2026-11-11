@@ -198,7 +198,7 @@ const needsQuotes = (title: string) => /[\s,]/.test(title);
  * The popup of the filter bar for the value being typed at `cursor`, after `list:` or `due:` and after a comma.
  * `from` is where the replaced text starts. Null when there is nothing to offer.
  */
-export function filterCompletion(text: string, cursor: number, listTitles: string[], _today: string): Completion | null {
+export function filterCompletion(text: string, cursor: number, listTitles: string[]): Completion | null {
   // Find the start of the token under the cursor and of its current comma-separated value, honoring quotes.
   let quoted = false;
   let tokenStart = 0;

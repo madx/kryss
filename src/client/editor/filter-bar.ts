@@ -1,10 +1,9 @@
 // The filter bar (PRD 5.14): a one-line CodeMirror editor in the header, always present, with the popup of `list:` and `due:` values.
-import { autocompletion, startCompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
+import { acceptCompletion, autocompletion, startCompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { filterCompletion } from "../logic/filter";
-import { localToday } from "../today";
 import { singleLine } from "./single-line";
 import "./filter-bar.css";
 
@@ -27,7 +26,7 @@ export function createFilterBar(options: FilterBarOptions) {
   let syncing = false;
 
   const source = (context: CompletionContext): CompletionResult | null => {
-    const result = filterCompletion(context.state.doc.toString(), context.pos, options.listTitles(), localToday());
+    const result = filterCompletion(context.state.doc.toString(), context.pos, options.listTitles());
     if (!result) return null;
     return { from: result.from, filter: false, options: result.options.map((o) => ({ label: o.label, apply: o.apply })) };
   };
@@ -52,6 +51,7 @@ export function createFilterBar(options: FilterBarOptions) {
               return true;
             },
           },
+          { key: "Tab", run: acceptCompletion },
           ...historyKeymap,
           ...standardKeymap,
         ]),

@@ -40,6 +40,8 @@ export type CommitOptions = {
   pin?: TaskPath;
   /** `pin` was just added or pasted: the pins at or after it shift. */
   inserted?: boolean;
+  /** `pin` is a parent whose subtasks were just changed too (a cascade): they stay visible with it. */
+  pinChildren?: boolean;
   /** A delete: the pins are dropped. */
   clearPins?: boolean;
 };
@@ -142,6 +144,10 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     history = push(history, doc, filter);
     if (options.clearPins) pins = [];
     if (options.pin) pins = pinTask(pins, options.pin, options.inserted);
+    if (options.pin && options.pinChildren && options.pin.child === undefined) {
+      const { list, task } = options.pin;
+      next.lists[list]?.tasks[task]?.children?.forEach((_, child) => (pins = pinTask(pins, { list, task, child })));
+    }
     doc = next;
     markDirty();
     emit("content");

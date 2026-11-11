@@ -370,7 +370,7 @@ describe("pinTask", () => {
 
 describe("filterCompletion", () => {
   const titles = ["Work", "Side projects", "Home"];
-  const c = (text: string, cursor = text.length) => filterCompletion(text, cursor, titles, TODAY);
+  const c = (text: string, cursor = text.length) => filterCompletion(text, cursor, titles);
 
   test("nothing for plain words, other keys and an unfinished key", () => {
     expect(c("")).toBeNull();
@@ -412,11 +412,11 @@ describe("filterCompletion", () => {
   });
 
   test("a title with a double quote is not offered", () => {
-    expect(filterCompletion("list:", 5, ['a"b', "ok"], TODAY)?.options.map((o) => o.label)).toEqual(["ok"]);
+    expect(filterCompletion("list:", 5, ['a"b', "ok"])?.options.map((o) => o.label)).toEqual(["ok"]);
   });
 
   test("duplicate titles are offered once", () => {
-    expect(filterCompletion("list:", 5, ["A", "A"], TODAY)?.options).toHaveLength(1);
+    expect(filterCompletion("list:", 5, ["A", "A"])?.options).toHaveLength(1);
   });
 
   test("due: offers today, week and overdue", () => {

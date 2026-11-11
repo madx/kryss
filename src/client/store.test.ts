@@ -397,6 +397,13 @@ describe("pinned rows", () => {
     expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 1 }]);
   });
 
+  test("pinChildren also pins the subtasks of the pinned parent", () => {
+    store.setFilter("x");
+    const withChildren: TodoDocument = { filters: [], lists: [{ title: "A", tasks: [{ text: "p", done: true, children: [{ text: "a", done: true }, { text: "b", done: true }] }] }] };
+    store.commit(withChildren, { pin: path(0), pinChildren: true });
+    expect(strip(store.getState().pins)).toEqual([{ list: 0, task: 0 }, path(0, 0), path(0, 1)]);
+  });
+
   test("an insertion shifts the earlier pins", () => {
     store.setFilter("x");
     store.commit(doc("B"), { pin: path(1) });

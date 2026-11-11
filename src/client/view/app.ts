@@ -72,7 +72,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     text: () => store.getState().filter,
     apply: (text) => store.setFilter(text),
     commit: (filters) => store.commitFilters(filters),
-    closed: () => cursor.focusIndex(cursor.last()),
+    closed: () => cursor.focusIndex(0), // the first visible stop, as after Enter in the bar
   });
   roots.header.append(picker.el);
   let cursorRestored = false;
@@ -98,7 +98,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   const tasks: TaskActions = {
     toggle(path) {
-      commitFocus(toggleDone(doc(), path, localToday()), rowSelector(path), { pin: path });
+      commitFocus(toggleDone(doc(), path, localToday()), rowSelector(path), { pin: path, pinChildren: true });
     },
     edit(path, text) {
       pendingFocus = rowSelector(path);

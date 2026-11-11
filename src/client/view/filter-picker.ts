@@ -54,6 +54,7 @@ export function createFilterPicker(env: PickerEnv) {
     naming = true;
     const input = el("input", { type: "text", class: "picker-name", "aria-label": "Filter name", placeholder: "Name of the filter" });
     input.addEventListener("keydown", (e) => {
+      e.stopPropagation(); // the menu handler must not see this key
       if (e.key === "Enter") {
         e.preventDefault();
         const next = saveFilter(env.saved(), input.value, env.text());
@@ -102,7 +103,7 @@ export function createFilterPicker(env: PickerEnv) {
   }
 
   menu.addEventListener("keydown", (e) => {
-    if (naming) return;
+    if (naming || menu.hidden) return;
     const result = pickerKey(active, entries.length, e.key, pendingD);
     if (!result) return;
     e.preventDefault();
