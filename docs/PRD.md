@@ -201,6 +201,9 @@ A whole document is its lists joined by a blank line, followed by that final new
   There is no wrapping: nothing happens at the first or last list.
   While a filter is active, the previous and next lists are the previous and next visible lists, and the hidden lists between them keep their place (5.14).
   The cursor stays on the moved list header, which is scrolled into view.
+- `H` / `L` move the whole list that holds the cursor, up / down, from a list header or from any task of the list.
+  They behave like `K` / `J` on a header, with the same edges and the same rule under a filter.
+  From a task, the cursor stays on that task, in the moved list.
   Each move is one undoable change (5.6).
 
 ### 5.3 Checking
@@ -333,7 +336,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
 - `/` focuses the filter bar, `ga`, `gt` and `gw` set the filter to the built-in views, `gl` starts a list filter, `gf` opens the saved filters and `gh` toggles the display of the siblings of a match (5.14).
-  `H` and `L` do not exist any more.
+  `H` / `L` move the whole list up / down (5.2).
   When the filter is set by a key, the cursor goes to the first stop.
 - The cursor position is stored in `localStorage` as its index in the flat sequence of stops of the current view, next to the filter text, and it is restored on load.
   An index that no longer exists is clamped to the last stop, and an empty view has no cursor.
@@ -360,6 +363,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `p` | paste the register below the task (5.12) |
 | `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), over the visible rows under a filter (5.14) |
+| `H` / `L` | move the whole list of the task up / down (5.2) |
 | `u` / `U`, Ctrl+Z / Ctrl+Shift+Z | undo / redo |
 | `o` / `O` | add a sibling below / above, always at the same level |
 | `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
@@ -378,9 +382,11 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
 | `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up, over the visible lists under a filter (5.14) |
+| `H` / `L` | move the list up / down, like `K` / `J` |
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
 - `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
+  `H` and `L` do the same on a header, and also work on a task.
 - `x`, `>`, `<` and `sd` do nothing on a header.
 - `N` creates the list as in 5.1 and clears the filter, so that the new list is visible.
   Once the name is confirmed, the cursor stays on the new list header.
@@ -732,7 +738,7 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 
 `ga`, `gt`, `gw` and `gl` replace the whole text.
 Nothing else marks a view: it is the text in the bar.
-There is no selector, no `H` / `L`, and no way to show a single list other than `list:`.
+There is no selector, and no way to show a single list other than `list:`.
 
 **Grammar**
 

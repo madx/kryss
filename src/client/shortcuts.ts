@@ -11,7 +11,7 @@ export type { AddAt } from "./logic/insert";
 export type Action =
   | { type: "cursor"; to: CursorMove }
   | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
-  | { type: "move"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
+  | { type: "move"; dir: "up" | "down" } | { type: "move-list"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
@@ -28,7 +28,7 @@ export type Resolution = { action: Action | null; pending: Pending; preventDefau
 const NOTHING: Resolution = { action: null, pending: "", preventDefault: false };
 const done = (action: Action | null, preventDefault = true): Resolution => ({ action, pending: "", preventDefault });
 
-/** Keys that act on both tasks and list headers (`J` / `K` move the task or the list). */
+/** Keys that act on both tasks and list headers (`J` / `K` move the task or the list, `H` / `L` always move the list). */
 function commonKey(key: string, onHeader: boolean): Action | null {
   switch (key) {
     case "j": case "ArrowDown": return { type: "cursor", to: "next" };
@@ -38,6 +38,8 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "l": return { type: "cursor", to: "next-header" };
     case "J": return { type: "move", dir: "down" };
     case "K": return { type: "move", dir: "up" };
+    case "H": return { type: "move-list", dir: "up" };
+    case "L": return { type: "move-list", dir: "down" };
     case "Delete": return { type: "delete" };
     case "i": case "Enter": return { type: "edit" };
     case "u": return { type: "undo" };
