@@ -29,15 +29,15 @@ function copyShape(source: Element, depth = 0): SVGElement | null {
   return copy;
 }
 
-/** A clean SVG element from the text of an SVG, or null when it is not one. Lucide icons are strokes, so that is the default. */
+/** A clean SVG element from the text of an SVG, or null when it is not one. */
 export function cleanSvg(text: string): SVGElement | null {
   const root = new DOMParser().parseFromString(text, "image/svg+xml").documentElement;
   if (root.localName !== "svg" || root.querySelector("parsererror")) return null;
   const svg = document.createElementNS(SVG_NS, "svg");
   const viewBox = root.getAttribute("viewBox");
   svg.setAttribute("viewBox", viewBox && /^[\d\s.,-]+$/.test(viewBox) ? viewBox : "0 0 24 24");
-  const fill = root.getAttribute("fill");
-  svg.setAttribute("fill", fill && fill !== "none" ? "currentColor" : "none");
+  // An SVG with no `fill` is filled in black, so only an explicit `none` stays transparent (the strokes of a Lucide icon).
+  svg.setAttribute("fill", root.getAttribute("fill") === "none" ? "none" : "currentColor");
   const stroke = root.getAttribute("stroke");
   if (stroke && stroke !== "none") svg.setAttribute("stroke", "currentColor");
   for (const name of ["stroke-width", "stroke-linecap", "stroke-linejoin"]) {
