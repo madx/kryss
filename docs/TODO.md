@@ -289,7 +289,7 @@
   - [x] Visible rows: match, ancestor or descendant, hidden empty lists under a filter, pinned rows
   - [x] Tests for every term, the tree rule, empty lists, pins and bad values
 - [x] Due date rewrite on completion
-  - [x] Pure `completeDue(text, today)` in `due.ts`: overdue day, week and quarter become today, with the `(was …)` suffix and the existing suffix kept
+  - [x] Pure `completeDue(text, today)` in `complete.ts`: a day before today, and any week or quarter, becomes today, with the `(was …)` suffix and the existing suffix kept
   - [x] Call it from the checking logic for a direct check, the children of a checked parent and an auto-checked parent
   - [x] Tests: each date form, today, a future day, no date, text after the date, cascade, auto-checked parent, undo as one change
 - [x] Store and history
