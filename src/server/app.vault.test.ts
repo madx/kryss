@@ -67,6 +67,7 @@ describe("GET /api/files", () => {
     put("b.md", ENABLED);
     put("Projects/A.md", ENABLED);
     put("plain.md", "## L\n");
+    start();
     const res = await fetch(url("/api/files"));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(["b.md", "Projects/A.md"]);
@@ -272,10 +273,11 @@ describe("GET /api/events with a file", () => {
     put("a.md", ENABLED + "## A\n");
     start();
     expect(app.watchedFiles()).toEqual([]);
-    const res = await fetch(url("/api/events", "a.md"));
+    const abort = new AbortController();
+    await fetch(url("/api/events", "a.md"), { signal: abort.signal });
     await sleep(100);
     expect(app.watchedFiles()).toEqual(["a.md"]);
-    await res.body!.cancel();
+    abort.abort();
     await sleep(100);
     expect(app.watchedFiles()).toEqual([]);
   });
