@@ -61,3 +61,33 @@
   color: var(--color-accent);
   text-decoration: underline;
 }
+
+/* The literal text of a valid date, with the colors of the pill and no icon. */
+.cm-due-overdue { color: var(--color-due-overdue); }
+.cm-due-now { color: var(--color-due-now); }
+.cm-due-later { color: var(--color-due-later); }
+
+/* The due date popup, in the panel look. */
+.cm-tooltip.cm-tooltip-autocomplete {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: var(--hairline) solid var(--color-border);
+  border-radius: var(--radius-control);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-task);
+}
+
+.cm-tooltip-autocomplete > ul > li {
+  padding: var(--space-2) var(--space-8);
+}
+
+.cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.cm-completionDetail {
+  margin-left: var(--space-12);
+  font-style: normal;
+  opacity: 0.8;
+}

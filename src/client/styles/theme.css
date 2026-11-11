@@ -20,6 +20,11 @@
   --color-error-text: #7a1f14;
   --color-focus: #2f6fed;
 
+  /* Due date states (PRD 5.10). */
+  --color-due-overdue: var(--color-danger);
+  --color-due-now: var(--color-accent);
+  --color-due-later: var(--color-muted);
+
   /* Spacing steps, in px. */
   --space-2: 2px;
   --space-4: 4px;

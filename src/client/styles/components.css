@@ -150,3 +150,28 @@
   background: color-mix(in srgb, var(--cursor-color) var(--tint-cursor), transparent);
   box-shadow: inset var(--bar-width) 0 0 0 var(--cursor-color);
 }
+
+/* Due date pill (PRD 5.10): an arrow and the date, colored by state. */
+.due {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-chip);
+  color: var(--color-due-later);
+  background: color-mix(in srgb, currentColor var(--tint-hover), transparent);
+}
+
+.due svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: none;
+}
+
+.due[data-state="overdue"] { color: var(--color-due-overdue); }
+.due[data-state="now"] { color: var(--color-due-now); }
+
+/* A completed task has a neutral pill, in the muted color of its text. */
+.task-row[data-done="true"] .due {
+  color: inherit;
+}

@@ -241,17 +241,24 @@ export function astToHtml(nodes: InlineNode[]): string {
     .join("");
 }
 
-function build(nodes: InlineNode[], parent: Node): void {
+/** Builds the element of a due node from its date text. */
+export type DueRenderer = (value: string) => HTMLElement;
+
+function build(nodes: InlineNode[], parent: Node, renderDue?: DueRenderer): void {
   for (const n of nodes) {
     if (n.type === "text") {
       parent.appendChild(document.createTextNode(n.value));
       continue;
     }
     if (n.type === "due") {
-      const pill = document.createElement("span");
-      pill.className = "due";
-      pill.textContent = n.value;
-      parent.appendChild(pill);
+      if (renderDue) {
+        parent.appendChild(renderDue(n.value));
+      } else {
+        const pill = document.createElement("span");
+        pill.className = "due";
+        pill.textContent = n.value;
+        parent.appendChild(pill);
+      }
       continue;
     }
     const el = document.createElement(n.type === "link" ? "a" : n.type === "code" ? "code" : TAGS[n.type]);
@@ -263,15 +270,15 @@ function build(nodes: InlineNode[], parent: Node): void {
         el.setAttribute("target", "_blank");
         el.setAttribute("rel", "noopener noreferrer");
       }
-      build(n.children, el);
+      build(n.children, el, renderDue);
     }
     parent.appendChild(el);
   }
 }
 
 /** Renders inline Markdown to DOM nodes using only createElement and text nodes (no innerHTML). */
-export function renderInline(text: string): DocumentFragment {
+export function renderInline(text: string, renderDue?: DueRenderer): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  build(parseInline(text), fragment);
+  build(parseInline(text), fragment, renderDue);
   return fragment;
 }

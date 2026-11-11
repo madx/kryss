@@ -9,7 +9,7 @@ import type { Store } from "../store";
 import type { Cursor } from "./cursor";
 import { stopOf } from "./cursor";
 import { isEditing } from "./edit-text";
-import { BEGIN_EDIT, CHANGE_EDIT } from "./task-row";
+import { BEGIN_EDIT, CHANGE_EDIT, DUE_EDIT } from "./task-row";
 
 /** What the keyboard layer needs from the app: operations that touch its render state. */
 export type KeyboardEnv = {
@@ -150,6 +150,9 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "change":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(CHANGE_EDIT));
+        return;
+      case "set-due":
+        document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(DUE_EDIT));
         return;
       case "delete":
         env.registerKeys.cut(current);
