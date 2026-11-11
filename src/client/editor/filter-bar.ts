@@ -21,7 +21,7 @@ export type FilterBarOptions = {
 const keyMark = Decoration.mark({ class: "cm-filter-key" });
 const valueMark = Decoration.mark({ class: "cm-filter-value" });
 
-/** `list:` and `due:` terms are drawn as pills: a colored key and a gray value. */
+/** `list:`, `due:` and `is:` terms are drawn as pills: a colored key and a gray value. */
 function pillMarks(view: EditorView): DecorationSet {
   const marks = filterPills(view.state.doc.toString()).flatMap(({ key, value }) => [
     keyMark.range(key.from, key.to),

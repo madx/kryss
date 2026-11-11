@@ -449,11 +449,15 @@ describe("filterCompletion", () => {
 });
 
 describe("filterPills", () => {
-  test("a list: or due: term gives a key range and a value range", () => {
+  test("a list:, due: or is: term gives a key range and a value range", () => {
     expect(filterPills("list:Work due:today")).toEqual([
       { key: { from: 0, to: 5 }, value: { from: 5, to: 9 } },
       { key: { from: 10, to: 14 }, value: { from: 14, to: 19 } },
     ]);
+  });
+
+  test("an is: term gets a pill too", () => {
+    expect(filterPills("is:done,todo")).toEqual([{ key: { from: 0, to: 3 }, value: { from: 3, to: 12 } }]);
   });
 
   test("the value runs over commas and quotes, spaces inside quotes included", () => {
@@ -467,7 +471,7 @@ describe("filterPills", () => {
 
   test("keys ignore case, and other terms and unknown keys have no pill", () => {
     expect(filterPills("LIST:a")).toHaveLength(1);
-    expect(filterPills("is:todo foo:bar word")).toEqual([]);
+    expect(filterPills("foo:bar word")).toEqual([]);
     expect(filterPills('"list:x"')).toEqual([]);
     expect(filterPills("")).toEqual([]);
   });
