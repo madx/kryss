@@ -87,3 +87,10 @@
 .sync-status[data-status="error"] {
   color: var(--color-danger);
 }
+
+/* In a wide window the footer is as wide as the list panels, which the page gutter insets from the column. */
+@media (min-width: 721px) {
+  .app-footer {
+    max-width: calc(var(--content-width) - 2 * var(--gutter));
+  }
+}

@@ -454,7 +454,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The page is one centered column that fills the window and stops growing at `--content-width` (720 px).
   The header, the list panels and the footer share the same left edge.
-- The footer box is the column itself: centered, at most `--content-width` wide, with its own background and nothing drawn outside it, and full width in a narrow window.
+- The footer box is the column itself: centered, as wide as the list panels in a wide window (`--content-width` minus the two page gutters), with its own background and nothing drawn outside it, and full width in a narrow window.
   The search input of 5.15 is stacked right above it, with the same width, while it is open.
 - A list is a flat panel: surface background, 8 px radius, no border and no shadow, with 8 px between panels.
   Panels are distinguished from the page by their background only.
