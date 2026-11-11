@@ -9,9 +9,10 @@
   font-size: var(--font-size-task);
 }
 
+/* Focused for editing: the Insert look of a task row, a green tint and a 2 px bar, with no ring that would shrink the bar. */
 .filter-bar:focus-within {
-  outline: var(--bar-width) solid var(--color-focus);
-  outline-offset: calc(-1 * var(--bar-width));
+  background: color-mix(in srgb, var(--color-success) var(--tint-cursor), var(--color-input));
+  box-shadow: inset var(--bar-width) 0 0 0 var(--color-success);
 }
 
 .filter-bar .cm-editor {
