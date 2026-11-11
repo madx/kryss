@@ -15,6 +15,10 @@ Features that were added and later removed are listed in both places, so that th
 - The open file lives in `?file=`, the last file is remembered, and the filter text and cursor position are stored per file.
 - A transparent dark layer behind the pickers and the `list:` popup, pickers pinned to the top of the window in the column of the app, and a slight shadow on the editor popups.
 
+- Wikilinks: `[[Note]]`, `[[Note|alias]]` and the heading and block forms render as `obsidian://open` links in Vault mode, and stay literal text in single-file mode.
+- `[[` opens a popup of the note index, filtered on names and aliases, which inserts the path format of `newLinkFormat` read from `.obsidian/app.json`, and the live preview hides the brackets away from the cursor.
+- `GET /api/notes` returns the note index and the link format, and `GET /api/files` carries the vault name in its `X-Vault-Name` header.
+
 ### Changed
 
 - The saved filters now live in the `kryss-filters` key of the frontmatter instead of `filters`.

@@ -5,6 +5,7 @@ import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate
 import { dayPeriod, dueEntries, dueState, resolveTrailing } from "../logic/due";
 import { findDueRange } from "../markdown/inline";
 import { localToday } from "../today";
+import { wikilinkSource } from "./wikilink";
 
 /** The popup source: after `->` (preceded by whitespace or the start) and a space-free word. Accepting writes `-> DATE`. */
 function dueSource(context: CompletionContext): CompletionResult | null {
@@ -58,7 +59,7 @@ const colorPlugin = ViewPlugin.fromClass(
   { decorations: (p) => p.decorations },
 );
 
-export const dueExtensions: Extension = [autocompletion({ override: [dueSource], icons: false }), resolveOnSpace, colorPlugin];
+export const dueExtensions: Extension = [autocompletion({ override: [dueSource, wikilinkSource], icons: false }), resolveOnSpace, colorPlugin];
 
 /** Resolves a trailing shortcut of the committed text, so a commit right after `->tomorrow` keeps the date. */
 export function resolveOnCommit(text: string): string {

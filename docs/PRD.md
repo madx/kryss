@@ -37,9 +37,9 @@ No virtualization needed.
 | `GET /api/todos` | Returns the JSON document and an `ETag` header (hash of the file contents). Returns `422` if the file is invalid. |
 | `PUT /api/todos` | Replaces the whole document. Requires `If-Match` with the known ETag. Returns `200` and the new ETag, `409` if the file changed, `422` if the file on disk is invalid. |
 | `GET /api/events` | SSE stream: an event is emitted whenever the file changes and the change was not caused by the server itself. |
-| `GET /api/files` | Vault mode only. Scans the Vault and returns the files that opt in (5.16). |
+| `GET /api/files` | Vault mode only. Scans the Vault and returns the files that opt in (5.16), with the Vault name in the `X-Vault-Name` header (5.17). |
 | `POST /api/files` | Vault mode only. Creates a file from a name (5.16). |
-| `GET /api/notes` | Vault mode only. Scans the Vault and returns the note index for the `[[` popup (5.17). |
+| `GET /api/notes` | Vault mode only. Scans the Vault and returns `{ "newLinkFormat", "notes" }`, the note index for the `[[` popup (5.17). |
 | `GET /api/config` | Vault mode only. Returns the link rules of `.kryss.json` (5.18). |
 | `GET /api/icons/<name>` | Vault mode only. Returns the SVG of a Lucide icon named by a link rule (5.18). |
 
@@ -967,16 +967,18 @@ Single-file mode keeps one file and has none of them.
 
 - `[[Note]]` and `[[Note|alias]]` render as a link whose label is the alias, or the note name when there is no alias.
   `[[Note#Heading]]`, `[[Note#^block]]` and `[[Note#Heading|alias]]` render with the label `Note > Heading`, or the alias, and the target is passed to Obsidian as it is.
-- The link is `obsidian://open?vault=<vault>&file=<target>`, where `<vault>` is the basename of `VAULT_DIR`, URL-encoded, and `<target>` is the text before `|`, URL-encoded.
+- The link is `obsidian://open?vault=<vault>&file=<target>`, where `<vault>` is the basename of `VAULT_DIR` after symbolic links are resolved, URL-encoded, and `<target>` is the text before `|`, URL-encoded.
   It opens in a new tab like any other link (5.5).
 - Kryss does not check that the note exists, so a link to a missing note looks like any other, and Obsidian resolves the name itself.
 - A wikilink needs a non-empty target and no `[`, `]` or `|` inside it, otherwise it is literal text.
   In single-file mode there is no vault name, so wikilinks stay literal text.
+- The client learns the vault name from the `X-Vault-Name` header of `GET /api/files`, which it already calls at startup, where the value is the URL-encoded basename of `VAULT_DIR` after symbolic links are resolved.
+  So no extra scan is needed to render a link, and the header is absent in single-file mode.
 - Inside the editor, the live preview hides the brackets away from the cursor like for any other link.
 
 **Note index and popup**
 
-- `GET /api/notes` returns one entry per Markdown file of the Vault, `{ "name", "path", "aliases" }`, where `name` is the basename without `.md`, `path` is relative to `VAULT_DIR` and without `.md`, and `aliases` come from the `aliases` key of its frontmatter (a YAML list, an inline array or a single string).
+- `GET /api/notes` returns `{ "newLinkFormat", "notes" }`, so the popup has the link format with the index, and `notes` holds one entry per Markdown file of the Vault, `{ "name", "path", "aliases" }`, where `name` is the basename without `.md`, `path` is relative to `VAULT_DIR` and without `.md`, and `aliases` come from the `aliases` key of its frontmatter (a YAML list, an inline array or a single string).
 - The server builds it with the scan of 5.16, in the same pass, and it keeps nothing between two calls.
   It leaves out the dot folders and the folders of `userIgnoreFilters` (below), and attachments are not notes.
 - Typing `[[` in the task editor opens a popup of the index, fetched when the popup opens and filtered as you type, ignoring case, on the name and on every alias.
@@ -992,7 +994,7 @@ Single-file mode keeps one file and has none of them.
   A missing, unreadable or malformed file means the defaults, and nothing fails.
 - `newLinkFormat` is `shortest` (the default when absent), `relative` or `absolute`.
   `shortest` inserts the name alone, or its shortest path that tells it from the other notes of the same name, `relative` inserts the path from the folder of the open file, and `absolute` inserts the path from the Vault root.
-- `userIgnoreFilters` lists folders that the note index leaves out.
+- `userIgnoreFilters` lists folders that the note index leaves out, each one a path from the Vault root that excludes the folder and everything below it.
   The scan for `kryss-enabled` still reads them.
 - `useMarkdownLinks` is ignored: a suggestion always inserts a wikilink.
 

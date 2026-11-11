@@ -1,6 +1,8 @@
 // Client entry point, built by Bun.
 import { createApi, createFile, listFiles, subscribeEvents } from "./api";
 import { chooseFile, fileHref, LAST_FILE_KEY } from "./logic/files";
+import { setWikilinkFile } from "./editor/wikilink";
+import { setVaultName } from "./markdown/inline";
 import { createStore } from "./store";
 import { mountApp } from "./view/app";
 import { mountEmptyVault } from "./view/empty-vault";
@@ -32,10 +34,12 @@ const vaultCalls = {
 const listing = await listFiles();
 let file: string | null = null;
 if (listing.kind === "vault") {
+  if (listing.vault !== "") setVaultName(listing.vault);
   file = chooseFile(new URLSearchParams(location.search).get("file"), safe(() => localStorage.getItem(LAST_FILE_KEY)), listing.files);
   if (file === null) {
     mountEmptyVault(roots, vaultCalls);
   } else {
+    setWikilinkFile(file);
     safe(() => localStorage.setItem(LAST_FILE_KEY, file!));
     history.replaceState(null, "", fileHref(file)); // a reload or a bookmark returns to this file
   }

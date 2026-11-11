@@ -6,6 +6,7 @@ import type { ChangeEvent, TodoDocument } from "../shared/types";
 import { serialize } from "../shared/serializer";
 import type { VaultConfig } from "./config";
 import { parse, withFrontmatter } from "./markdown";
+import { scanNotes } from "./notes";
 import { createVaultFile, resolveKryssFile, scanVault } from "./vault";
 
 const WATCH_DEBOUNCE_MS = 50;
@@ -219,10 +220,12 @@ export function createApp(options: AppOptions) {
   async function handle(req: Request, server?: Server): Promise<Response> {
     const { pathname } = new URL(req.url);
     if (vault && pathname === "/api/files") {
-      if (req.method === "GET") return json(await scanVault(vault.vaultDir));
+      // The client builds the `obsidian://` links of wikilinks with the vault name (PRD 5.17).
+      if (req.method === "GET") return json(await scanVault(vault.vaultDir), 200, { "X-Vault-Name": encodeURIComponent(basename(vault.vaultDir)) });
       if (req.method === "POST") return postFile(req);
       return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST" });
     }
+    if (vault && pathname === "/api/notes" && req.method === "GET") return json(await scanNotes(vault.vaultDir));
     if (pathname === "/api/todos") {
       if (req.method !== "GET" && req.method !== "PUT") return json({ error: "Method not allowed" }, 405, { Allow: "GET, PUT" });
       const file = await targetOf(req);
