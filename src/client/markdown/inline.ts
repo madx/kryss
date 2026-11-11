@@ -1,12 +1,16 @@
 // Small hand-written inline Markdown parser and DOM renderer.
 // Supported: **bold**, *italic*, _italic_, `code`, ~~strike~~, [label](url) and backslash escapes.
 // `![alt](url)` renders as nothing.
+// A top-level `-> DATE` becomes a `due` node (PRD 5.13), the view adds its state.
 // Everything else (raw HTML, headings, lists) stays literal text.
 // The DOM is only ever built with createElement and textContent, never innerHTML.
+
+import { duePeriod } from "../logic/due";
 
 export type InlineNode =
   | { type: "text"; value: string }
   | { type: "code"; value: string }
+  | { type: "due"; value: string }
   | { type: "strong" | "em" | "strike"; children: InlineNode[] }
   | { type: "link"; href: string; children: InlineNode[] };
 
@@ -76,7 +80,31 @@ function findLabelEnd(s: string, from: number): number {
   return -1;
 }
 
-function parse(s: string, allowLinks: boolean): InlineNode[] {
+/** The valid date of a `-> DATE` marker at `i`, or null. The marker follows whitespace or the start, the date ends at whitespace or the end. */
+function dueAt(s: string, i: number): string | null {
+  if (!s.startsWith("-> ", i) || !isSpace(s[i - 1])) return null;
+  const token = /^\S+/.exec(s.slice(i + 3))?.[0];
+  return token !== undefined && duePeriod(token) ? token : null;
+}
+
+/** Keeps the last due node and turns the earlier ones back into literal text. */
+function keepLastDue(nodes: InlineNode[]): InlineNode[] {
+  let last = -1;
+  nodes.forEach((n, index) => { if (n.type === "due") last = index; });
+  const out: InlineNode[] = [];
+  nodes.forEach((n, index) => {
+    const node: InlineNode = n.type === "due" && index !== last ? { type: "text", value: "-> " + n.value } : n;
+    const prev = out[out.length - 1];
+    if (node.type === "text" && prev?.type === "text") prev.value += node.value;
+    else out.push(node);
+  });
+  return out;
+}
+
+/** Where the due node sits in the source: the whole `-> DATE`, where the date starts, and the date. */
+export type DueRange = { from: number; to: number; dateFrom: number; value: string };
+
+function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRange[]): InlineNode[] {
   const nodes: InlineNode[] = [];
   const pushText = (value: string) => {
     const last = nodes[nodes.length - 1];
@@ -87,6 +115,16 @@ function parse(s: string, allowLinks: boolean): InlineNode[] {
   let i = 0;
   while (i < s.length) {
     const c = s[i]!;
+
+    if (topLevel && c === "-") {
+      const date = dueAt(s, i);
+      if (date) {
+        nodes.push({ type: "due", value: date });
+        ranges?.push({ from: i, to: i + 3 + date.length, dateFrom: i + 3, value: date });
+        i += 3 + date.length;
+        continue;
+      }
+    }
 
     if (c === "\\") {
       const next = s[i + 1];
@@ -174,12 +212,19 @@ function parse(s: string, allowLinks: boolean): InlineNode[] {
     pushText(c);
     i++;
   }
-  return nodes;
+  return topLevel ? keepLastDue(nodes) : nodes;
+}
+
+/** The range of the due date that `parseInline` recognizes (the last valid one), so the editor agrees with the view. */
+export function findDueRange(text: string): DueRange | null {
+  const ranges: DueRange[] = [];
+  parse(text, true, true, ranges);
+  return ranges[ranges.length - 1] ?? null;
 }
 
 /** Parses one line of inline Markdown into a small AST. Pure, no DOM. */
 export function parseInline(text: string): InlineNode[] {
-  return parse(text, true);
+  return parse(text, true, true);
 }
 
 const TAGS = { strong: "strong", em: "em", strike: "del" } as const;
@@ -196,6 +241,8 @@ export function astToHtml(nodes: InlineNode[]): string {
           return escapeHtml(n.value);
         case "code":
           return `<code>${escapeHtml(n.value)}</code>`;
+        case "due":
+          return `<span class="due">${escapeHtml(n.value)}</span>`;
         case "link":
           return `<a href="${escapeHtml(n.href)}" target="_blank" rel="noopener noreferrer">${astToHtml(n.children)}</a>`;
         default:
@@ -205,10 +252,24 @@ export function astToHtml(nodes: InlineNode[]): string {
     .join("");
 }
 
-function build(nodes: InlineNode[], parent: Node): void {
+/** Builds the element of a due node from its date text. */
+export type DueRenderer = (value: string) => HTMLElement;
+
+function build(nodes: InlineNode[], parent: Node, renderDue?: DueRenderer): void {
   for (const n of nodes) {
     if (n.type === "text") {
       parent.appendChild(document.createTextNode(n.value));
+      continue;
+    }
+    if (n.type === "due") {
+      if (renderDue) {
+        parent.appendChild(renderDue(n.value));
+      } else {
+        const pill = document.createElement("span");
+        pill.className = "due";
+        pill.textContent = n.value;
+        parent.appendChild(pill);
+      }
       continue;
     }
     const el = document.createElement(n.type === "link" ? "a" : n.type === "code" ? "code" : TAGS[n.type]);
@@ -220,15 +281,15 @@ function build(nodes: InlineNode[], parent: Node): void {
         el.setAttribute("target", "_blank");
         el.setAttribute("rel", "noopener noreferrer");
       }
-      build(n.children, el);
+      build(n.children, el, renderDue);
     }
     parent.appendChild(el);
   }
 }
 
 /** Renders inline Markdown to DOM nodes using only createElement and text nodes (no innerHTML). */
-export function renderInline(text: string): DocumentFragment {
+export function renderInline(text: string, renderDue?: DueRenderer): DocumentFragment {
   const fragment = document.createDocumentFragment();
-  build(parseInline(text), fragment);
+  build(parseInline(text), fragment, renderDue);
   return fragment;
 }

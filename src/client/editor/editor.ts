@@ -1,7 +1,9 @@
 // Single-line CodeMirror 6 editor with live preview, created when a task enters editing and destroyed when it leaves.
+import { acceptCompletion } from "@codemirror/autocomplete";
 import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
+import { dueExtensions, resolveOnCommit, startCompletion } from "./due";
 import { livePreview } from "./live-preview";
 import { settleDecision, toSingleLine } from "./text";
 import "./editor.css";
@@ -38,6 +40,12 @@ export type EditorOptions = {
   at?: { x: number; y: number };
   /** Enter on an empty text does nothing (new tasks). */
   keepOnEmptyEnter?: boolean;
+  /** Text shown in the editor when it differs from `text` (`sd` appends ` ->`). `text` stays the task's own text. */
+  initial?: string;
+  /** Selection range at the start, instead of the caret at the end (`sd` selects the date). */
+  select?: { from: number; to: number };
+  /** Opens the due date popup right away (`sd`). */
+  openPopup?: boolean;
 };
 
 export function createEditor(
@@ -46,7 +54,8 @@ export function createEditor(
   done: (result: string | null, how: EditEnd) => void,
   options: EditorOptions = {},
 ): void {
-  const { at, keepOnEmptyEnter } = options;
+  const { at, keepOnEmptyEnter, initial, select, openPopup } = options;
+  const shown = initial ?? text;
   if (host.querySelector(".cm-editor")) return;
   let view: EditorView | null = null;
   host.replaceChildren(); // the editor takes the place of the rendered text
@@ -56,7 +65,7 @@ export function createEditor(
     const v = view;
     view = null; // later events (blur while destroying) do nothing
     open.delete(entry);
-    const result = commit ? v.state.doc.toString() : null;
+    const result = commit ? resolveOnCommit(v.state.doc.toString()) : null;
     active--;
     v.destroy();
     done(result, how);
@@ -79,12 +88,13 @@ export function createEditor(
   view = new EditorView({
     parent: host,
     state: EditorState.create({
-      doc: toSingleLine(text),
-      selection: EditorSelection.cursor(text.length),
+      doc: toSingleLine(shown),
+      selection: select ? EditorSelection.range(select.from, select.to) : EditorSelection.cursor(shown.length),
       extensions: [
         singleLine,
         history(),
         livePreview,
+        dueExtensions,
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ "aria-label": "Edit task" }),
         keymap.of([
@@ -95,6 +105,7 @@ export function createEditor(
               return true;
             },
           },
+          { key: "Tab", run: acceptCompletion }, // with the popup closed it does nothing, and the focus moves
           { key: "Escape", run: () => (finish(true, "escape"), true) },
           ...historyKeymap,
           ...standardKeymap,
@@ -108,4 +119,5 @@ export function createEditor(
   const pos = at ? view.posAtCoords(at, false) : null;
   if (pos !== null) view.dispatch({ selection: EditorSelection.cursor(pos) });
   view.focus();
+  if (openPopup) startCompletion(view);
 }

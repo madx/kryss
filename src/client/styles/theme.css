@@ -20,6 +20,11 @@
   --color-error-text: #7a1f14;
   --color-focus: #2f6fed;
 
+  /* Due date states (PRD 5.10). */
+  --color-due-overdue: var(--color-danger);
+  --color-due-now: var(--color-accent);
+  --color-due-later: var(--color-muted);
+
   /* Spacing steps, in px. */
   --space-2: 2px;
   --space-4: 4px;
@@ -39,6 +44,7 @@
   --radius-panel: 8px;
   --radius-control: 6px;
   --radius-chip: 4px;
+  --radius-pill: 999px;
 
   /* Sizes. */
   --content-width: 720px;
@@ -68,6 +74,7 @@
   /* Tints, as a share of a color mixed with transparent. */
   --tint-hover: 8%;
   --tint-cursor: 14%;
+  --tint-pill: 22%;
 }
 
 /* Dark palette: Sonokai, as in the Obsidian vault (snippet sonokai.css). */

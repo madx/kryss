@@ -35,6 +35,7 @@ import { createFooter } from "./footer";
 import { createMarkdownView } from "./markdown-view";
 import { renderHeader } from "./header";
 import { el } from "./dom";
+import { installDueRefresh } from "./due-pill";
 import { installKeyboard } from "./keyboard";
 import { renderListSection, type ListContext } from "./list-section";
 import { BEGIN_EDIT, type TaskActions } from "./task-row";
@@ -352,6 +353,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
   };
 
+  installDueRefresh();
   installKeyboard({
     store,
     cursor,

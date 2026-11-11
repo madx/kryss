@@ -432,8 +432,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 **Due date pill**
 
-- A due date is a small chip in the task text: a Lucide `ArrowRight` icon, then the date exactly as written, with no `->`.
-  It follows the radii and spacing tokens, with the 4 px chip radius.
+- A due date is a small chip in the task text: a Lucide `ArrowRight` icon (a `CircleExclamationPoint` icon instead when the date is overdue and the task is not completed), then the date exactly as written, with no `->`.
+  It follows the radii and spacing tokens, with a fully rounded shape (the pill radius), a semi-bold date and a tint stronger than the hover tint so that it stands out.
 - Its colors depend on the state of 5.13: the danger color for overdue, the accent color for due now, and the muted color for later.
   On a completed task the pill is neutral, in the same muted text color as the task, with no state color.
 - In the editor, the same colors apply to the literal text of a valid date, with no icon and no widget.
@@ -589,6 +589,8 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 - The due date of a task is its last valid `-> DATE`.
   Earlier ones stay plain text.
 - The server and the JSON model do not know about dates: a date never makes a file invalid, and the Markdown view, the clipboard and the register carry it as text.
+- A due date inside a link label or inside emphasis (`**`, `*`, `_`, `~~`) is plain text too, so a pill only sits at the top level of the text.
+  The editor, `sd` and the view all use the range that the inline parser finds, so they always agree.
 - A due date is not an inline Markdown syntax.
   It is recognized inside the inline parser of 5.5 only to render it, and a `-> DATE` inside a code span stays literal.
 

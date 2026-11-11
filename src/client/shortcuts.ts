@@ -2,7 +2,7 @@
 import type { CursorMove } from "./logic/cursor";
 import type { AddAt } from "./logic/insert";
 
-export type Pending = "" | "g" | "d" | "y" | "c";
+export type Pending = "" | "g" | "d" | "y" | "c" | "s";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
 export type Overlay = "none" | "cheatsheet";
@@ -15,7 +15,7 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste" };
+  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
@@ -114,8 +114,9 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "d" && key === "d") return done({ type: "delete" });
   if (pending === "c" && key === "c") return done({ type: "change" });
   if (pending === "y" && key === "y") return done({ type: "yank" });
+  if (pending === "s" && key === "d") return done(onHeader ? null : { type: "set-due" });
   if (pending) return NOTHING;
-  if (key === "g" || key === "d" || key === "c" || key === "y") return { action: null, pending: key, preventDefault: true };
+  if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s") return { action: null, pending: key, preventDefault: true };
 
   const action = commonKey(key, onHeader) ?? (onHeader ? null : taskKey(key));
   return action ? done(action) : NOTHING;

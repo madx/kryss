@@ -1,5 +1,5 @@
 // Lucide icons, built as SVG elements (no innerHTML). Only the icons listed here end up in the bundle.
-import { CircleExclamationPoint, Check, ChevronDown, CloudOff, Copy, createElement, GitCompareArrows, Loader, Pencil, SquareLetterM, TriangleExclamationPoint } from "lucide";
+import { ArrowRight, CircleExclamationPoint, Check, ChevronDown, CloudOff, Copy, createElement, GitCompareArrows, Loader, Pencil, SquareLetterM, TriangleExclamationPoint } from "lucide";
 import type { SyncStatus } from "../sync";
 
 type IconNode = Parameters<typeof createElement>[0];
@@ -12,6 +12,8 @@ export const caretIcon = () => icon(ChevronDown);
 export const checkIcon = () => icon(Check);
 export const markdownIcon = () => icon(SquareLetterM); // Lucide "square-m"
 export const copyIcon = () => icon(Copy);
+export const arrowRightIcon = () => icon(ArrowRight); // the due date pill
+export const overdueIcon = () => icon(CircleExclamationPoint); // the pill of an overdue date
 
 const STATUS_ICONS: Record<SyncStatus, IconNode> = {
   saved: Check,

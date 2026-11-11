@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { astToHtml, isAllowedUrl, parseInline } from "./inline";
+import { astToHtml, findDueRange, isAllowedUrl, parseInline } from "./inline";
 
 const html = (s: string) => astToHtml(parseInline(s));
 
@@ -123,4 +123,85 @@ describe("isAllowedUrl", () => {
     "httpx://a.b",
     "http//a.b",
   ])("refuses %j", (u) => expect(isAllowedUrl(u)).toBe(false));
+});
+
+describe("parseInline: due dates", () => {
+  const due = (value: string) => ({ type: "due" as const, value });
+  test("a trailing valid date becomes a due node", () => {
+    expect(parseInline("Buy milk -> 2026-11-22")).toEqual([{ type: "text", value: "Buy milk " }, due("2026-11-22")]);
+  });
+  test("weeks and quarters are recognized, with text after the date", () => {
+    expect(parseInline("a -> 2026-W47 b")).toEqual([{ type: "text", value: "a " }, due("2026-W47"), { type: "text", value: " b" }]);
+    expect(parseInline("a -> 2026-Q4")).toEqual([{ type: "text", value: "a " }, due("2026-Q4")]);
+  });
+  test("the marker can be at the start of the text", () => {
+    expect(parseInline("-> 2026-11-22")).toEqual([due("2026-11-22")]);
+  });
+  test("the marker needs whitespace before it and one space after it", () => {
+    expect(parseInline("a->  2026-11-22")).toEqual([{ type: "text", value: "a->  2026-11-22" }]);
+    expect(parseInline("a-> 2026-11-22")).toEqual([{ type: "text", value: "a-> 2026-11-22" }]);
+    expect(parseInline("a ->2026-11-22")).toEqual([{ type: "text", value: "a ->2026-11-22" }]);
+    expect(parseInline("a ->  2026-11-22")).toEqual([{ type: "text", value: "a ->  2026-11-22" }]);
+  });
+  test("the date must end at whitespace or at the end", () => {
+    expect(parseInline("a -> 2026-11-22x")).toEqual([{ type: "text", value: "a -> 2026-11-22x" }]);
+    expect(parseInline("a -> 2026-11-22.")).toEqual([{ type: "text", value: "a -> 2026-11-22." }]);
+  });
+  test("an invalid date and a prose arrow stay literal", () => {
+    expect(parseInline("a -> 2026-02-30")).toEqual([{ type: "text", value: "a -> 2026-02-30" }]);
+    expect(parseInline("A -> B")).toEqual([{ type: "text", value: "A -> B" }]);
+  });
+  test("only the last valid date counts, earlier ones stay literal", () => {
+    expect(parseInline("a -> 2026-11-01 b -> 2026-11-22")).toEqual([
+      { type: "text", value: "a -> 2026-11-01 b " }, due("2026-11-22"),
+    ]);
+  });
+  test("an invalid date after a valid one does not hide it", () => {
+    expect(parseInline("a -> 2026-11-01 b -> 2026-02-30")).toEqual([
+      { type: "text", value: "a " }, due("2026-11-01"), { type: "text", value: " b -> 2026-02-30" },
+    ]);
+  });
+  test("a date inside a code span stays literal", () => {
+    expect(parseInline("`a -> 2026-11-22`")).toEqual([{ type: "code", value: "a -> 2026-11-22" }]);
+    expect(parseInline("`x -> 2026-11-22` -> 2026-12-01")).toEqual([
+      { type: "code", value: "x -> 2026-11-22" }, { type: "text", value: " " }, due("2026-12-01"),
+    ]);
+  });
+  test("a date inside a link label stays literal", () => {
+    expect(html("[a -> 2026-11-22](https://x.y)")).toBe(
+      '<a href="https://x.y" target="_blank" rel="noopener noreferrer">a -&gt; 2026-11-22</a>',
+    );
+  });
+  test("other inline syntax still works around a date", () => {
+    expect(parseInline("**b** -> 2026-11-22")).toEqual([
+      { type: "strong", children: [{ type: "text", value: "b" }] }, { type: "text", value: " " }, due("2026-11-22"),
+    ]);
+  });
+});
+
+describe("findDueRange", () => {
+  test("gives the range of the last valid `-> DATE`, with the date text", () => {
+    expect(findDueRange("Renew -> 2026-12-01")).toEqual({ from: 6, to: 19, dateFrom: 9, value: "2026-12-01" });
+    expect(findDueRange("a -> 2026-11-01 b -> 2026-W47 c")).toEqual({ from: 18, to: 29, dateFrom: 21, value: "2026-W47" });
+  });
+  test("null without a valid date, for a bare arrow or a prose arrow", () => {
+    expect(findDueRange("a ->")).toBeNull();
+    expect(findDueRange("A -> B")).toBeNull();
+    expect(findDueRange("a -> 2026-02-30")).toBeNull();
+    expect(findDueRange("a->2026-11-22")).toBeNull();
+  });
+  test("agrees with the parser: code spans, link labels and emphasis are literal", () => {
+    expect(findDueRange("`run -> 2026-11-22 now`")).toBeNull();
+    expect(findDueRange("[x -> 2026-11-22 y](https://a.b)")).toBeNull();
+    expect(findDueRange("**a -> 2026-11-22**")).toBeNull();
+  });
+  test("a valid date after a bare arrow is found", () => {
+    expect(findDueRange("a -> -> 2026-11-22")).toEqual({ from: 5, to: 18, dateFrom: 8, value: "2026-11-22" });
+    expect(parseInline("a -> -> 2026-11-22")).toEqual([{ type: "text", value: "a -> " }, { type: "due", value: "2026-11-22" }]);
+  });
+  test("a date inside emphasis is plain text", () => {
+    expect(parseInline("**a -> 2026-11-22**")).toEqual([
+      { type: "strong", children: [{ type: "text", value: "a -> 2026-11-22" }] },
+    ]);
+  });
 });

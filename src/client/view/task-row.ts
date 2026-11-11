@@ -3,14 +3,17 @@
 // - `.task-text` holds the rendered text and is what the editor replaces while editing.
 import type { Task } from "../../shared/types";
 import type { TaskPath } from "../logic";
-import { renderInline } from "../markdown/inline";
+import { findDueRange, renderInline } from "../markdown/inline";
 import { el } from "./dom";
+import { renderDuePill } from "./due-pill";
 import { startEdit, type EditEnd } from "./edit-text";
 
 /** Dispatched on a row (by the keyboard layer) to open its editor. */
 export const BEGIN_EDIT = "begin-edit";
 /** Dispatched on a row to open its editor with an empty text (`cc`). Escape or an empty commit restores the previous text. */
 export const CHANGE_EDIT = "change-edit";
+/** Dispatched on a row to open its editor on the due date and its popup (`sd`). */
+export const DUE_EDIT = "due-edit";
 
 /** Action callbacks. Those returning a boolean return false when the action was refused. */
 export type TaskActions = {
@@ -40,20 +43,27 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
   checkbox.addEventListener("change", () => actions.toggle(path));
 
   const text = el("span", { class: "task-text" });
-  text.append(renderInline(task.text));
-  const beginEdit = (at?: { x: number; y: number }, empty = false) => {
+  text.append(renderInline(task.text, renderDuePill));
+  const beginEdit = (at?: { x: number; y: number }, empty = false, due = false) => {
+    const match = due ? findDueRange(task.text) : null;
     startEdit(
       text,
       empty ? "" : task.text,
       (result) => {
         if (result === null || result.trim() === "" || result === task.text) {
-          text.replaceChildren(renderInline(task.text));
+          text.replaceChildren(renderInline(task.text, renderDuePill));
           actions.focusRow(path);
         } else {
           actions.edit(path, result); // the store re-renders the row
         }
       },
-      { at },
+      due
+        ? {
+            initial: match ? task.text : task.text + " ->",
+            select: match ? { from: match.from + 2, to: match.to } : undefined,
+            openPopup: true,
+          }
+        : { at },
     );
   };
   text.addEventListener("click", (e) => {
@@ -63,6 +73,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions):
 
   row.addEventListener(BEGIN_EDIT, () => beginEdit());
   row.addEventListener(CHANGE_EDIT, () => beginEdit(undefined, true));
+  row.addEventListener(DUE_EDIT, () => beginEdit(undefined, false, true));
 
   row.append(checkbox, text);
   return row;

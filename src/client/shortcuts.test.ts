@@ -467,3 +467,26 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     expect(act("p", { target: "none" })).toEqual({ type: "paste" });
   });
 });
+
+describe("resolveKey: sd (due date)", () => {
+  test("s sets the pending prefix without an action", () => {
+    expect(resolveKey(k("s"))).toEqual({ action: null, pending: "s", preventDefault: true });
+  });
+  test("s then d on a task sets the due date and clears the prefix", () => {
+    expect(resolveKey(k("d", { pending: "s" }))).toEqual({ action: { type: "set-due" }, pending: "", preventDefault: true });
+  });
+  test("s then another key does nothing and clears the prefix", () => {
+    expect(resolveKey(k("x", { pending: "s" }))).toEqual({ action: null, pending: "", preventDefault: false });
+  });
+  test("sd has no effect on a header", () => {
+    expect(act("d", { pending: "s", ...onHeader })).toBeNull();
+  });
+  test("sd is ignored in the Markdown view and in a text field", () => {
+    expect(act("d", { pending: "s", markdownView: true })).toBeNull();
+    expect(act("s", { markdownView: true })).toBeNull();
+    expect(act("s", { target: "field" })).toBeNull();
+  });
+  test("sd is ignored while the cheat sheet is open", () => {
+    expect(act("d", { pending: "s", overlay: "cheatsheet" })).toBeNull();
+  });
+});

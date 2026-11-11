@@ -21,6 +21,7 @@ const GROUPS: Group[] = [
       ["dd, Delete", "delete with its subtasks (fills the register)"],
       ["yy", "copy into the register, without deleting"],
       ["cc", "clear the text to retype it (Escape restores it)"],
+      ["sd", "set the due date: edit the date with its popup"],
       ["p", "paste the register below, after the subtasks"],
       ["> / <", "indent / outdent"],
       ["J / K, Alt+↓ / Alt+↑", "move down / up"],
