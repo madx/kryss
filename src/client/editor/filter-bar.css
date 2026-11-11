@@ -1,0 +1,42 @@
+/* The filter bar in the header: transparent, one line, tokens from theme.css only. */
+.filter-bar {
+  flex: 1;
+  min-width: 0;
+  height: var(--icon-button-size);
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-control);
+  background: var(--color-hover);
+  font-size: var(--font-size);
+}
+
+.filter-bar:focus-within {
+  outline: var(--bar-width) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--bar-width));
+}
+
+.filter-bar .cm-editor {
+  height: 100%;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.filter-bar .cm-editor.cm-focused {
+  outline: none;
+}
+
+.filter-bar .cm-scroller {
+  overflow: hidden !important;
+  font-family: var(--font-sans);
+  line-height: var(--icon-button-size);
+}
+
+.filter-bar .cm-content,
+.filter-bar .cm-line {
+  padding: 0;
+  caret-color: var(--color-text) !important;
+}
+
+.filter-bar .cm-placeholder {
+  color: var(--color-muted);
+}

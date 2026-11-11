@@ -35,7 +35,7 @@ describe("saveFilter", () => {
   });
 
   test("does not mutate its input", () => {
-    const saved = Object.freeze([Object.freeze({ ...A })]);
+    const saved = Object.freeze([Object.freeze({ ...A })]) as unknown as { name: string; text: string }[];
     expect(saveFilter(saved, "A", "y")).toEqual([{ name: "A", text: "y" }]);
     expect(saved[0]!.text).toBe("list:Work");
   });

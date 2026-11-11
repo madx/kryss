@@ -5,6 +5,7 @@ import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import { dueExtensions, resolveOnCommit, startCompletion } from "./due";
 import { livePreview } from "./live-preview";
+import { singleLine } from "./single-line";
 import { settleDecision, toSingleLine } from "./text";
 import "./editor.css";
 
@@ -70,20 +71,6 @@ export function createEditor(
     v.destroy();
     done(result, how);
   };
-
-  // Line breaks, from paste, drop or any command, are replaced by spaces (same length, so selections stay valid).
-  const singleLine = EditorState.transactionFilter.of((tr) => {
-    let multi = false;
-    tr.changes.iterChanges((_fa, _ta, _fb, _tb, inserted) => {
-      if (inserted.lines > 1) multi = true;
-    });
-    if (!multi) return tr;
-    const changes: { from: number; to: number; insert: string }[] = [];
-    tr.changes.iterChanges((from, to, _fb, _tb, inserted) => {
-      changes.push({ from, to, insert: toSingleLine(inserted.toString()) });
-    });
-    return [{ changes, selection: tr.selection, scrollIntoView: tr.scrollIntoView }];
-  });
 
   view = new EditorView({
     parent: host,
