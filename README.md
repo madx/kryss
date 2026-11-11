@@ -1,4 +1,4 @@
-# todoapp
+# Kryss
 
 A single-user, local todo list manager.
 The source of truth is a Markdown file that can be edited both from the web app and from an external editor such as Obsidian or Vim.
