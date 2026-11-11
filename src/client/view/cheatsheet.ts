@@ -52,7 +52,7 @@ const GROUPS: Group[] = [
   {
     title: "Filters and views",
     rows: [
-      ["/", "focus the filter bar (Enter applies, Escape twice restores)"],
+      ["/", "focus the filter bar (Enter or Escape applies)"],
       ["ga / gt / gw", "all / due today or overdue / due this week or overdue"],
       ["gl", "add list: to the filter, with a popup of the lists"],
       ["gf", "saved filters (dd deletes one)"],

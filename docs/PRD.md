@@ -711,7 +711,7 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 - `/` focuses the bar and enters Insert mode, and a click on the bar does the same.
   The lists narrow live while typing.
 - Enter accepts the highlighted popup entry when the popup is open, and otherwise applies the text and returns to Normal mode, with the cursor on the first visible stop.
-  Escape closes the popup first, and a second Escape restores the text that the bar had when it was focused and returns to Normal mode.
+  Escape closes the popup first, and a second Escape does the same as Enter: it keeps the text and returns to Normal mode, like Escape in the task editor (5.9).
   A blur keeps the typed text.
 - The filter text is stored in `localStorage` with the cursor index (5.9) and restored on load.
   It is never sent to the server.

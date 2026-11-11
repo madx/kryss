@@ -14,10 +14,8 @@ export type FilterBarOptions = {
   listTitles(): string[];
   /** The text changed by typing: the lists narrow live. */
   onInput(text: string): void;
-  /** Enter with the popup closed: apply the text and go back to Normal mode. */
+  /** Enter or Escape with the popup closed (a popup takes the key first): keep the text and go back to Normal mode. */
   onEnter(): void;
-  /** The second Escape: the text was restored, go back to Normal mode. */
-  onEscape(): void;
 };
 
 const keyMark = Decoration.mark({ class: "cm-filter-key" });
@@ -48,7 +46,6 @@ const pills = ViewPlugin.fromClass(
 export function createFilterBar(options: FilterBarOptions) {
   const host = document.createElement("div");
   host.className = "filter-bar";
-  let focusText = options.initial;
   let syncing = false;
 
   const source = (context: CompletionContext): CompletionResult | null => {
@@ -70,14 +67,7 @@ export function createFilterBar(options: FilterBarOptions) {
         EditorView.contentAttributes.of({ "aria-label": "Filter" }),
         keymap.of([
           { key: "Enter", run: () => (options.onEnter(), true) },
-          {
-            key: "Escape",
-            run: () => {
-              replace(focusText, true);
-              options.onEscape();
-              return true;
-            },
-          },
+          { key: "Escape", run: () => (options.onEnter(), true) },
           { key: "Tab", run: acceptCompletion },
           ...historyKeymap,
           ...standardKeymap,
@@ -85,15 +75,14 @@ export function createFilterBar(options: FilterBarOptions) {
         EditorView.updateListener.of((u) => {
           if (u.docChanged && !syncing) options.onInput(u.state.doc.toString());
         }),
-        EditorView.domEventHandlers({ focus: () => void (focusText = view.state.doc.toString()) }),
       ],
     }),
   });
 
-  /** Replaces the whole text. `notify` tells the store, otherwise the store already knows. */
-  function replace(text: string, notify: boolean) {
+  /** Replaces the whole text with one the store already knows, so `onInput` is not called. */
+  function replace(text: string) {
     if (view.state.doc.toString() === text) return;
-    syncing = !notify;
+    syncing = true;
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text }, selection: { anchor: text.length } });
     syncing = false;
   }
@@ -101,7 +90,7 @@ export function createFilterBar(options: FilterBarOptions) {
   return {
     el: host,
     /** Shows a text that came from outside (a built-in view, an undo, a saved filter). */
-    setText: (text: string) => replace(text, false),
+    setText: replace,
     focus: () => view.focus(),
     /** Leaves the bar and drops its selection: some browsers keep drawing a blinking caret in an editable that lost the focus to a plain element. */
     blur() {

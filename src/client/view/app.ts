@@ -61,10 +61,6 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       bar.blur();
       cursor.focusIndex(0); // the first visible stop
     },
-    onEscape() {
-      bar.blur();
-      cursor.focusIndex(cursor.last());
-    },
   });
   const header = createHeader(roots.header, bar, () => toggleMarkdown());
   const picker = createFilterPicker({

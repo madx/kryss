@@ -299,7 +299,7 @@
   - [ ] Tests
 - [ ] Filter bar
   - [ ] Replace the selector with a one-line CodeMirror bar and the `All` placeholder, with the Markdown toggle on the right
-  - [ ] `/` focuses it, narrowing is live, Enter applies, the first Escape closes the popup and the second restores the text, and a blur keeps it
+  - [ ] `/` focuses it, narrowing is live, Enter applies, the first Escape closes the popup and the second commits like Enter, and a blur keeps the text
   - [ ] Store the text in `localStorage` with the cursor index, and drop the old selector index key
   - [ ] Popups for `list:` and `due:`, with commas, quoting and a typed literal entry
   - [ ] "No matching task" and the bad value reason in place of the lists
