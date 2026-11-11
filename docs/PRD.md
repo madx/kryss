@@ -589,6 +589,7 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 - The due date of a task is its last valid `-> DATE`.
   Earlier ones stay plain text.
 - The server and the JSON model do not know about dates: a date never makes a file invalid, and the Markdown view, the clipboard and the register carry it as text.
+- A due date inside a link label is plain text too, so a pill never sits inside a link.
 - A due date is not an inline Markdown syntax.
   It is recognized inside the inline parser of 5.5 only to render it, and a `-> DATE` inside a code span stays literal.
 
