@@ -65,7 +65,7 @@ Work plan: `docs/TODO.md`.
 
 - **Checking**: checking a parent checks its children; when all children are checked, the parent is checked; unchecking a child, adding a child or moving an unchecked task under a parent unchecks the parent.
   The server never normalizes states.
-- **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and only while the filter is empty (PRD 5.1, 5.4, 5.14).
+- **No drag and drop**: tasks and lists move with the keyboard only (`J` / `K`, Alt+↑ / Alt+↓, `>` / `<`), and also under a filter, where they follow the visible rows (PRD 5.1, 5.4, 5.14).
 - **Sync**: autosave with a 500 ms debounce, one `PUT` in flight; on `409` with pending changes, a banner offers "keep my version" or "take the disk version", with no automatic merge.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode (SEARCH in orange while the filter bar has the focus) and a statusline.
 - **Markdown view**: read-only toggle (`gm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
@@ -78,14 +78,14 @@ Work plan: `docs/TODO.md`.
 - **Filters and views** (PRD 5.14): there is no list selector and no `H` / `L`.
   The header filter bar (`/`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE`, `is:done|todo`, terms ANDed and commas for OR inside a term.
   `ga`, `gt` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gf` opens the saved filters, whose first entry saves the current text under a name.
-  A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent do nothing while a filter is active.
+  A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent work on the visible rows: they jump over hidden tasks and lists, indent targets the previous visible task, and the moved task is pinned.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 
 ## Out of scope
 
-Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter other than the `filters` key, the `xit` format, automatic merging, moving tasks and lists under a filter, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, Yjs / CRDT, offline mode, editing the frontmatter other than the `filters` key, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
 
 ## Testing
 
