@@ -531,3 +531,31 @@ describe("commit works with logic operations", () => {
     expect(store.getState().doc!.lists[0]!.tasks).toHaveLength(1);
   });
 });
+
+describe("per-file storage (PRD 5.16)", () => {
+  test("the filter text is stored and read under the key of the open file", () => {
+    mem.clear();
+    const a = createStore({ api, timers: clock.timers, storage: storageOf(), file: "a.md" });
+    a.replace(doc("A"), '"x"');
+    a.setFilter("is:todo");
+    expect(mem.get(FILTER_KEY)).toBeUndefined();
+    const b = createStore({ api, timers: clock.timers, storage: storageOf(), file: "b.md" });
+    expect(b.getState().filter).toBe("");
+    expect(createStore({ api, timers: clock.timers, storage: storageOf(), file: "a.md" }).getState().filter).toBe("is:todo");
+  });
+
+  test("without a file the plain key is used", () => {
+    mem.clear();
+    store.replace(doc("A"), '"x"');
+    store.setFilter("is:done");
+    expect(mem.get(FILTER_KEY)).toBe("is:done");
+  });
+
+  test("flush saves the pending changes and resolves", async () => {
+    store.replace(doc("A"), '"x"');
+    store.commit(doc("B"));
+    await store.flush();
+    expect(store.getState().status).toBe("saved");
+    expect(store.hasPendingChanges()).toBe(false);
+  });
+});
