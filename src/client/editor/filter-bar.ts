@@ -91,7 +91,11 @@ export function createFilterBar(options: FilterBarOptions) {
     el: host,
     /** Shows a text that came from outside (a built-in view, an undo, a saved filter). */
     setText: replace,
-    focus: () => view.focus(),
+    /** `gf`: focuses the bar with the caret after the text, so a term can be appended right away. */
+    focus() {
+      view.focus();
+      view.dispatch({ selection: { anchor: view.state.doc.length } });
+    },
     /** Leaves the bar and drops its selection: some browsers keep drawing a blinking caret in an editable that lost the focus to a plain element. */
     blur() {
       view.contentDOM.blur();
