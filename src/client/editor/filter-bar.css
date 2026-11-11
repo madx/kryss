@@ -9,10 +9,10 @@
   font-size: var(--font-size-task);
 }
 
-/* Focused for editing: the Insert look of a task row, a green tint and a 2 px bar, with no ring that would shrink the bar. */
+/* Focused: the search look, the cursor look of a task row in orange (a tint and a 2 px bar), with no ring that would shrink the bar. */
 .filter-bar:focus-within {
-  background: color-mix(in srgb, var(--color-success) var(--tint-cursor), var(--color-input));
-  box-shadow: inset var(--bar-width) 0 0 0 var(--color-success);
+  background: color-mix(in srgb, var(--color-search) var(--tint-cursor), var(--color-input));
+  box-shadow: inset var(--bar-width) 0 0 0 var(--color-search);
 }
 
 .filter-bar .cm-editor {

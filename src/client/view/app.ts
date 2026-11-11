@@ -226,7 +226,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     if (!state.doc) return;
     const visible = visibleOf(state)!;
     const insert = isEditing() || isTextField(document.activeElement);
-    footer.update({ mode: insert ? "insert" : "normal", view: countVisible(state.doc, visible.lists) });
+    footer.update({ mode: bar.isFocused() ? "search" : insert ? "insert" : "normal", view: countVisible(state.doc, visible.lists) });
   }
 
   function renderAll(state: StoreState, focus: string | null = null) {

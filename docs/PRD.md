@@ -320,6 +320,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 - There are two modes only, Normal and Insert.
   There is no Visual mode and no Command mode.
+  A focused filter bar is Insert mode too, but it has its own color and label, SEARCH (5.10, 5.14).
 - Normal is the default.
   Single keys act on the **cursor**, which is the focused row or list header.
 - Insert is active while a text field has focus (the task editor or a list name input).
@@ -408,7 +409,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 **Footer, statusline and cheat sheet**
 
-- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
+- A fixed footer, like the header, shows the mode (NORMAL in accent blue, INSERT in green and SEARCH in orange while the filter bar has the focus, as in 5.10), the done / total task counts of the current view and the sync status symbol on the right.
   The mode badge is a corner block that reaches the left and bottom edges of the window.
 - The counts are those of the visible tasks of the current filter (5.14), and each visible list also shows its own done / total counts of visible tasks at the top right of its header.
   Subtasks count as tasks.
@@ -472,6 +473,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - The cursor row and the cursor list header share one look: a tinted background and a 2 px bar on the left, in the color of the current mode.
   The mode color is accent blue in Normal mode and green in Insert mode, the same as the footer badge.
+  The focused filter bar is orange (`--color-search`), with the same tint and 2 px bar, and the footer badge says SEARCH in that color.
 - An input never looks like a box.
   It replaces the text or the placeholder it stands for, with the same font and size and no border or background of its own, and the cursor look in Insert color is the only signal.
   This applies to the task editor and to the list name input (which edits the title in place).
@@ -708,7 +710,7 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 
 - The header holds a one-line filter bar, always visible, with the placeholder `All` when it is empty (5.10).
   It is a single-line CodeMirror editor, so that it shares the popup mechanism of 5.13.
-- `/` focuses the bar and enters Insert mode, and a click on the bar does the same.
+- `/` focuses the bar and enters the search mode, shown as SEARCH in orange in the footer and on the bar, and a click on the bar does the same.
   The lists narrow live while typing.
 - Enter accepts the highlighted popup entry when the popup is open, and otherwise applies the text and returns to Normal mode, with the cursor on the first visible stop.
   Escape closes the popup first, and a second Escape does the same as Enter: it keeps the text and returns to Normal mode, like Escape in the task editor (5.9).
