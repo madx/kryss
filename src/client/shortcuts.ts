@@ -17,7 +17,7 @@ export type Action =
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
   | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" } | { type: "change-list" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
-  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" };
+  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean; search: boolean;
@@ -66,7 +66,7 @@ function taskKey(key: string): Action | null {
   }
 }
 
-/** The second key of `g` that sets, focuses or opens a filter (PRD 5.14) or opens the cheat sheet, or null. */
+/** The second key of `g` that sets, focuses or opens a filter (PRD 5.14), opens the file picker (5.16) or the cheat sheet, or null. */
 function filterKey(key: string): Action | null {
   switch (key) {
     case "a": return { type: "set-filter", text: "" };
@@ -75,6 +75,7 @@ function filterKey(key: string): Action | null {
     case "l": return { type: "filter-list" };
     case "f": return { type: "focus-filter" };
     case "F": return { type: "filter-picker" };
+    case "o": return { type: "file-picker" };
     case "?": return { type: "toggle-help" };
     default: return null;
   }

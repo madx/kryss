@@ -6,6 +6,7 @@ import type { Api } from "./api";
 import { canRedo, canUndo, clear, createHistory, push, redo as redoHistory, undo as undoHistory } from "./logic";
 import { followPins, pinTask } from "./logic/filter";
 import type { PathMove, TaskPath } from "./logic/paths";
+import { fileStorageKey } from "./logic/files";
 import { DEBOUNCE_MS, retryDelay, type SyncStatus } from "./sync";
 
 export type StoreState = {
@@ -53,10 +54,12 @@ export type CommitOptions = {
 
 const realTimers: Timers = { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) };
 
-export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage }) {
+/** `file` is the open file of a Vault (PRD 5.16): the filter text is then stored under its own key. */
+export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage; file?: string | null }) {
   const { api } = deps;
   const timers = deps.timers ?? realTimers;
   const storage = deps.storage;
+  const filterKey = fileStorageKey(FILTER_KEY, deps.file ?? null);
 
   let doc: TodoDocument | null = null;
   let etag: string | null = null;
@@ -68,6 +71,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let showSiblings = readSiblings();
   let dirty = false; // local changes not on disk yet
   let inFlight = false;
+  let flying: Promise<unknown> | undefined; // the PUT in flight
   let attempts = 0;
   let saveTimer: unknown;
   let retryTimer: unknown;
@@ -78,7 +82,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   function readFilter(): string {
     try {
       storage?.removeItem(OLD_SELECTION_KEY);
-      return storage?.getItem(FILTER_KEY) ?? "";
+      return storage?.getItem(filterKey) ?? "";
     } catch {
       return "";
     }
@@ -94,7 +98,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
 
   function storeFilter() {
     try {
-      storage?.setItem(FILTER_KEY, filter);
+      storage?.setItem(filterKey, filter);
     } catch {}
   }
 
@@ -222,7 +226,8 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
     retryTimer = undefined;
     const snapshot = doc;
     setStatus("saving");
-    const result = await api.save(snapshot, etag);
+    flying = api.save(snapshot, etag);
+    const result = await flying;
     inFlight = false;
 
     if (result.kind === "ok") {
@@ -296,6 +301,16 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
       if (!dirty && !inFlight) void reload();
     },
     hasPendingChanges: () => dirty,
+    /** Saves the pending changes now. It gives up, leaving them pending, when a save fails or is in conflict. */
+    async flush(): Promise<void> {
+      for (let i = 0; i < 3 && dirty; i++) {
+        timers.clear(saveTimer);
+        saveTimer = undefined;
+        if (inFlight) await flying;
+        else await save();
+        if (status !== "saved" && status !== "unsaved" && status !== "saving") return;
+      }
+    },
     undo(): boolean {
       const result = doc && undoHistory(history, doc);
       if (!result) return false;

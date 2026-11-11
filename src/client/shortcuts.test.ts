@@ -544,7 +544,7 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
   });
 
   test("go opens the file picker, on a task, on a header, with nothing focused and in the Markdown view", () => {
-    const expected = { action: { type: "file-picker" }, pending: "", preventDefault: true };
+    const expected = { action: { type: "file-picker" as const }, pending: "" as const, preventDefault: true };
     expect(resolveKey(k("o", { pending: "g" }))).toEqual(expected);
     expect(resolveKey(k("o", { pending: "g", ...onHeader }))).toEqual(expected);
     expect(resolveKey(k("o", { pending: "g", target: "none" }))).toEqual(expected);
