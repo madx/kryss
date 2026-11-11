@@ -1,10 +1,11 @@
-// Header: the filter bar on the left (PRD 5.14), the siblings and Markdown view toggles on the right.
+// Header: the name of the open file in Vault mode (PRD 5.16), the filter bar (5.14), the siblings and Markdown view toggles on the right.
 import type { FilterBar } from "../editor/filter-bar";
+import { fileLabel } from "../logic/files";
 import { el } from "./dom";
 import { markdownIcon, siblingsIcon } from "./icons";
 
 /** Built once: the filter bar is a live editor, so the header is never rebuilt by a render. */
-export function createHeader(root: HTMLElement, bar: FilterBar, toggleMarkdown: () => void, toggleSiblings: () => void) {
+export function createHeader(root: HTMLElement, bar: FilterBar, toggleMarkdown: () => void, toggleSiblings: () => void, file: string | null = null) {
   const siblings = el(
     "button",
     {
@@ -23,7 +24,9 @@ export function createHeader(root: HTMLElement, bar: FilterBar, toggleMarkdown: 
     markdownIcon(),
   );
   markdown.addEventListener("click", toggleMarkdown);
-  root.replaceChildren(bar.el, siblings, markdown);
+  // The name has no folder and no extension, and the whole path is its tooltip.
+  const name = file === null ? [] : [el("span", { class: "header-file", title: file }, fileLabel(file))];
+  root.replaceChildren(...name, bar.el, siblings, markdown);
   return {
     setSiblings: (on: boolean) => siblings.setAttribute("aria-pressed", String(on)),
     setMarkdownOpen: (open: boolean) => markdown.setAttribute("aria-pressed", String(open)),

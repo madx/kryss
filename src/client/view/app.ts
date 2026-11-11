@@ -35,6 +35,8 @@ import { createFooter } from "./footer";
 import { createMarkdownView } from "./markdown-view";
 import { createFilterBar } from "../editor/filter-bar";
 import { createHeader } from "./header";
+import { switchRefusal } from "../logic/files";
+import { createFilePicker, type FilePickerEnv } from "./file-picker";
 import { createFilterPicker } from "./filter-picker";
 import { visibleOf } from "./visible";
 import { firstMatch, matchingStops, searchCounter, stepMatch } from "../logic/search";
@@ -51,7 +53,10 @@ import { isTextField } from "../shortcuts";
 
 const NEW_LIST_NAME = "New list";
 
-export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage): void {
+/** What the app needs in Vault mode (PRD 5.16): the open file and the calls of the file picker. */
+export type VaultEnv = { file: string; list: FilePickerEnv["list"]; create: FilePickerEnv["create"]; open(path: string): void };
+
+export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; main: HTMLElement }, store: Store, storage?: Storage, vault?: VaultEnv): void {
   const ctx: ListContext = { renaming: null, placeholder: null };
   const footer = createFooter();
   const cheatsheet = createCheatsheet();
@@ -61,7 +66,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     end: (refocus) => endSearch(refocus ? searchOrigin : null),
   });
   document.body.append(searchBar.el, footer.el, cheatsheet.el);
-  const cursor = createCursor(roots.main, store, storage);
+  const cursor = createCursor(roots.main, store, storage, vault?.file ?? null);
   const bar = createFilterBar({
     initial: store.getState().filter,
     listTitles: () => store.getState().doc?.lists.map((l) => l.title) ?? [],
@@ -72,7 +77,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       cursor.focusIndex(0); // the first visible stop
     },
   });
-  const header = createHeader(roots.header, bar, () => toggleMarkdown(), () => store.toggleSiblings());
+  const header = createHeader(roots.header, bar, () => toggleMarkdown(), () => store.toggleSiblings(), vault?.file ?? null);
   const picker = createFilterPicker({
     saved: () => store.getState().doc?.filters ?? [],
     text: () => store.getState().filter,
@@ -81,6 +86,31 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     closed: () => cursor.focusIndex(0), // the first visible stop, as after Enter in the bar
   });
   roots.header.append(picker.el);
+  const filePicker = vault
+    ? createFilePicker({
+        list: vault.list,
+        create: vault.create,
+        current: () => vault.file,
+        open: (path) => void switchFile(path),
+        closed: () => cursor.focusIndex(cursor.last()),
+      })
+    : null;
+  if (filePicker) roots.header.append(filePicker.el);
+
+  /** A switch is a navigation, after the pending changes are saved, and it is refused while a save fails or is in conflict. */
+  async function switchFile(path: string) {
+    if (!vault || path === vault.file) return filePicker?.close();
+    let refusal = switchRefusal(store.getState().status);
+    if (refusal === null) {
+      await store.flush();
+      refusal = switchRefusal(store.getState().status);
+    }
+    if (refusal !== null) {
+      footer.flash(refusal, true);
+      return filePicker?.close();
+    }
+    vault.open(path);
+  }
   let cursorRestored = false;
   const markdownView = createMarkdownView(copyText);
   let markdownOpen = false;
@@ -463,6 +493,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       startList: () => bar.startListTerm(),
       openPicker: () => picker.open(),
     },
+    files: { openPicker: () => void filePicker?.open() },
     renameList: lists.rename,
     registerKeys,
     changeList: (list) => lists.rename(list, true),

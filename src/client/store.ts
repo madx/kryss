@@ -2,7 +2,7 @@
 // Everything that changes the document goes through `commit`, everything that comes from the server through `replace`.
 // Dependencies (api, timers, storage) are injected so that the state machine can be tested without DOM or network.
 import type { ChangeEvent, ParseError, SavedFilter, TodoDocument } from "../shared/types";
-import type { Api } from "./api";
+import type { Api, SaveResult } from "./api";
 import { canRedo, canUndo, clear, createHistory, push, redo as redoHistory, undo as undoHistory } from "./logic";
 import { followPins, pinTask } from "./logic/filter";
 import type { PathMove, TaskPath } from "./logic/paths";
@@ -71,7 +71,7 @@ export function createStore(deps: { api: Api; timers?: Timers; storage?: Storage
   let showSiblings = readSiblings();
   let dirty = false; // local changes not on disk yet
   let inFlight = false;
-  let flying: Promise<unknown> | undefined; // the PUT in flight
+  let flying: Promise<SaveResult> | undefined; // the PUT in flight
   let attempts = 0;
   let saveTimer: unknown;
   let retryTimer: unknown;

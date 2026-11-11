@@ -69,3 +69,22 @@
   border-radius: var(--radius-control);
   outline: none;
 }
+
+/* The file picker: the open file is marked, and a refused name is explained under the input. */
+.picker-item[aria-current="true"] .picker-item-label {
+  color: var(--color-accent);
+}
+
+.picker-item[data-kind="new"] {
+  color: var(--color-accent);
+}
+
+.picker-error {
+  padding: var(--space-4) var(--row-padding);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+}
+
+.picker-error:empty {
+  display: none;
+}

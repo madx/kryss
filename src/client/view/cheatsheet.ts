@@ -61,6 +61,7 @@ const GROUPS: Group[] = [
       ["ga / gt / gw", "all / due today or overdue / due this week or overdue"],
       ["gl", "replace the filter with list:, with a popup of the lists"],
       ["gF", "saved filters (dd deletes one)"],
+      ["go", "open another file of the Vault, or create one"],
       ["sh", "tasks with a matching subtask: show all their subtasks / only the matching ones"],
       ["words", "match the task text, ignoring case", true],
       ["list:name due:today|week|overdue|DATE is:done|todo", "terms are ANDed, commas inside a term are OR", true],
