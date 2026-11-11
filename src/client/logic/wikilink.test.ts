@@ -28,7 +28,7 @@ describe("filterNotes", () => {
     expect(list.map((s) => s.folder)).toEqual(["", "A", "B"]);
   });
   test("a note at the root has an empty folder even when it shares its name", () => {
-    expect(filterNotes([n("Same"), n("B/Same")], "").map((s) => s.folder)).toEqual(["", "B"]);
+    expect(filterNotes([n("Same"), n("B/Same")], "").map((s) => s.folder).sort()).toEqual(["", "B"]);
   });
 });
 

@@ -6,6 +6,14 @@
 // The DOM is only ever built with createElement and textContent, never innerHTML.
 
 import { duePeriod } from "../logic/due";
+import { parseWikilink, wikilinkUrl } from "../logic/wikilink";
+
+// The name of the Vault, set once at startup in Vault mode. Without it, wikilinks stay literal text (PRD 5.17).
+let vaultName: string | null = null;
+export function setVaultName(name: string | null): void {
+  vaultName = name;
+}
+export const hasVaultName = () => vaultName !== null;
 
 export type InlineNode =
   | { type: "text"; value: string }
@@ -159,6 +167,15 @@ function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRan
           i = urlEnd + 1;
           continue;
         }
+      }
+    }
+
+    if (c === "[" && allowLinks && vaultName !== null) {
+      const wiki = parseWikilink(s, i);
+      if (wiki) {
+        nodes.push({ type: "link", href: wikilinkUrl(vaultName, wiki.target), children: [{ type: "text", value: wiki.label }] });
+        i = wiki.end;
+        continue;
       }
     }
 
