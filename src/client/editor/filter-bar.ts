@@ -5,6 +5,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { filterCompletion } from "../logic/filter";
 import { singleLine } from "./single-line";
+import "./editor.css"; // the popup look is shared with the task editor
 import "./filter-bar.css";
 
 export type FilterBarOptions = {

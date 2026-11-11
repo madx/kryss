@@ -11,6 +11,8 @@
   --color-accent: #2f6fed;
   --color-accent-text: #ffffff;
   --color-hover: #ecece8;
+  /* Inputs sit below the page background: a darker mix of it, in both themes. */
+  --color-input: color-mix(in srgb, var(--color-bg) 88%, black);
   --color-done-text: #5b6b5b;
   --color-success: #2e7d32;
   --color-danger: #c0392b;

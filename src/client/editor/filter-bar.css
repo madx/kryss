@@ -5,8 +5,8 @@
   height: var(--icon-button-size);
   padding: 0 var(--space-8);
   border-radius: var(--radius-control);
-  background: var(--color-hover);
-  font-size: var(--font-size);
+  background: var(--color-input);
+  font-size: var(--font-size-task);
 }
 
 .filter-bar:focus-within {
@@ -29,6 +29,7 @@
   overflow: hidden !important;
   font-family: var(--font-sans);
   line-height: var(--icon-button-size);
+  font-size: var(--font-size-task);
 }
 
 .filter-bar .cm-content,
@@ -39,4 +40,13 @@
 
 .filter-bar .cm-placeholder {
   color: var(--color-muted);
+}
+
+/* The caret shows only while the bar has the focus. */
+.filter-bar .cm-editor:not(.cm-focused) .cm-content {
+  caret-color: transparent !important;
+}
+
+.filter-bar .cm-editor:not(.cm-focused) .cm-cursor {
+  display: none !important;
 }

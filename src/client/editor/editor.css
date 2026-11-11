@@ -77,8 +77,15 @@
   font-size: var(--font-size-task);
 }
 
-.cm-tooltip-autocomplete > ul > li {
-  padding: var(--space-2) var(--space-8);
+/* One look for every popup, the due dates of tasks and the filter bar: sans serif, roomy entries. */
+.cm-tooltip.cm-tooltip-autocomplete > ul {
+  font-family: var(--font-sans) !important;
+  font-size: var(--font-size-task);
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  padding: var(--space-4) var(--space-12) !important;
+  line-height: var(--line-height-task) !important;
 }
 
 .cm-tooltip-autocomplete > ul > li[aria-selected] {
