@@ -177,9 +177,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   Cancelling (an empty name) keeps "New list".
   The header has no title: it holds the filter bar of 5.14 on the left and the siblings toggle of 5.14 and the Markdown view toggle of 5.11 aligned on the right.
   There is no button to create a list: `N` does it (5.9).
-- Lists are reordered with the keyboard only (5.2, 5.9), and only while the filter is empty.
-  With a filter, the move keys do nothing.
-  This restriction is temporary: moves on the visible lists are deferred until after user testing, so the logic keeps taking the visible range as a parameter (5.7).
+- Lists are reordered with the keyboard only (5.2, 5.9), also while a filter is active, where they move over the visible lists (5.14).
   Empty file: the app offers to create the first list.
 - The theme follows the system (`prefers-color-scheme`), with no setting.
 - When the page is installed as an app, the titlebar uses the list card background, set with two `theme-color` meta tags (light and dark) that must stay equal to `--color-surface`.
@@ -195,12 +193,13 @@ A whole document is its lists joined by a blank line, followed by that final new
   A top-level task swaps with the previous or next top-level task (it never enters a task that has subtasks), and at the top or bottom of a list it goes to the end of the previous list or the start of the next list.
   A subtask swaps with the previous or next subtask.
   At the edge of its parent, a subtask becomes the last subtask of the previous top-level task (up) or the first subtask of the next top-level task (down), and nothing happens when there is no such task in the list.
-  The keys work only while the filter is empty (5.14), so they cross every list.
-  Nothing happens at the very top or bottom of the document.
+  With an empty filter the keys cross every list, and nothing happens at the very top or bottom of the document.
+  While a filter is active they follow the visible rows (5.14): the neighbours above are the visible ones, hidden tasks are jumped over, and the visible lists are the lists that have a visible task.
   The check rules of 5.3 apply (an unchecked task landing under a parent unchecks it, the old parent is recomputed).
 - Move a list with the same shortcuts on a list header (5.9).
   `J` / Alt+↓ moves the list below the next list, and `K` / Alt+↑ moves it above the previous list.
-  There is no wrapping: nothing happens at the first or last list, and nothing happens while a filter is active.
+  There is no wrapping: nothing happens at the first or last list.
+  While a filter is active, the previous and next lists are the previous and next visible lists, and the hidden lists between them keep their place (5.14).
   The cursor stays on the moved list header, which is scrolled into view.
   Each move is one undoable change (5.6).
 
@@ -256,7 +255,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 - No confirmation to delete a task (undo recovers it).
 - Inside a task's editor, Ctrl+Z first undoes typing (CodeMirror), then the global stack once the task is left.
 - Each entry remembers the filter text that was active when the change was made, and undo and redo restore it, so a change made under another filter is never invisible.
-  A list move is made with an empty filter, so undoing it returns to the empty filter before the lists change order.
+  Undoing a move made under a filter returns to that filter, with the task or list back at its place.
 - The snapshots hold the lists only, so undo and redo never change the saved filters, and saving or deleting a saved filter is not part of the history.
   The text typed in the filter bar is not part of it either.
 - The stack is cleared on page reload and on any detected external change.
@@ -269,7 +268,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 - An operation that is refused returns `null` (or the same document for simple edits), so the caller can detect a no-op.
 - Keyboard move (`J` / `K`, Alt+↑ / Alt+↓) follows 5.2: it crosses parent and visible list boundaries, takes the visible list range as a parameter (default: the whole document), and returns `null` at the edges of that range and for a subtask with no task to join.
 - List move takes the list to move, a target list and `before` or `after`, and returns `null` when the order would not change.
-  The keyboard calls it with the previous or next visible list, so that moves on filtered lists, deferred until after user testing, only change which list is the target.
+  The keyboard calls it with the previous or next visible list, so that a move under a filter only changes which list is the target.
   Like the task move, the keyboard resolution takes the visible list range as a parameter (default: the whole document).
 - Indent makes the task the last subtask of the previous task, and unchecks that parent if the indented task is unchecked.
 - Reordering under the same parent never changes a check state.
@@ -359,8 +358,8 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `cc` | change the task: open the editor with an empty text (5.12) |
 | `sd` | set the due date: open the editor on the date and its popup (5.13) |
 | `p` | paste the register below the task (5.12) |
-| `>` / `<` | indent / outdent, only with an empty filter |
-| `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), only with an empty filter |
+| `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
+| `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), over the visible rows under a filter (5.14) |
 | `u` / `U`, Ctrl+Z / Ctrl+Shift+Z | undo / redo |
 | `o` / `O` | add a sibling below / above, always at the same level |
 | `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
@@ -378,7 +377,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `p` | paste the register as the first task of the list, or after the list if it holds a list (5.12) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
-| `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up (empty filter only) |
+| `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up, over the visible lists under a filter (5.14) |
 | `N` | create a list at the end and open its name input, from anywhere in Normal mode |
 
 - `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
@@ -777,7 +776,7 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 - Hiding only changes what is rendered: the document is whole, the cursor stops are the visible rows, and the counts of 5.9 are those of the visible tasks.
 - **Pinned rows**: a task that the user adds, pastes, edits, checks or unchecks stays visible, with its ancestors, until the filter text changes or is applied again, even if it no longer matches.
   Applying the text again, with `/` then Enter or Escape, or with a built-in view key that sets the same text, drops the pins: it refreshes the view.
-  Pins follow the task through the add or paste that shifts it, and they are cleared by a refresh, a delete, an undo, a redo and an external change.
+  Pins follow the task through the add, the paste or the move that shifts it, and they are cleared by a refresh, a delete, an undo, a redo and an external change.
 - An empty result shows a muted "No matching task" and the filter text in place of the lists.
   When a known key has an invalid value, it shows the reason, for example "Unknown due value: foo".
   An empty file keeps the offer of 5.1.
@@ -785,8 +784,19 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 **Editing under a filter**
 
 - The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `sd` and the positional adds work as usual on the visible rows.
-- `J` / `K`, Alt+↑ / Alt+↓, `>` and `<` do nothing while a filter is active, for tasks and for lists.
-  Moves on the visible rows are deferred until after user testing.
+- `J` / `K`, Alt+↑ / Alt+↓, `>` and `<` work on the visible rows, for tasks and for lists.
+  The visible rows are the rows shown, so the siblings toggle changes which subtasks count as neighbours.
+- **Move**: a task swaps with the next visible sibling in the direction of the key, and lands right after it (down) or right before it (up), so the hidden siblings between them stay where they were.
+  A task that has visible subtasks counts as one block with its whole subtree.
+  At the edge of its parent or of its list the rules of 5.2 apply to the visible neighbours: a subtask becomes the last subtask of the previous visible top-level task or the first subtask of the next visible one, and a top-level task crosses into the previous or next visible list.
+  It lands right before the first visible top-level task of the next visible list, or right after the last visible top-level task of the previous one together with its subtree, and nothing happens when there is no such task or list.
+- **Indent** makes the task the last subtask of the previous visible top-level task, after its hidden subtasks, and jumps over hidden tasks.
+  **Outdent** places the task right after its parent, as without a filter.
+- **List move**: a list moves before or after the previous or next visible list, and the hidden lists keep their place.
+- **Pinning**: the moved, indented or outdented task is pinned, so that it stays visible with its ancestors until the filter changes, even when it lost the parent that made it visible, for example an outdented subtask that does not match.
+  The pins of the other tasks follow the move, so that every pin keeps pointing at the task it was set on.
+  A list move needs no pin, since a list with a visible task stays visible.
+- The check rules of 5.3 apply unchanged, and each move is one undoable change that restores the filter text it was made under (5.6).
 - `N` and the paste of a list clear the filter, so that the new list is visible.
 - Completing a task rewrites its due date (5.13), and pinning keeps it visible even in a filter that it no longer matches, such as `is:todo`.
 
@@ -806,7 +816,7 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 
 - The filter parsing, the matching of a task (with today as a parameter) and the computation of the visible rows are pure functions in `src/client/logic/filter.ts`, with the immutable and `null` conventions of 5.7.
   The Markdown view of 5.11 and the counts of 5.9 use the same visible rows.
-- Pinned rows are paths, shifted by the add or paste that creates them, and the store clears them as described above.
+- Pinned rows are paths, shifted by the add, paste or move that changes them, and the store clears them as described above.
 - The store holds the filter text and the pins, and `commit` takes the pin and whether it is an insertion.
   The undo history keeps the lists and the filter text of each change, and never the saved filters, which `commitFilters` changes outside the history.
 - Today is read by the view at each render, and passed to the pure functions.
@@ -819,9 +829,9 @@ There is no selector, no `H` / `L`, and no way to show a single list other than 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `sd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the tree visibility rule, empty lists, pinned rows), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `sd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent).
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `filters` key, and file-based settings other than the saved filters; `xit` format; automatic conflict merging; moving tasks and lists while a filter is active, and wrapping at the edges; tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `filters` key, and file-based settings other than the saved filters; `xit` format; automatic conflict merging; wrapping at the edges; tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked.
