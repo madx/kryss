@@ -461,7 +461,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 - Task text is 12 px (the same as in Obsidian) with a line height of 20 px, rows have 3 px of vertical padding and no gap between them, which makes a row about 26 px tall.
   Text size and row height are the same at every window width.
 - Horizontal spacing is tight in a narrow window and grows a little in a wide one, through `clamp()` tokens of the viewport width.
-  The page gutter goes from 6 to 16 px in a wide window and fixed at 8 px in a narrow one (up to 720 px), the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
+  The page gutter is fixed at 8 px up to 720 px of window width and 16 px above, the panel padding from 4 to 6 px, the row padding and the checkbox gap from 6 to 8 px, and the subtask indent from 16 to 24 px.
 - The header is fixed and about 32 px tall, below a 4 px margin at the top of the page, the footer is fixed and about 24 px tall, and neither has a border or a separator.
 - The scrollbar of the scroll area appears only when the content overflows, and no space is reserved for it, so the layout stays centered and balanced.
   It is 10 px wide (an 8 px thumb with 1 px of padding).
