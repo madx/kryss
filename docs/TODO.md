@@ -333,18 +333,18 @@
 - [x] Update the PRD and the tests, then run `bun test` and `bun run build`
 
 ## Moves under a filter
-- [ ] Move logic over the visible rows
-  - [ ] Task move takes the visible rows, jumps over hidden siblings and lands next to the visible one, with a subtree as one block
-  - [ ] Edges: a subtask joins the previous or next visible top-level task, a top-level task crosses to the previous or next visible list next to its visible neighbour
-  - [ ] Indent makes the task the last subtask of the previous visible top-level task
-  - [ ] List move targets the previous or next visible list
-  - [ ] Tests of each case, including the siblings toggle on and off and the no-op at the edges
-- [ ] Store and pins
-  - [ ] Pin the moved, indented or outdented task, and shift the other pins so that they keep pointing at their tasks
-  - [ ] Tests: pins after a move, an outdented subtask that no longer matches stays visible, undo restores the filter text
-- [ ] Keys
-  - [ ] Stop returning `null` under a filter for the move, indent and outdent keys, for tasks and for lists
-  - [ ] Keep the cursor on the moved task or list, following it
-  - [ ] Update the cheat sheet and the shortcut tests
-- [ ] Run `bun test` and `bun run build`
-- [ ] Verify by hand: a move across hidden siblings, a move between visible lists, indent under a filter, an outdented subtask that stops matching, a list move, undo and redo
+- [x] Move logic over the visible rows
+  - [x] Task move takes the visible rows, jumps over hidden siblings and lands next to the visible one, with a subtree as one block
+  - [x] Edges: a subtask joins the previous or next visible top-level task, a top-level task crosses to the previous or next visible list next to its visible neighbour
+  - [x] Indent makes the task the last subtask of the previous visible top-level task
+  - [x] List move targets the previous or next visible list
+  - [x] Tests of each case, including the siblings toggle on and off and the no-op at the edges
+- [x] Store and pins
+  - [x] Pin the moved, indented or outdented task, and shift the other pins so that they keep pointing at their tasks
+  - [x] Tests: pins after a move, an outdented subtask that no longer matches stays visible, undo restores the filter text
+- [x] Keys
+  - [x] Stop returning `null` under a filter for the move, indent and outdent keys, for tasks and for lists
+  - [x] Keep the cursor on the moved task or list, following it
+  - [x] Update the cheat sheet and the shortcut tests
+- [x] Run `bun test` and `bun run build`
+- [x] Verify by hand: a move across hidden siblings, a move between visible lists, indent under a filter, an outdented subtask that stops matching, a list move, undo and redo
