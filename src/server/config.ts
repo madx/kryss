@@ -1,5 +1,5 @@
 import { realpath, writeFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 
 const DEFAULT_TODO_FILE = "./todo.md";
 const DEFAULT_HOST = "127.0.0.1";
@@ -35,6 +35,8 @@ export async function resolveVault(env: Record<string, string | undefined>): Pro
     throw new Error(`NEW_FILE_DIR "${env.NEW_FILE_DIR}" is not an existing folder`);
   });
   const inside = relative(vaultDir, newFileDir);
-  if (inside.startsWith("..") || isAbsolute(inside)) throw new Error(`NEW_FILE_DIR "${env.NEW_FILE_DIR}" must be inside VAULT_DIR`);
+  if (inside === ".." || inside.startsWith(".." + sep) || isAbsolute(inside)) throw new Error(`NEW_FILE_DIR "${env.NEW_FILE_DIR}" must be inside VAULT_DIR`);
+  // The scan skips dot folders, so a file created in one could never be listed or opened.
+  if (inside.split(sep).some((segment) => segment.startsWith("."))) throw new Error(`NEW_FILE_DIR "${env.NEW_FILE_DIR}" must not be in a folder whose name starts with a dot`);
   return { vaultDir, newFileDir };
 }

@@ -73,7 +73,7 @@ export async function resolveKryssFile(vaultDir: string, rel: string): Promise<s
     const root = await realpath(vaultDir);
     const real = await realpath(join(root, rel));
     const inside = relative(root, real);
-    if (inside === "" || inside.startsWith("..") || isAbsolute(inside)) return null;
+    if (inside === "" || inside === ".." || inside.startsWith(".." + sep) || isAbsolute(inside)) return null;
     const segments = inside.split(sep);
     if (segments.slice(0, -1).some((s) => s.startsWith(".")) || !real.endsWith(".md")) return null;
     if (!(await stat(real)).isFile()) return null;

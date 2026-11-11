@@ -183,10 +183,9 @@ export function createApp(options: AppOptions) {
   async function events(req: Request, file: string, server?: Server): Promise<Response> {
     server?.timeout(req, 0);
     const session = sessionOf(file);
-    if (!session.watcher) {
-      session.knownEtag = etagOf(await readContent(file));
-      startWatching(session);
-    }
+    // Checked and started without waiting, so that two streams opening together cannot start two watchers.
+    if (!session.watcher) startWatching(session);
+    session.knownEtag = etagOf(await readContent(file));
     let controller!: ReadableStreamDefaultController<Uint8Array>;
     const release = () => {
       session.clients.delete(controller);

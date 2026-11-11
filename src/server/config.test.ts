@@ -98,6 +98,17 @@ describe("resolveVault", () => {
     }
   });
 
+  test("refuses a NEW_FILE_DIR in a dot folder, whose files the scan would skip", async () => {
+    mkdirSync(join(root, ".drafts"));
+    await expect(resolveVault({ VAULT_DIR: root, NEW_FILE_DIR: join(root, ".drafts") })).rejects.toThrow(/dot/);
+  });
+
+  test("accepts a NEW_FILE_DIR whose name merely starts with two dots", async () => {
+    mkdirSync(join(root, "..notes"));
+    // Two leading dots is still a dot folder for the scan, so it is refused for that reason and not as being outside.
+    await expect(resolveVault({ VAULT_DIR: root, NEW_FILE_DIR: join(root, "..notes") })).rejects.toThrow(/dot/);
+  });
+
   test("refuses a VAULT_DIR that does not exist", async () => {
     await expect(resolveVault({ VAULT_DIR: join(root, "missing") })).rejects.toThrow(/VAULT_DIR/);
   });

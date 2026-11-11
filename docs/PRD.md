@@ -950,7 +950,7 @@ Single-file mode keeps one file and has none of them.
 **Creating a file**
 
 - The folder for new files is the `NEW_FILE_DIR` environment variable, which defaults to `VAULT_DIR`.
-  The server refuses to start when it lies outside `VAULT_DIR`, since the scan would never list the new files.
+  The server refuses to start when it lies outside `VAULT_DIR`, or in a folder whose name starts with a dot, since the scan would never list the new files.
 - `POST /api/files` takes `{ "name": string }`.
   The server trims the name, adds `.md` unless the name already ends with it, and writes the file in `NEW_FILE_DIR`.
 - The name is refused with a `400` when it is empty, starts with a dot, or contains a control character or one of `* " \ / < > : | ? # ^ [ ]`, which are the characters that Obsidian refuses in a note name or that break its links.

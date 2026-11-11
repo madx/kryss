@@ -250,6 +250,21 @@ describe("GET /api/events with a file", () => {
     expect(eb!.map((e) => e.doc.lists[0]!.title)).toEqual(["B2"]);
   });
 
+  test("two streams opening together share one watcher, released with the last stream", async () => {
+    put("a.md", ENABLED + "## A\n");
+    start();
+    const one = new AbortController();
+    const two = new AbortController();
+    await Promise.all([fetch(url("/api/events", "a.md"), { signal: one.signal }), fetch(url("/api/events", "a.md"), { signal: two.signal })]);
+    expect(app.watchedFiles()).toEqual(["a.md"]);
+    one.abort();
+    await sleep(100);
+    expect(app.watchedFiles()).toEqual(["a.md"]);
+    two.abort();
+    await sleep(100);
+    expect(app.watchedFiles()).toEqual([]);
+  });
+
   test("a write by the server itself emits nothing", async () => {
     put("a.md", ENABLED + "## A\n");
     start();
