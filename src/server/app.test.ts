@@ -20,7 +20,7 @@ function start(content?: string) {
 }
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "todoapp-api-"));
+  dir = mkdtempSync(join(tmpdir(), "kryss-api-"));
   file = join(dir, "todo.md");
 });
 afterEach(() => {

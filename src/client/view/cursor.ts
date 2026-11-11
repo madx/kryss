@@ -5,7 +5,7 @@ import { visibleOf } from "./visible";
 import type { TaskPath } from "../logic";
 import type { Store } from "../store";
 
-export const CURSOR_KEY = "todoapp.cursor";
+export const CURSOR_KEY = "kryss.cursor";
 
 /** Scrolls an element into view only if it is off screen, smoothly unless the user prefers reduced motion. */
 export function reveal(el: Element | null | undefined, block: ScrollLogicalPosition = "nearest"): void {

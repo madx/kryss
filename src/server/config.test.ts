@@ -35,7 +35,7 @@ describe("resolveHost", () => {
 describe("ensureTodoFile", () => {
   let dir: string;
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "todoapp-"));
+    dir = mkdtempSync(join(tmpdir(), "kryss-"));
   });
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
