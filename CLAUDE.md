@@ -3,7 +3,8 @@
 A single-user, local todo list manager.
 The source of truth is a **Markdown file** that can be edited both from the web app and from an external editor (Obsidian, Vim).
 Full spec: `docs/PRD.md`.
-Work plan: `docs/TODO.md`.
+Work plan: `docs/TODO.md`, which lists only the work still open.
+History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 
 ## Collaboration rules
 
