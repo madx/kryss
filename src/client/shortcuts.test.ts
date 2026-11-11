@@ -455,7 +455,7 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     expect(act("c", { pending: "c", ...onHeader })).toEqual({ type: "change" });
   });
   test("c then another key cancels the prefix without an action", () => {
-    for (const key of ["j", "o", "d", "y", "p"]) {
+    for (const key of ["j", "o", "x", "y", "p"]) {
       const r = resolveKey(k(key, { pending: "c" }));
       expect(r.action).toBeNull();
       expect(r.pending).toBe("");

@@ -15,11 +15,12 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" }
+  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" } | { type: "change-list" }
+  | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
   | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
-  target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean;
+  target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean; search: boolean;
 };
 export type Resolution = { action: Action | null; pending: Pending; preventDefault: boolean };
 
@@ -42,9 +43,9 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "i": case "Enter": return { type: "edit" };
     case "u": return { type: "undo" };
     case "U": return { type: "redo" };
-    case "N": return { type: "new-list" };
+    case "+": return { type: "new-list" };
     case "p": return { type: "paste" };
-    case "/": return { type: "focus-filter" };
+    case "/": return { type: "search-start" };
     case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
     case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
     case "I": return { type: "add", at: onHeader ? "list-start" : "first-child" };
@@ -65,15 +66,15 @@ function taskKey(key: string): Action | null {
   }
 }
 
-/** The second key of `g` that sets or opens a filter, toggles the siblings (PRD 5.14) or opens the cheat sheet, or null. */
+/** The second key of `g` that sets, focuses or opens a filter (PRD 5.14) or opens the cheat sheet, or null. */
 function filterKey(key: string): Action | null {
   switch (key) {
     case "a": return { type: "set-filter", text: "" };
     case "t": return { type: "set-filter", text: "due:today,overdue" };
     case "w": return { type: "set-filter", text: "due:week,overdue" };
     case "l": return { type: "filter-list" };
-    case "f": return { type: "filter-picker" };
-    case "h": return { type: "toggle-siblings" };
+    case "f": return { type: "focus-filter" };
+    case "F": return { type: "filter-picker" };
     case "?": return { type: "toggle-help" };
     default: return null;
   }
@@ -82,17 +83,13 @@ function filterKey(key: string): Action | null {
 /** Keys while the Markdown view is open (PRD 5.11): everything that changes a task is ignored. */
 function resolveMarkdownKey({ key, pending, altKey }: KeyInput): Resolution {
   if (altKey) return NOTHING;
-  if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "s" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "s" && key === "h") return done({ type: "toggle-siblings" });
   if (pending === "g" && filterKey(key)) return done(filterKey(key));
   if (pending === "y" && key === "y") return done({ type: "copy-markdown" });
   if (pending) return NOTHING;
-  if (key === "g") return { action: null, pending: "g", preventDefault: true };
-  if (key === "y") return { action: null, pending: "y", preventDefault: true };
-  switch (key) {
-    case "Escape": return done({ type: "toggle-markdown" });
-    case "/": return done({ type: "focus-filter" });
-    default: return NOTHING;
-  }
+  if (key === "g" || key === "s" || key === "y") return { action: null, pending: key, preventDefault: true };
+  return key === "Escape" ? done({ type: "toggle-markdown" }) : NOTHING;
 }
 
 const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "AltGraph", "Meta", "CapsLock"]);
@@ -129,15 +126,21 @@ export function resolveKey(input: KeyInput): Resolution {
     return done({ type: "move", dir: key === "ArrowDown" ? "down" : "up" });
   }
 
-  if (pending === "g" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "s" && key === "m") return done({ type: "toggle-markdown" });
+  if (pending === "s" && key === "h") return done({ type: "toggle-siblings" });
   if (pending === "g" && filterKey(key)) return done(filterKey(key));
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });
   if (pending === "c" && key === "c") return done({ type: "change" });
+  if (pending === "c" && key === "d") return done(onHeader ? null : { type: "set-due" });
+  if (pending === "c" && key === "l") return done({ type: "change-list" });
   if (pending === "y" && key === "y") return done({ type: "yank" });
-  if (pending === "s" && key === "d") return done(onHeader ? null : { type: "set-due" });
   if (pending) return NOTHING;
   if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s") return { action: null, pending: key, preventDefault: true };
+
+  if (input.search && key === "Escape") return done({ type: "search-end" });
+  if (input.search && key === "n") return done({ type: "search-next" });
+  if (input.search && key === "N") return done({ type: "search-prev" });
 
   const action = commonKey(key, onHeader) ?? (onHeader ? null : taskKey(key));
   return action ? done(action) : NOTHING;

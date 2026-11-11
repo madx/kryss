@@ -37,6 +37,10 @@ import { createFilterBar } from "../editor/filter-bar";
 import { createHeader } from "./header";
 import { createFilterPicker } from "./filter-picker";
 import { visibleOf } from "./visible";
+import { firstMatch, matchingStops, searchLabel, stepMatch } from "../logic/search";
+import { visibleStops } from "../logic/filter";
+import { createSearchBar } from "./search-bar";
+import { highlight, markCurrent } from "./search-highlight";
 import { localToday } from "../today";
 import { el } from "./dom";
 import { installDueRefresh } from "./due-pill";
@@ -51,7 +55,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   const ctx: ListContext = { renaming: null, placeholder: null };
   const footer = createFooter();
   const cheatsheet = createCheatsheet();
-  document.body.append(footer.el, cheatsheet.el);
+  const searchBar = createSearchBar({
+    input: (query) => typeSearch(query),
+    close: (refocus) => closeSearchInput(refocus),
+    end: (refocus) => endSearch(refocus ? searchOrigin : null),
+  });
+  document.body.append(searchBar.el, footer.el, cheatsheet.el);
   const cursor = createCursor(roots.main, store, storage);
   const bar = createFilterBar({
     initial: store.getState().filter,
@@ -75,6 +84,11 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   let cursorRestored = false;
   const markdownView = createMarkdownView(copyText);
   let markdownOpen = false;
+  /** The active search query (PRD 5.15), or null. In memory only. */
+  let search: string | null = null;
+  /** Cursor index where `/` was pressed, and the matching row the cursor is on while the input has the focus. */
+  let searchOrigin = 0;
+  let searchIndex = 0;
   /** CSS selector of the element to focus after the next render. */
   let pendingFocus: string | null = null;
 
@@ -229,7 +243,65 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     if (!state.doc) return;
     const visible = visibleOf(state)!;
     const insert = isEditing() || isTextField(document.activeElement);
-    footer.update({ mode: bar.isFocused() ? "filter" : insert ? "insert" : "normal", view: countVisible(state.doc, visible.lists) });
+    footer.update({ mode: bar.isFocused() ? "filter" : searchBar.isFocused() ? "search" : insert ? "insert" : "normal", view: countVisible(state.doc, visible.lists) });
+  }
+
+  const stopElement = (index: number): HTMLElement | null => {
+    const visible = visibleOf(store.getState());
+    const stop = visible ? visibleStops(visible)[index] : undefined;
+    return stop ? roots.main.querySelector<HTMLElement>(stopSelector(stop)) : null;
+  };
+  const searchMatches = (): number[] => {
+    const state = store.getState();
+    const visible = visibleOf(state);
+    return state.doc && visible && search ? matchingStops(state.doc, visible, search) : [];
+  };
+  /** Where the cursor is for the search: the matching row while typing, the focused stop otherwise. */
+  const searchCursor = () => (searchBar.isFocused() ? searchIndex : cursor.hasFocus() ? cursor.index() : cursor.last());
+  /** Recomputes the highlights, the cursor row mark and the muted line from the document and the filter (PRD 5.15). */
+  function refreshSearch() {
+    const active = search !== null && !markdownOpen;
+    highlight(roots.main, active ? search : null);
+    markCurrent(roots.main, active ? stopElement(searchCursor()) : null);
+    if (active && !searchBar.isFocused()) searchBar.showLine(searchLabel(search!, searchMatches(), searchCursor()));
+  }
+  function startSearch() {
+    if (markdownOpen) return;
+    searchOrigin = Math.max(0, cursor.hasFocus() ? cursor.index() : cursor.last());
+    searchIndex = searchOrigin;
+    search = "";
+    searchBar.open();
+    refreshSearch();
+  }
+  /** Live typing: the cursor goes to the first match at or after the starting row, or back to it when there is none. */
+  function typeSearch(query: string) {
+    search = query;
+    searchIndex = firstMatch(searchMatches(), searchOrigin)?.index ?? searchOrigin;
+    refreshSearch();
+    reveal(stopElement(searchIndex));
+  }
+  /** Enter or Escape in the input with a query: it closes, the cursor stays on the matching row and the search stays active. */
+  function closeSearchInput(refocus: boolean) {
+    if (search === null) return;
+    searchBar.showLine(searchLabel(search, searchMatches(), searchIndex));
+    if (refocus) cursor.focusIndex(searchIndex);
+    refreshSearch();
+  }
+  /** Ends the search: the query is forgotten and the highlights and the bar disappear. `focusAt` puts the cursor back on that index. */
+  function endSearch(focusAt: number | null = null) {
+    if (search === null) return;
+    search = null;
+    searchBar.hide();
+    if (focusAt !== null) cursor.focusIndex(focusAt);
+    refreshSearch();
+    updateFooter();
+  }
+  function stepSearch(dir: "next" | "prev") {
+    const step = stepMatch(searchMatches(), searchCursor(), dir);
+    if (!step) return;
+    cursor.focusIndex(step.index);
+    if (step.wrapped) footer.flash("Wrapped", false);
+    refreshSearch();
   }
 
   function renderAll(state: StoreState, focus: string | null = null) {
@@ -252,11 +324,13 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     }
     startPlaceholder();
     updateFooter();
+    refreshSearch();
   }
 
   /** Opens the Markdown view, or closes it. It needs no save: it shows the document held by the page. */
   function toggleMarkdown() {
     markdownOpen = !markdownOpen;
+    if (markdownOpen) endSearch(); // opening the view ends the search (PRD 5.15)
     renderAll(store.getState());
   }
 
@@ -274,6 +348,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     }
   });
   document.addEventListener("focusin", updateFooter);
+  document.addEventListener("focusin", () => search !== null && refreshSearch()); // the cursor row changes with the focus
   document.addEventListener("focusout", () => setTimeout(updateFooter, 0));
 
   /** A positional add: the empty row exists only in the client, it is committed (or dropped) when its editor ends. */
@@ -388,6 +463,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     renameList: lists.rename,
     registerKeys,
     changeList: (list) => lists.rename(list, true),
+    search: { active: () => search !== null, start: startSearch, step: stepSearch, end: () => endSearch() },
     moveList: lists.moveByKey,
     beginAdd,
     newList: createList,

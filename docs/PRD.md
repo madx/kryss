@@ -878,6 +878,7 @@ It is separate from the filter of 5.14: a filter hides rows, a search only highl
 - Every occurrence is highlighted with `--color-match`, which is `#edc763` (the Sonokai yellow) in both themes.
   On other rows it is a 40% tint behind the normal text color, and on the cursor row it is solid with a fixed dark text color (`#1f2328`).
   It has the chip radius, and no underline or bold, so the layout never shifts.
+  An occurrence that spans several inline elements, for example across a bold marker, still matches but is not highlighted.
 - The search bar is stacked right above the footer, with the same width, the 12 px font, the input tint and a 2 px bar in `--color-match`, like the focused filter bar of 5.10.
   It takes no space when no search is active, and the page grows by its height while it is shown, so that the last rows stay reachable.
 - When the input is closed and the search is active, the bar stays as a muted line, `/query  3/12`, with `no match` in place of the counter when nothing matches.

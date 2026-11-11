@@ -22,7 +22,8 @@ const GROUPS: Group[] = [
       ["dd, Delete", "delete with its subtasks (fills the register)"],
       ["yy", "copy into the register, without deleting"],
       ["cc", "clear the text to retype it (Escape restores it)"],
-      ["sd", "set the due date: edit the date with its popup"],
+      ["cl", "clear the name of its list to retype it"],
+      ["cd", "change the due date: edit the date with its popup"],
       ["p", "paste the register below, after the subtasks"],
       ["> / <", "indent / outdent, over the visible rows under a filter"],
       ["J / K, Alt+↓ / Alt+↑", "move down / up, over the visible rows under a filter"],
@@ -36,11 +37,11 @@ const GROUPS: Group[] = [
       ["i, Enter", "rename the list"],
       ["dd", "delete the list at once (fills the register)"],
       ["yy", "copy the list into the register"],
-      ["cc", "clear the name to retype it"],
+      ["cc, cl", "clear the name to retype it (cl also works from a task)"],
       ["p", "paste a task first, or a list after this one"],
       ["J / K, Alt+↓ / Alt+↑", "move the list down / up, over the visible lists under a filter"],
       ["H / L", "move the list up / down, from a header or a task"],
-      ["N", "new list, from anywhere (clears the filter)"],
+      ["+", "new list, from anywhere (clears the filter)"],
     ],
   },
   {
@@ -56,11 +57,11 @@ const GROUPS: Group[] = [
   {
     title: "Filters and views",
     rows: [
-      ["/", "focus the filter bar (Enter or Escape applies)"],
+      ["gf", "focus the filter bar (Enter or Escape applies)"],
       ["ga / gt / gw", "all / due today or overdue / due this week or overdue"],
       ["gl", "replace the filter with list:, with a popup of the lists"],
-      ["gf", "saved filters (dd deletes one)"],
-      ["gh", "tasks with a matching subtask: show all their subtasks / only the matching ones"],
+      ["gF", "saved filters (dd deletes one)"],
+      ["sh", "tasks with a matching subtask: show all their subtasks / only the matching ones"],
       ["words", "match the task text, ignoring case", true],
       ["list:name due:today|week|overdue|DATE is:done|todo", "terms are ANDed, commas inside a term are OR", true],
       ["list:\"two words\"", "quote a name with spaces", true],
@@ -68,9 +69,17 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Search",
+    rows: [
+      ["/", "search the visible rows as you type (Enter or Escape keeps it)"],
+      ["n / N", "next / previous match, wrapping"],
+      ["Escape", "end the search"],
+    ],
+  },
+  {
     title: "Markdown view",
     rows: [
-      ["gm", "open / close the Markdown view"],
+      ["sm", "open / close the Markdown view"],
       ["yy", "copy the Markdown (view open)"],
       ["Escape", "close the view"],
     ],
