@@ -351,7 +351,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
 - `go` opens the file picker in Vault mode (5.16).
-- `f` and `F` are the filter keys: `ff` focuses the filter bar, `fs` opens the saved filters, `ft`, `fw`, `fl`, `fx` and `fX` append a term to the filter text, and `FF`, `Ft`, `Fw`, `Fl`, `Fx` and `FX` replace the whole text (5.14).
+- `f` and `F` are the filter keys: `ff` focuses the filter bar, `fs` opens the saved filters, and `fa`, `ft`, `fw`, `fl`, `fx` and `fX` replace the whole text (5.14).
   `sh` toggles the display of the siblings of a match (5.14).
   `/` starts an incremental search, `n` / `N` jump to the next / previous match and Escape ends it (5.15).
   `H` / `L` move the whole list up / down (5.2).
@@ -365,8 +365,8 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   The conflict banner is the first Tab stop and has no dedicated key.
 - `sm` toggles the Markdown view of 5.11.
   `yy`, `dd`, `cc` and `p` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
-- A pending first key (`g`, `f`, `F`, `d`, `y`, `c` or `s`) is cancelled by any other key or by a blur, with no timeout.
-- Each prefix has one meaning: `g` goes (cursor, file and help), `f` appends to the filter, `F` replaces the filter, `s` shows or switches a display, `c` changes a value, `d` deletes and `y` yanks.
+- A pending first key (`g`, `f`, `d`, `y`, `c` or `s`) is cancelled by any other key or by a blur, with no timeout.
+- Each prefix has one meaning: `g` goes (cursor, file and help), `f` sets the filter, `s` shows or switches a display, `c` changes a value, `d` deletes and `y` yanks.
 - Escape in Normal mode ends the active search (5.15), and does nothing otherwise.
 
 **Keys on a task**
@@ -577,7 +577,7 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 - A copy button at the top right of the block copies the whole export with `navigator.clipboard`, and `yy` does the same from the keyboard.
 - Both show the transient footer text of 5.12.
 - While the view is open, the other Normal keys are ignored, so a task cannot be changed without being seen.
-  The `f` and `F` keys, `sh`, `sm`, `yy`, Escape and `g?` keep working.
+  The `f` keys, `sh`, `sm`, `yy`, Escape and `g?` keep working.
   `/`, `n` and `N` do nothing there, and opening the view ends the active search (5.15).
 
 **Implementation decisions**
@@ -779,16 +779,17 @@ A view is only a filter text: the built-in views set it, and a saved filter is a
 
 **Filter keys**
 
-The lowercase prefix `f` appends a term to the current text, to compose and refine a filter, and the uppercase prefix `F` replaces the whole text, to switch to another view.
+The prefix `f` sets the filter: each key replaces the whole text, so a key switches to another view.
+To refine a filter, type in the bar.
 
-| Append | Replace | Term |
-|---|---|---|
-| | `FF` | empty, which shows everything |
-| `ft` | `Ft` | `due:today,overdue` |
-| `fw` | `Fw` | `due:week,overdue` |
-| `fl` | `Fl` | `list:`, followed by the list popup |
-| `fx` | `Fx` | `is:done` |
-| `fX` | `FX` | `is:todo` |
+| Key | Term |
+|---|---|
+| `fa` | empty, which shows everything |
+| `ft` | `due:today,overdue` |
+| `fw` | `due:week,overdue` |
+| `fl` | `list:`, followed by the list popup |
+| `fx` | `is:done` |
+| `fX` | `is:todo` |
 
 | Key | Action |
 |---|---|
@@ -796,14 +797,10 @@ The lowercase prefix `f` appends a term to the current text, to compose and refi
 | `fs` | opens the saved filter picker |
 | `sh` | toggles the display of the siblings of a match (see Results) |
 
-- An append adds the term at the end of the text, after a space, with no leading space on an empty text.
-  When the same term is already in the text, nothing changes.
-- `fx` and `fX` replace the opposite `is:` term in place, so `fX` on `list:work is:done` gives `list:work is:todo`, since a task cannot be both and the result would always be empty.
-  `ft`, `fw` and `fl` append plainly.
-- `Ff` is left unassigned.
+- There is no `F` prefix and no key that appends a term, and every other second key of `f` is unassigned.
 - There are no `g` aliases: `ga`, `gt`, `gw`, `gl`, `gf` and `gF` do not exist.
-- An append changes the filter text, so it drops the pins like any other change of the text.
-- Hiding the completed tasks is `FX`, or `fX` to add it to a filter, and it is a plain filter: no separate mode, no display setting.
+- A replacing key changes the filter text, so it drops the pins like any other change of the text, even when it sets the same text.
+- Hiding the completed tasks is `fX`, and it is a plain filter: no separate mode, no display setting.
   The hide-done toggle stays out of scope (see Out of scope).
 
 Nothing else marks a view: it is the text in the bar.
@@ -849,7 +846,7 @@ There is no selector, and no way to show a single list other than `list:`.
   The popup does not list the default shortcut set of 5.13 and does not suggest the operators.
 - Accepting an entry inserts the typed text as is, so `due:<+1w` is not rewritten to a date and a saved filter stays relative to today.
 - The popup is a CodeMirror autocomplete like the one of 5.13: ↑ / ↓ move, Enter or Tab accept, Escape closes it first.
-- `Fl` opens the bar with `list:` alone and its popup, and `fl` does the same after the current text.
+- `fl` opens the bar with `list:` alone and its popup, replacing the current text.
   The other keys of the bar are those above.
 
 **Results**
@@ -1127,7 +1124,7 @@ Single-file mode keeps one file and has none of them.
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (append and replace, no leading space, a term already present, the opposite `is:` term replaced, `FF`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.

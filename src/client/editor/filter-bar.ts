@@ -94,7 +94,7 @@ export function createFilterBar(options: FilterBarOptions) {
     el: host,
     /** Shows a text that came from outside (a built-in view, an undo, a saved filter). */
     setText: replace,
-    /** `gf`: focuses the bar with the caret after the text, so a term can be appended right away. */
+    /** `ff`: focuses the bar with the caret after the text, so a term can be typed right away. */
     focus() {
       view.focus();
       view.dispatch({ selection: { anchor: view.state.doc.length } });
@@ -105,7 +105,7 @@ export function createFilterBar(options: FilterBarOptions) {
       view.contentDOM.ownerDocument.getSelection()?.removeAllRanges();
     },
     isFocused: () => view.hasFocus,
-    /** `gl`: focuses the bar, replaces the whole text with `list:` and opens the popup, like `ga`, `gt` and `gw` replace it. */
+    /** `fl`: focuses the bar, replaces the whole text with `list:` and opens the popup. */
     startListTerm() {
       view.focus();
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: "list:" }, selection: { anchor: 5 } });
