@@ -399,6 +399,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
       ctx.renaming = null;
       ctx.placeholder = null;
+      moving = null; // the picker holds list indexes and a path of the old document
+      listPicker.close();
     }
     if (kind !== "status") {
       renderAll(state);

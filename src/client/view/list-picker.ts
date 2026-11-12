@@ -93,6 +93,8 @@ export function createListPicker(env: ListPickerEnv) {
       root.style.width = `${box.width}px`;
       root.style.top = `${box.bottom + 4}px`;
       root.hidden = false;
+      const height = root.getBoundingClientRect().height;
+      if (box.bottom + 4 + height > window.innerHeight) root.style.top = `${Math.max(box.top - height - 4, 0)}px`; // not enough room below: open above the row
       input.focus();
       menu.querySelector("[data-active]")?.scrollIntoView({ block: "nearest" });
     },
