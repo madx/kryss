@@ -4,6 +4,7 @@ import { history, historyKeymap, standardKeymap } from "@codemirror/commands";
 import { EditorState } from "@codemirror/state";
 import { Decoration, type DecorationSet, EditorView, ViewPlugin, type ViewUpdate, keymap, placeholder } from "@codemirror/view";
 import { filterCompletion, filterPills } from "../logic/filter";
+import { localToday } from "../today";
 import { setScrim } from "../view/scrim";
 import { singleLine } from "./single-line";
 import "./editor.css"; // the popup look is shared with the task editor
@@ -50,9 +51,9 @@ export function createFilterBar(options: FilterBarOptions) {
   let syncing = false;
 
   const source = (context: CompletionContext): CompletionResult | null => {
-    const result = filterCompletion(context.state.doc.toString(), context.pos, options.listTitles());
+    const result = filterCompletion(context.state.doc.toString(), context.pos, options.listTitles(), localToday());
     if (!result) return null;
-    return { from: result.from, filter: false, options: result.options.map((o) => ({ label: o.label, apply: o.apply })) };
+    return { from: result.from, filter: false, options: result.options.map((o) => ({ label: o.label, apply: o.apply, detail: o.detail })) };
   };
 
   const view = new EditorView({

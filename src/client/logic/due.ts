@@ -137,6 +137,21 @@ export function resolveShortcut(word: string, today: string): string | null {
   }
 }
 
+const UNITS = ["d", "w", "m", "y", "W", "Q"];
+
+/**
+ * The completion of a sign and a number (one entry per unit) or of a sign and a weekday prefix (the matching weekdays).
+ * It lists nothing for a bare sign, a complete shortcut or any other word. Shared by the `->` and `due:` popups.
+ */
+export function dueCompletions(word: string, today: string): DueEntry[] {
+  const labels = /^[+-][1-9]\d*$/.test(word)
+    ? UNITS.map((u) => word + u)
+    : /^[+-][a-z]{1,2}$/.test(word)
+      ? WEEKDAYS.filter((d) => d.startsWith(word.slice(1))).map((d) => word[0] + d)
+      : [];
+  return labels.map((label) => ({ label, date: resolveShortcut(label, today)! }));
+}
+
 /** The popup entries for what was typed after `->`. */
 export function dueEntries(word: string, today: string): DueEntry[] {
   const entries: DueEntry[] = [];
@@ -147,6 +162,9 @@ export function dueEntries(word: string, today: string): DueEntry[] {
   if (!DEFAULT_WORDS.includes(word)) {
     const date = resolveShortcut(word, today);
     if (date) entries.push({ label: word, date });
+  }
+  for (const entry of dueCompletions(word, today)) {
+    if (!entries.some((e) => e.label === entry.label)) entries.push(entry);
   }
   return entries;
 }

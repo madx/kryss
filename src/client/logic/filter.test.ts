@@ -294,8 +294,8 @@ describe("matchesTask: due shortcuts and operators", () => {
     expect(at("due:>2026-W47", "2026-11-18")).toBe(false);
     expect(at("due:<2026-W47", "2026-11-15")).toBe(true);
     expect(at("due:>2026-W47", "2026-11-23")).toBe(true);
-    expect(at("due:<2026-Q4", "2026-W40")).toBe(true);
-    expect(at("due:<2026-Q4", "2026-W41")).toBe(false);
+    expect(at("due:<2026-Q4", "2026-W39")).toBe(true);
+    expect(at("due:<2026-Q4", "2026-W40")).toBe(false);
   });
 
   test("an inclusive bound is written with a comma", () => {
