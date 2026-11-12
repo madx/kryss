@@ -379,7 +379,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `yy` | copy the task with its subtree into the register (5.12) |
 | `cc` | change the task: open the editor with an empty text (5.12) |
 | `cd` | change the due date: open the editor on the date and its popup (5.13) |
-| `cl` | change the name of the list of the task: open its name input with an empty name (5.12) |
+| `cL` | change the name of the list of the task: open its name input with an empty name (5.12) |
 | `p` | paste the register below the task (5.12) |
 | `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), over the visible rows under a filter (5.14) |
@@ -400,7 +400,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `i`, Enter | rename the list in its inline name input (a click on the title does the same) |
 | `dd`, Delete | delete the list at once, into the register (5.12), with no prompt since the register and undo recover it |
 | `yy` | copy the list into the register (5.12) |
-| `cc`, `cl` | change the list: open the name input with an empty name (5.12) |
+| `cc`, `cL` | change the list: open the name input with an empty name (5.12) |
 | `p` | paste the register as the first task of the list, or after the list if it holds a list (5.12) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
@@ -498,7 +498,8 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - A due date is a small chip in the task text: a Lucide `ArrowRight` icon (a `CircleExclamationPoint` icon instead when the date is overdue and the task is not completed), then the date exactly as written, with no `->`.
   It follows the radii and spacing tokens, with a fully rounded shape (the pill radius), a semi-bold date and a tint stronger than the hover tint so that it stands out.
-- Its colors depend on the state of 5.13: the danger color for overdue, the accent color for due now, and the muted color for later.
+- Its colors depend on the state of 5.13: the danger color for overdue, yellow for due now, the accent color for due this week, and the muted color for later.
+  The yellow is a dark amber in the light theme, so that it stays readable on the light surface.
   On a completed task the pill is neutral, in the same muted text color as the task, with no state color.
 - In the editor, the same colors apply to the literal text of a valid date, with no icon and no widget.
 
@@ -606,7 +607,7 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - `cc` opens the editor of a task with an empty text, or the name input of a list with an empty name.
   The subtasks and the check state are kept, the register is not touched, and `cc` is one undoable change once committed.
   Escape on an empty editor restores the previous text, as in 5.9.
-- `cl` opens the name input of the list of the cursor with an empty name, from its header or from any task of that list.
+- `cL` (`c` then Shift+L) opens the name input of the list of the cursor with an empty name, from its header or from any task of that list.
   It acts like `cc` on a header: it is one undoable change once committed, and Escape on the empty input discards the rename and restores the previous name.
   It works under every filter and touches neither the register nor the filter.
 - `c` is a pending prefix like `g`, `d` and `y`: a lone `c` does nothing and any other key cancels it.
@@ -621,9 +622,9 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - The pasted element keeps its own check states and those of its children.
   The rules of 5.3 apply at the destination: an unchecked task pasted under a checked parent unchecks that parent.
 - After `p`, the cursor goes to the pasted element, scrolled into view.
-- `p`, `dd`, `cc` and `cl` are each one undoable change, and `yy` is not one.
+- `p`, `dd`, `cc` and `cL` are each one undoable change, and `yy` is not one.
   Undoing the paste of a list goes back to the filter that was active when it was pasted, as in 5.6.
-- While the Markdown view is open, `cc`, `cl`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
+- While the Markdown view is open, `cc`, `cL`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
 - With no list there is no cursor, so the keys do nothing, and `+` creates the first list.
 
 **Clipboard**
@@ -675,8 +676,10 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
   The `due:` terms of 5.14 use the same periods, with their own matching rules.
 - **Overdue**: the due period ends before the horizon starts.
   **Due now**: the due period overlaps the horizon.
-  **Later**: the due period starts after the horizon ends.
+  **Due this week**: the due period starts after the horizon ends, within the ISO week of the horizon end.
+  **Later**: the due period starts after the end of that week.
 - With today as the horizon, `2026-11-11` is due now on that day and overdue the day after, `2026-W46` is due now for the whole week and overdue from the following Monday, and `2026-Q4` is due now for the whole quarter.
+  On Thursday `2026-11-12`, `2026-11-15` is due this week and `2026-11-16` is later.
 - Today is read from the local clock.
   The states are recomputed on every render and when the tab becomes visible again or gets the focus, with no timer, and this only restyles the pills, never the editor.
 - The state is classified by one pure function in `src/client/logic/`.

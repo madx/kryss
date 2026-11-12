@@ -30,6 +30,8 @@ Features that were added and later removed are listed in both places, so that th
 ### Changed
 
 - The saved filters now live in the `kryss-filters` key of the frontmatter instead of `filters`.
+- Due date pills are yellow when due now, blue when due later in the current week (a new state), muted beyond it, and still red when overdue.
+- `cL` replaces `cl` to rename the list of the cursor, and `cl` does nothing.
 
 ## 2026-11-11
 

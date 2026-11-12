@@ -68,10 +68,10 @@ describe("duePeriod: periods", () => {
 
 describe("dueState against a horizon", () => {
   const today = dayPeriod(TODAY);
-  test("a day is due now on that day, overdue the day after, later the day before", () => {
+  test("a day is due now on that day, overdue the day after, later the week before", () => {
     expect(dueState("2026-11-11", today)).toBe("now");
     expect(dueState("2026-11-11", dayPeriod("2026-11-12"))).toBe("overdue");
-    expect(dueState("2026-11-11", dayPeriod("2026-11-10"))).toBe("later");
+    expect(dueState("2026-11-11", dayPeriod("2026-11-08"))).toBe("later");
   });
   test("a week is due now all week and overdue from the next Monday", () => {
     expect(dueState("2026-W46", dayPeriod("2026-11-09"))).toBe("now");
@@ -92,6 +92,20 @@ describe("dueState against a horizon", () => {
     expect(dueState("2026-Q4", week)).toBe("now");
     expect(dueState("2026-11-16", week)).toBe("later");
     expect(dueState("2026-11-08", week)).toBe("overdue");
+  });
+  test("a day after today but within the current ISO week is due this week", () => {
+    expect(dueState("2026-11-13", today)).toBe("week");
+    expect(dueState("2026-11-15", today)).toBe("week");
+  });
+  test("a day in the next week, a later week and a later quarter are later", () => {
+    expect(dueState("2026-11-16", today)).toBe("later");
+    expect(dueState("2026-W47", today)).toBe("later");
+    expect(dueState("2027-Q1", today)).toBe("later");
+  });
+  test("the current week and quarter stay due now, and today stays due now", () => {
+    expect(dueState("2026-W46", today)).toBe("now");
+    expect(dueState("2026-Q4", today)).toBe("now");
+    expect(dueState(TODAY, today)).toBe("now");
   });
   test("an invalid date has no state", () => {
     expect(dueState("2026-02-30", today)).toBeNull();

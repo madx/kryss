@@ -2,7 +2,7 @@
 // ISO strings of the same form compare correctly as plain strings.
 
 export type Period = { start: string; end: string };
-export type DueState = "overdue" | "now" | "later";
+export type DueState = "overdue" | "now" | "week" | "later";
 export type DueEntry = { label: string; date: string };
 
 const DAY_MS = 86_400_000;
@@ -57,7 +57,7 @@ export function dueState(text: string, horizon: Period): DueState | null {
   const period = duePeriod(text);
   if (!period) return null;
   if (period.end < horizon.start) return "overdue";
-  if (period.start > horizon.end) return "later";
+  if (period.start > horizon.end) return period.start <= weekPeriod(horizon.end).end ? "week" : "later";
   return "now";
 }
 

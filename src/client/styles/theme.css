@@ -29,7 +29,8 @@
 
   /* Due date states (PRD 5.10). */
   --color-due-overdue: var(--color-danger);
-  --color-due-now: var(--color-accent);
+  --color-due-now: #8a6100;
+  --color-due-week: var(--color-accent);
   --color-due-later: var(--color-muted);
 
   /* Spacing steps, in px. */
@@ -101,6 +102,7 @@
     --color-match: #edc763;
     --color-match-text: #1f2328;
     --color-danger: #fb617e;
+    --color-due-now: #edc763;
     --color-warning-bg: color-mix(in srgb, var(--color-warning-text) 16%, var(--color-surface));
     --color-warning-text: #edc763;
     --color-error-bg: color-mix(in srgb, var(--color-error-text) 16%, var(--color-surface));
