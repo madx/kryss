@@ -29,7 +29,7 @@
 
   /* Due date states (PRD 5.10). */
   --color-due-overdue: var(--color-danger);
-  --color-due-now: #b07d00;
+  --color-due-now: #8a6100;
   --color-due-week: var(--color-accent);
   --color-due-later: var(--color-muted);
 
