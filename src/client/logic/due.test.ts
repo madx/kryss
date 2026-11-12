@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { dayPeriod, dueEntries, duePeriod, dueState, resolveShortcut, resolveTrailing } from "./due";
+import { dayPeriod, dueCompletions, dueEntries, duePeriod, dueState, resolveShortcut, resolveTrailing } from "./due";
 
 const TODAY = "2026-11-11"; // a Wednesday
 const r = (word: string, today = TODAY) => resolveShortcut(word, today);
@@ -239,6 +239,54 @@ describe("dueEntries", () => {
     expect(labels("foo")).toEqual([]);
     expect(labels("yesterday")).toEqual([]);
     expect(labels("2026-02-30")).toEqual([]);
+  });
+});
+
+describe("dueCompletions", () => {
+  const comp = (word: string) => dueCompletions(word, TODAY);
+  test("a sign and a number list one entry per unit, in the order d, w, m, y, W, Q", () => {
+    expect(comp("+3")).toEqual([
+      { label: "+3d", date: "2026-11-14" },
+      { label: "+3w", date: "2026-12-02" },
+      { label: "+3m", date: "2027-02-11" },
+      { label: "+3y", date: "2029-11-11" },
+      { label: "+3W", date: "2026-W49" },
+      { label: "+3Q", date: "2027-Q3" },
+    ]);
+  });
+  test("a minus sign works the same way", () => {
+    expect(comp("-2")).toEqual([
+      { label: "-2d", date: "2026-11-09" },
+      { label: "-2w", date: "2026-10-28" },
+      { label: "-2m", date: "2026-09-11" },
+      { label: "-2y", date: "2024-11-11" },
+      { label: "-2W", date: "2026-W44" },
+      { label: "-2Q", date: "2026-Q2" },
+    ]);
+  });
+  test("a number of several digits is accepted", () => {
+    expect(comp("+12").map((e) => e.label)).toEqual(["+12d", "+12w", "+12m", "+12y", "+12W", "+12Q"]);
+  });
+  test("a sign and a weekday prefix list the matching weekdays", () => {
+    expect(comp("+t")).toEqual([{ label: "+tue", date: "2026-11-17" }, { label: "+thu", date: "2026-11-12" }]);
+    expect(comp("-s")).toEqual([{ label: "-sat", date: "2026-11-07" }, { label: "-sun", date: "2026-11-08" }]);
+    expect(comp("+mo")).toEqual([{ label: "+mon", date: "2026-11-16" }]);
+  });
+  test("a bare sign, zero, a leading zero, a unit, a full weekday and an unknown prefix list nothing", () => {
+    for (const word of ["", "+", "-", "+0", "+03", "+3d", "+3x", "+tue", "+x", "3", "today"]) expect(comp(word)).toEqual([]);
+  });
+});
+
+describe("dueEntries: completion", () => {
+  test("a sign and a number list the units, also when no default entry matches", () => {
+    expect(dueEntries("+3", TODAY).map((e) => e.label)).toEqual(["+3d", "+3w", "+3m", "+3y", "+3W", "+3Q"]);
+  });
+  test("a sign and a weekday prefix list the weekdays", () => {
+    expect(dueEntries("+t", TODAY).map((e) => e.label)).toEqual(["+tue", "+thu"]);
+  });
+  test("an entry of the default set is not listed twice", () => {
+    expect(dueEntries("+1", TODAY).map((e) => e.label)).toEqual(["+1d", "+1w", "+1m", "+1y", "+1W", "+1Q"]);
+    expect(dueEntries("+m", TODAY).map((e) => e.label)).toEqual(["+mon"]);
   });
 });
 
