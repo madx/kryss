@@ -78,7 +78,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
   The server and the JSON model do not know about them: the inline parser recognizes them and the client renders a pill with a state (overdue, due now, later) computed by a pure function against a horizon that is today by default.
   Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `cd` in Normal mode opens the editor on the date and its popup.
 - **Filters and views** (PRD 5.14): there is no list selector (`H` / `L` move the focused list, not the view).
-  The header filter bar (`gf`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE`, `is:done|todo`, terms ANDed and commas for OR inside a term.
+  The header filter bar (`gf`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE|+1w`, `due:<X` and `due:>X` (strict, whole periods), `is:done|todo`, terms ANDed and commas for OR inside a term.
   `ga`, `gt` and `gw` set it to empty, `due:today,overdue` and `due:week,overdue`, `gl` appends `list:` with a popup, and `gF` opens the saved filters, whose first entry saves the current text under a name.
   A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent work on the visible rows: they jump over hidden tasks and lists, indent targets the previous visible task, and the moved task is pinned.
   `sh` toggles the display of the siblings of a match.
