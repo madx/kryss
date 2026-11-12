@@ -106,6 +106,15 @@ export function moveTask(doc: TodoDocument, source: TaskPath, drop: Drop): OpRes
   });
 }
 
+/**
+ * Moves a task with its subtree, or a subtask as a top-level task, to the end of another list (PRD 5.12).
+ * Returns null for an unknown task or list, and when the list already holds the task.
+ */
+export function moveToList(doc: TodoDocument, source: TaskPath, list: number): OpResult | null {
+  if (list === source.list || !doc.lists[list]) return null;
+  return moveTask(doc, source, { kind: "end", list });
+}
+
 /** The rows a keyboard move works on: the visible rows under a filter, and the whole document by default. */
 function rowsOf(doc: TodoDocument, visible?: Visible): Visible {
   return visible ?? visibleRows(doc, "", "");

@@ -15,7 +15,7 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" } | { type: "change-list" }
+  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
   | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
@@ -135,6 +135,7 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "c" && key === "c") return done({ type: "change" });
   if (pending === "c" && key === "d") return done(onHeader ? null : { type: "set-due" });
   if (pending === "c" && key === "L") return done({ type: "change-list" });
+  if (pending === "c" && key === "l") return done(onHeader ? null : { type: "move-to-list" });
   if (pending === "y" && key === "y") return done({ type: "yank" });
   if (pending) return NOTHING;
   if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s") return { action: null, pending: key, preventDefault: true };
