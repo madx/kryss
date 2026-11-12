@@ -83,7 +83,7 @@ export async function scanNotes(vaultDir: string): Promise<NoteIndex> {
     kept.map(async (file) => {
       const path = file.slice(0, -3);
       const full = join(vaultDir, file);
-      const modified = await stat(full).then((st) => Math.floor(st.mtimeMs), () => 0);
+      const modified = await stat(full).then((st) => Math.round(st.mtimeMs), () => 0);
       return { name: path.slice(path.lastIndexOf("/") + 1), path, aliases: parseAliases(await readFrontmatter(full)), modified };
     }),
   );
