@@ -68,10 +68,10 @@ describe("duePeriod: periods", () => {
 
 describe("dueState against a horizon", () => {
   const today = dayPeriod(TODAY);
-  test("a day is due now on that day, overdue the day after, later the day before", () => {
+  test("a day is due now on that day, overdue the day after, later the week before", () => {
     expect(dueState("2026-11-11", today)).toBe("now");
     expect(dueState("2026-11-11", dayPeriod("2026-11-12"))).toBe("overdue");
-    expect(dueState("2026-11-11", dayPeriod("2026-11-10"))).toBe("later");
+    expect(dueState("2026-11-11", dayPeriod("2026-11-08"))).toBe("later");
   });
   test("a week is due now all week and overdue from the next Monday", () => {
     expect(dueState("2026-W46", dayPeriod("2026-11-09"))).toBe("now");

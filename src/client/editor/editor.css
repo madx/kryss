@@ -65,6 +65,7 @@
 /* The literal text of a valid date, with the colors of the pill and no icon. */
 .cm-due-overdue { color: var(--color-due-overdue); }
 .cm-due-now { color: var(--color-due-now); }
+.cm-due-week { color: var(--color-due-week); }
 .cm-due-later { color: var(--color-due-later); }
 
 /* The due date popup, in the panel look. */

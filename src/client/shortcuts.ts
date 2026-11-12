@@ -134,7 +134,7 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "d" && key === "d") return done({ type: "delete" });
   if (pending === "c" && key === "c") return done({ type: "change" });
   if (pending === "c" && key === "d") return done(onHeader ? null : { type: "set-due" });
-  if (pending === "c" && key === "l") return done({ type: "change-list" });
+  if (pending === "c" && key === "L") return done({ type: "change-list" });
   if (pending === "y" && key === "y") return done({ type: "yank" });
   if (pending) return NOTHING;
   if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s") return { action: null, pending: key, preventDefault: true };
