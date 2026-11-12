@@ -23,6 +23,7 @@ Features that were added and later removed are listed in both places, so that th
 - A link that matches a rule shows its icon, or the `Link` icon, as an inline SVG in the text color, rebuilt from an allow-list of shapes.
 - Pasting one URL in the task editor gives `[selection](url)` with a selection, `[label](url)` when a rule matches, and `<url>` otherwise, in one undo step.
 - `<https://…>` autolinks render as links under the scheme rules.
+- The link rules are read again when the window regains the focus, and the lists are drawn again when they changed, so an edit of `.kryss.json` applies without a reload.
 
 ### Changed
 
