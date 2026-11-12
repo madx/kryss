@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { filterNotes, insertText, type Note } from "./wikilink";
 
-const n = (path: string, aliases: string[] = []): Note => ({ name: path.split("/").pop()!, path, aliases });
+const n = (path: string, aliases: string[] = [], modified = 0): Note => ({ name: path.split("/").pop()!, path, aliases, modified });
 
 describe("filterNotes", () => {
   const notes = [n("Projects/Alpha", ["First project"]), n("Beta"), n("Archive/Alphabet")];
@@ -29,6 +29,36 @@ describe("filterNotes", () => {
   });
   test("a note at the root has an empty folder even when it shares its name", () => {
     expect(filterNotes([n("Same"), n("B/Same")], "").map((s) => s.folder).sort()).toEqual(["", "B"]);
+  });
+});
+
+describe("filterNotes: order", () => {
+  const paths = (notes: Note[], q: string) => filterNotes(notes, q).map((s) => s.note.path);
+
+  test("an empty query lists the most recently modified notes first", () => {
+    expect(paths([n("Old", [], 1), n("New", [], 3), n("Mid", [], 2)], "")).toEqual(["New", "Mid", "Old"]);
+  });
+  test("prefix matches come before the others, even when the others are more recent", () => {
+    expect(paths([n("Zeta alpha", [], 9), n("Alpha", [], 1)], "alp")).toEqual(["Alpha", "Zeta alpha"]);
+  });
+  test("inside a tier the most recent comes first", () => {
+    expect(paths([n("Alpha one", [], 1), n("Alpha two", [], 2), n("X alpha", [], 1), n("Y alpha", [], 2)], "alpha")).toEqual([
+      "Alpha two",
+      "Alpha one",
+      "Y alpha",
+      "X alpha",
+    ]);
+  });
+  test("an alias entry sorts with the modified of its note", () => {
+    const list = filterNotes([n("Other", ["Nick"], 1), n("Nickel", [], 2), n("Third", ["Nicky"], 3)], "nick");
+    expect(list.map((s) => s.alias ?? s.note.name)).toEqual(["Nicky", "Nickel", "Nick"]);
+  });
+  test("equal modified are ordered by the matched text ignoring case, then by path", () => {
+    expect(paths([n("B/same"), n("A/Same"), n("a")], "")).toEqual(["a", "A/Same", "B/same"]);
+  });
+  test("a note whose name and alias both match gives two entries ordered by the same rules", () => {
+    const list = filterNotes([n("Alpha", ["Alpha two"], 5), n("Beta", ["Alpha three"], 7)], "alpha");
+    expect(list.map((s) => s.alias ?? s.note.name)).toEqual(["Alpha three", "Alpha", "Alpha two"]);
   });
 });
 
