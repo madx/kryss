@@ -27,6 +27,8 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 
 - Every branch forks from the tip of `main`, adds its commits, then is merged back into `main` with `git merge --no-ff`.
   The history must show no crossing lines.
+- Delete a branch right after it is merged (`git branch -d`).
+  The `--no-ff` merge commit keeps its commits reachable, so it can be recreated from there if needed.
 - Never merge `main` or another branch into a feature branch, and never cross-merge feature branches.
   If `main` has moved, rebase the unmerged branch onto `main` instead.
 - Never push, and never rewrite history that is already merged into `main`, without explicit approval.

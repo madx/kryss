@@ -91,6 +91,7 @@ Wait for the decision:
   Never push.
   Merge a branch only after explicit approval given for this unit alone.
   Follow the git history rules below when merging.
+  Once the merge is done, delete the merged branch with `git branch -d`.
 - **To fix**: apply the feedback and resume at the relevant step.
 
 ## Rules
@@ -102,6 +103,7 @@ Wait for the decision:
   Never merge `main` or any other branch into a feature branch, and never merge one feature branch into another.
   If `main` has moved since the branch was created, rebase the branch onto `main` before asking for the merge approval.
   Rewriting history, including a rebase, only applies to unmerged local branches and never to `main`.
+  Delete a branch right after it is merged (`git branch -d`), since `--no-ff` keeps its commits reachable and it can be recreated from the merge commit.
 - Write in English, in the conversation and in every file.
   In documentation, write one sentence per line.
 - No real data: tests, fixtures and examples are fictional.
