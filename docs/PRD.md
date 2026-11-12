@@ -379,6 +379,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `yy` | copy the task with its subtree into the register (5.12) |
 | `cc` | change the task: open the editor with an empty text (5.12) |
 | `cd` | change the due date: open the editor on the date and its popup (5.13) |
+| `cl` | change the list of the task: open the list picker below the row (5.12) |
 | `cL` | change the name of the list of the task: open its name input with an empty name (5.12) |
 | `p` | paste the register below the task (5.12) |
 | `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
@@ -411,7 +412,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 - `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
   `H` and `L` do the same on a header, and also work on a task.
-- `x`, `>`, `<` and `cd` do nothing on a header.
+- `x`, `>`, `<`, `cd` and `cl` do nothing on a header.
 - `+` creates the list as in 5.1 and clears the filter, so that the new list is visible.
   Once the name is confirmed, the cursor stays on the new list header.
 
@@ -610,6 +611,18 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - `cL` (`c` then Shift+L) opens the name input of the list of the cursor with an empty name, from its header or from any task of that list.
   It acts like `cc` on a header: it is one undoable change once committed, and Escape on the empty input discards the rename and restores the previous name.
   It works under every filter and touches neither the register nor the filter.
+- `cl` (`c` then lowercase `l`) changes the list of the task under the cursor, and does nothing on a list header, with no cursor or while the Markdown view is open.
+  It opens a list picker anchored below the row of the task, with the panel look and the keys of the saved filter picker of 5.14: ↑ / ↓ move, Enter confirms and Escape closes it without a change.
+  The picker is a plain input with a list under it, not a CodeMirror editor, and the task text is not editable while it is open.
+  It lists every list of the document in document order, one row per list, including the lists that a filter hides and the list that already holds the task, with no de-duplication, so that two lists with the same title are two rows.
+  Typing in the input narrows the rows to the lists whose title contains the text, ignoring case.
+  The highlighted row starts on the first list after the list of the task, or on the first row when there is none, and Enter on the list that already holds the task does nothing.
+  Enter moves the task with its subtree to the end of the chosen list.
+  A subtask leaves its parent and becomes a top-level task at the end of the chosen list, with its own children, and the rules of 5.3 recompute the parent it left.
+  The check states are kept, and the register and the due dates are not touched.
+  Under a filter the moved task is pinned (5.14), which also makes a hidden destination list visible, and the filter text is not changed.
+  The cursor follows the moved task, scrolled into view.
+  There is no list to create from the picker.
 - `c` is a pending prefix like `g`, `d` and `y`: a lone `c` does nothing and any other key cancels it.
 - `p` on a task pastes right below it, after its whole subtree, at the cursor's own level.
   A subtask pasted at the top level becomes a top-level task.
@@ -622,9 +635,9 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - The pasted element keeps its own check states and those of its children.
   The rules of 5.3 apply at the destination: an unchecked task pasted under a checked parent unchecks that parent.
 - After `p`, the cursor goes to the pasted element, scrolled into view.
-- `p`, `dd`, `cc` and `cL` are each one undoable change, and `yy` is not one.
+- `p`, `dd`, `cc`, `cL` and `cl` are each one undoable change, and `yy` is not one.
   Undoing the paste of a list goes back to the filter that was active when it was pasted, as in 5.6.
-- While the Markdown view is open, `cc`, `cL`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
+- While the Markdown view is open, `cc`, `cL`, `cl`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
 - With no list there is no cursor, so the keys do nothing, and `+` creates the first list.
 
 **Clipboard**
@@ -645,6 +658,7 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 
 - The register content, the paste placement and the depth rule are pure functions in `src/client/logic/`, with the immutable and `null` conventions of 5.7.
 - The `cc`, `yy` and `p` resolution belongs to the pure key function of 5.9, with `c` as one more pending prefix.
+- The move of a task to another list is a pure function in `src/client/logic/`, with the immutable and `null` conventions of 5.7, and the picker is verified by hand.
 - The task-to-text and list-to-text functions are the shared serializer, so the register never builds Markdown by hand.
 
 ### 5.13 Due dates
@@ -844,7 +858,7 @@ There is no selector, and no way to show a single list other than `list:`.
 
 **Editing under a filter**
 
-- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `cd` and the positional adds work as usual on the visible rows.
+- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `cd`, `cl` and the positional adds work as usual on the visible rows.
 - `J` / `K`, Alt+↑ / Alt+↓, `>` and `<` work on the visible rows, for tasks and for lists.
   The visible rows are the rows shown, so the siblings toggle changes which subtasks count as neighbours.
 - **Move**: a task swaps with the next visible sibling in the direction of the key, and lands right after it (down) or right before it (up), so the hidden siblings between them stay where they were.
@@ -1096,7 +1110,7 @@ Single-file mode keeps one file and has none of them.
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter presets and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
