@@ -94,7 +94,7 @@
   color: var(--color-accent-text);
 }
 
-/* The detail (folder, or note and folder) is muted like a completed task, and slightly transparent accent text on the selected entry. */
+/* The detail (folder, or note and folder) is muted like a completed task, and the text color of the selected entry with a lower opacity. */
 .cm-completionDetail {
   margin-left: var(--space-12);
   font-style: normal;
@@ -102,6 +102,6 @@
 }
 
 .cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionDetail {
-  color: var(--color-accent-text);
-  opacity: 0.8;
+  color: inherit;
+  opacity: 0.6;
 }
