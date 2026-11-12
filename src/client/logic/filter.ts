@@ -104,7 +104,7 @@ export function appendTerm(text: string, term: string): string {
   if (words.includes(term)) return text;
   const opposite = term === "is:done" ? "is:todo" : term === "is:todo" ? "is:done" : null;
   if (opposite && words.includes(opposite)) return words.map((w) => (w === opposite ? term : w)).join(" ");
-  return text.trim() === "" ? term : `${text} ${term}`;
+  return text.trim() === "" ? term : `${text.trimEnd()} ${term}`;
 }
 
 /** The period of a `today`, `week`, literal or shortcut word, resolved from `today`. */

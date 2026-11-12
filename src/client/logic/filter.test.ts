@@ -678,6 +678,9 @@ describe("appendTerm (PRD 5.14)", () => {
   test("appending adds the term after a space", () => {
     expect(appendTerm("list:work", "due:today,overdue")).toBe("list:work due:today,overdue");
   });
+  test("a trailing space in the text does not double the separator", () => {
+    expect(appendTerm("list:work ", "is:todo")).toBe("list:work is:todo");
+  });
   test("a term already in the text leaves it unchanged", () => {
     expect(appendTerm("due:today,overdue list:work", "due:today,overdue")).toBe("due:today,overdue list:work");
     expect(appendTerm("is:done", "is:done")).toBe("is:done");

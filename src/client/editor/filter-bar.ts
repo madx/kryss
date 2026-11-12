@@ -109,7 +109,7 @@ export function createFilterBar(options: FilterBarOptions) {
     startListTerm(append: boolean) {
       view.focus();
       const text = view.state.doc.toString();
-      const next = append && text.trim() !== "" ? `${text} list:` : "list:";
+      const next = append && text.trim() !== "" ? `${text.trimEnd()} list:` : "list:";
       view.dispatch({ changes: { from: 0, to: text.length, insert: next }, selection: { anchor: next.length } });
       startCompletion(view);
     },
