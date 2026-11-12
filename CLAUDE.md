@@ -74,6 +74,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 - **Keyboard**: modal editing, Normal and Insert only (PRD 5.9); Tab and Shift+Tab are plain focus keys, Escape commits the editor, and the footer shows the mode (SEARCH in orange while the filter bar has the focus) and a statusline.
 - **Markdown view**: read-only toggle (`sm`, header button) that shows the export of the current view, built by the client from its document, with a copy button and `yy` (PRD 5.11); it is never persisted.
 - **Register**: `dd` and `yy` put a task subtree or a list in an in-memory register and write its Markdown to the clipboard, `p` pastes it, and `cc` clears the text of a task or the name of a list to retype it (PRD 5.12).
+- **Change list**: `cl` on a task opens a list picker below its row, a plain input and a list that narrows on the title, and Enter moves the task with its subtree, or a subtask as a top-level task, to the end of the chosen list, as one undoable change that pins the task and keeps the filter (PRD 5.12).
 - **Undo**: global in-memory stack (Ctrl+Z / Ctrl+Shift+Z), cleared on reload and on external change, remembering the filter text of each change and never touching the saved filters.
 - **UI details**: filter bar in the header (PRD 5.14), its text stored in `localStorage`; system theme; task move via `J` / `K` or Alt+↑ / Alt+↓; completed tasks shown by a checked box and a muted text color, never by strikethrough, and rows and list headers have no action buttons (delete, add, move are keys only), hovering a row highlights it slightly, a click on a list title renames the list like a click on a task text edits it, with the visual design rules of PRD 5.10.
 - **Due dates**: plain task text, `-> 2026-11-22`, `-> 2026-W47` (ISO week) or `-> 2026-Q4`, only the last valid one counts, and invalid ones are plain text (PRD 5.13).
@@ -86,7 +87,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
   `sh` toggles the display of the siblings of a match.
 - **Incremental search** (PRD 5.15): `/` opens a plain input above the footer, highlights every occurrence (a literal substring, ignoring case) in the visible rows and moves the cursor, `n` / `N` jump to the next / previous match with wrap, and Escape in Normal mode ends it.
   It is client-only and in memory, it never reveals a row hidden by the filter, and the Markdown view ends it.
-- **Key groups** (PRD 5.9): `g` goes (cursor, filter, help), `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`), `d` deletes, `y` yanks, `+` creates a list.
+- **Key groups** (PRD 5.9): `g` goes (cursor, filter, help), `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
