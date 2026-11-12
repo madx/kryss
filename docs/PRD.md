@@ -978,11 +978,15 @@ Single-file mode keeps one file and has none of them.
 
 **Note index and popup**
 
-- `GET /api/notes` returns `{ "newLinkFormat", "notes" }`, so the popup has the link format with the index, and `notes` holds one entry per Markdown file of the Vault, `{ "name", "path", "aliases" }`, where `name` is the basename without `.md`, `path` is relative to `VAULT_DIR` and without `.md`, and `aliases` come from the `aliases` key of its frontmatter (a YAML list, an inline array or a single string).
+- `GET /api/notes` returns `{ "newLinkFormat", "notes" }`, so the popup has the link format with the index, and `notes` holds one entry per Markdown file of the Vault, `{ "name", "path", "aliases", "modified" }`, where `name` is the basename without `.md`, `path` is relative to `VAULT_DIR` and without `.md`, `aliases` come from the `aliases` key of its frontmatter (a YAML list, an inline array or a single string), and `modified` is the modification time of the file in epoch milliseconds, or `0` when it cannot be read.
 - The server builds it with the scan of 5.16, in the same pass, and it keeps nothing between two calls.
   It leaves out the dot folders and the folders of `userIgnoreFilters` (below), and attachments are not notes.
 - Typing `[[` in the task editor opens a popup of the index, fetched when the popup opens and filtered as you type, ignoring case, on the name and on every alias.
   It is a CodeMirror autocomplete popup with the same look as the due date popup (5.13).
+- The suggestions come in two tiers, the matches that start with what was typed and then the others, and inside each tier the most recently modified note comes first.
+  An entry that matches an alias uses the `modified` of its note, and two entries with the same `modified` are ordered by the matched text, ignoring case, then by path.
+  With nothing typed after `[[`, the popup therefore lists the most recent notes.
+- The `detail` of an entry (the folder, or the note name and its folder for an alias) is drawn in the muted color of completed tasks (`--color-done-text`), and on the selected entry in the accent text color with a slight opacity, so that it stays readable on the accent background.
 - A suggestion that matches the name inserts `[[Note]]`, and one that matches an alias inserts `[[Note|alias]]`, so the label stays the alias that was typed.
   Two entries with the same name show their folder next to the name.
 - Which path is inserted follows the Obsidian setting `newLinkFormat` (below).
