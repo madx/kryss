@@ -131,6 +131,11 @@ describe("parseFilter", () => {
     expect(parseFilter("due:>+0d").error).toBe("Unknown due value: >+0d");
   });
 
+  test("a shift out of range is an unknown value, not a crash", () => {
+    expect(parseFilter("due:+8000y").error).toBe("Unknown due value: +8000y");
+    expect(parseFilter("due:<+99999999999d").error).toBe("Unknown due value: <+99999999999d");
+  });
+
   test("an operator alone is ignored, like a key with no value yet", () => {
     expect(parseFilter("due:<")).toEqual({ terms: [], error: null });
     expect(parseFilter("due:>,")).toEqual({ terms: [], error: null });
@@ -596,6 +601,11 @@ describe("filterCompletion", () => {
     });
     expect(c("due:<-t", 7, TODAY)).toEqual({ from: 5, options: [{ label: "-tue", apply: "-tue", detail: "2026-11-10" }, { label: "-thu", apply: "-thu", detail: "2026-11-05" }] });
     expect(c("due:today,+t", 12, TODAY)?.from).toBe(10);
+  });
+
+  test("a huge shift offers nothing and does not throw", () => {
+    expect(c("due:+99999999999", 16, TODAY)).toBeNull();
+    expect(c("due:<+8000y", 11, TODAY)).toBeNull();
   });
 
   test("a bare sign, a bad shortcut and an operator typed twice offer nothing", () => {

@@ -107,8 +107,17 @@ function shiftQuarters(day: string, n: number): string {
   return `${pad(Math.floor(index / 4), 4)}-Q${(index % 4) + 1}`;
 }
 
-/** Resolves a shortcut word (without the arrow) to a date, or null when it is unknown. */
+/** Resolves a shortcut word (without the arrow) to a date, or null when it is unknown or leaves the valid years. */
 export function resolveShortcut(word: string, today: string): string | null {
+  try {
+    const resolved = resolveWord(word, today);
+    return resolved !== null && duePeriod(resolved) ? resolved : null;
+  } catch {
+    return null; // a shift so large that the date is not representable
+  }
+}
+
+function resolveWord(word: string, today: string): string | null {
   if (word === "today") return today;
   if (word === "tomorrow") return addDays(today, 1);
   if (word === "W") return shiftWeeks(today, 0);
@@ -149,7 +158,8 @@ export function dueCompletions(word: string, today: string): DueEntry[] {
     : /^[+-][a-z]{1,2}$/.test(word)
       ? WEEKDAYS.filter((d) => d.startsWith(word.slice(1))).map((d) => word[0] + d)
       : [];
-  return labels.map((label) => ({ label, date: resolveShortcut(label, today)! }));
+  const entries = labels.map((label) => ({ label, date: resolveShortcut(label, today) }));
+  return entries.filter((e): e is DueEntry => e.date !== null);
 }
 
 /** The popup entries for what was typed after `->`. */

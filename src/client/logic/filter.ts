@@ -102,7 +102,7 @@ export const isFiltering = (text: string): boolean => text.trim() !== "";
 function boundPeriod(word: string, today: string): Period {
   if (word === "today") return dayPeriod(today);
   if (word === "week") return weekPeriod(today);
-  return duePeriod(resolveShortcut(word, today)!)!;
+  return duePeriod(resolveShortcut(word, today) ?? ANY_DAY)!;
 }
 
 function matchesDue(value: DueValue, node: Pick<Task, "text" | "done">, today: string): boolean {

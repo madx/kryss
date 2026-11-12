@@ -242,6 +242,19 @@ describe("dueEntries", () => {
   });
 });
 
+describe("resolveShortcut: out of range", () => {
+  test("a shift that leaves the valid years or the date range resolves to null", () => {
+    expect(r("+8000y")).toBeNull();
+    expect(r("+3000000d")).toBeNull();
+    expect(r("+99999999999d")).toBeNull();
+    expect(r("-99999999999W")).toBeNull();
+    expect(r("+99999999999Q")).toBeNull();
+  });
+  test("the completion of a huge number lists only the units that resolve", () => {
+    expect(dueCompletions("+99999999999", TODAY)).toEqual([]);
+  });
+});
+
 describe("dueCompletions", () => {
   const comp = (word: string) => dueCompletions(word, TODAY);
   test("a sign and a number list one entry per unit, in the order d, w, m, y, W, Q", () => {
