@@ -107,8 +107,17 @@ function shiftQuarters(day: string, n: number): string {
   return `${pad(Math.floor(index / 4), 4)}-Q${(index % 4) + 1}`;
 }
 
-/** Resolves a shortcut word (without the arrow) to a date, or null when it is unknown. */
+/** Resolves a shortcut word (without the arrow) to a date, or null when it is unknown or leaves the valid years. */
 export function resolveShortcut(word: string, today: string): string | null {
+  try {
+    const resolved = resolveWord(word, today);
+    return resolved !== null && duePeriod(resolved) ? resolved : null;
+  } catch {
+    return null; // a shift so large that the date is not representable
+  }
+}
+
+function resolveWord(word: string, today: string): string | null {
   if (word === "today") return today;
   if (word === "tomorrow") return addDays(today, 1);
   if (word === "W") return shiftWeeks(today, 0);
@@ -137,6 +146,22 @@ export function resolveShortcut(word: string, today: string): string | null {
   }
 }
 
+const UNITS = ["d", "w", "m", "y", "W", "Q"];
+
+/**
+ * The completion of a sign and a number (one entry per unit) or of a sign and a weekday prefix (the matching weekdays).
+ * It lists nothing for a bare sign, a complete shortcut or any other word. Shared by the `->` and `due:` popups.
+ */
+export function dueCompletions(word: string, today: string): DueEntry[] {
+  const labels = /^[+-][1-9]\d*$/.test(word)
+    ? UNITS.map((u) => word + u)
+    : /^[+-][a-z]{1,2}$/.test(word)
+      ? WEEKDAYS.filter((d) => d.startsWith(word.slice(1))).map((d) => word[0] + d)
+      : [];
+  const entries = labels.map((label) => ({ label, date: resolveShortcut(label, today) }));
+  return entries.filter((e): e is DueEntry => e.date !== null);
+}
+
 /** The popup entries for what was typed after `->`. */
 export function dueEntries(word: string, today: string): DueEntry[] {
   const entries: DueEntry[] = [];
@@ -147,6 +172,9 @@ export function dueEntries(word: string, today: string): DueEntry[] {
   if (!DEFAULT_WORDS.includes(word)) {
     const date = resolveShortcut(word, today);
     if (date) entries.push({ label: word, date });
+  }
+  for (const entry of dueCompletions(word, today)) {
+    if (!entries.some((e) => e.label === entry.label)) entries.push(entry);
   }
   return entries;
 }

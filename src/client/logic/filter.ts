@@ -3,10 +3,11 @@
 import type { Task, TodoDocument } from "../../shared/types";
 import { findDueRange } from "../markdown/inline";
 import type { Stop } from "./cursor";
-import { duePeriod, overlaps, weekPeriod, dayPeriod } from "./due";
+import { dayPeriod, dueCompletions, duePeriod, resolveShortcut, weekPeriod, type Period } from "./due";
 import { samePath, type PathMove, type TaskPath } from "./paths";
 
-export type DueValue = string; // "today", "week", "overdue" or a valid day, week or quarter
+/** A due value as typed, lowercased for the words: `today`, `week`, `overdue`, a day, week or quarter, or a shortcut, with `<` or `>` in front except for `overdue`. */
+export type DueValue = string;
 export type Term =
   | { kind: "word"; text: string }
   | { kind: "list"; names: string[] }
@@ -52,10 +53,19 @@ function tokenize(text: string): { values: string[]; quotedStart: boolean }[] {
   return tokens;
 }
 
+const OPERATOR = /^[<>]/;
+/** Any day works to validate a shortcut, since only its shape matters. */
+const ANY_DAY = "2000-01-03";
+
+/** An operator with nothing after it is a value that is not typed yet. */
+const isBareOperator = (value: string) => value === "<" || value === ">";
+
 function dueValue(value: string): DueValue | null {
-  const v = value.toLowerCase();
-  if (v === "today" || v === "week" || v === "overdue") return v;
-  return duePeriod(value) ? value : null;
+  const operator = OPERATOR.exec(value)?.[0] ?? "";
+  const rest = value.slice(operator.length);
+  const lower = rest.toLowerCase();
+  if (lower === "today" || lower === "week" || (lower === "overdue" && !operator)) return operator + lower;
+  return resolveShortcut(rest, ANY_DAY) ? value : null;
 }
 
 export function parseFilter(text: string): ParsedFilter {
@@ -68,7 +78,7 @@ export function parseFilter(text: string): ParsedFilter {
       terms.push({ kind: "word", text: values.join(",") });
       continue;
     }
-    const rest = [head.slice(key.length + 1), ...values.slice(1)].filter((v) => v !== "");
+    const rest = [head.slice(key.length + 1), ...values.slice(1)].filter((v) => v !== "" && !isBareOperator(v));
     if (rest.length === 0) continue;
     if (key === "list") terms.push({ kind: "list", names: rest });
     else if (key === "due") {
@@ -88,14 +98,23 @@ export function parseFilter(text: string): ParsedFilter {
 /** Any non-blank text is a filter, even one whose terms are all ignored. */
 export const isFiltering = (text: string): boolean => text.trim() !== "";
 
+/** The period of a `today`, `week`, literal or shortcut word, resolved from `today`. */
+function boundPeriod(word: string, today: string): Period {
+  if (word === "today") return dayPeriod(today);
+  if (word === "week") return weekPeriod(today);
+  return duePeriod(resolveShortcut(word, today) ?? ANY_DAY)!;
+}
+
 function matchesDue(value: DueValue, node: Pick<Task, "text" | "done">, today: string): boolean {
   const date = findDueRange(node.text)?.value;
   const period = date ? duePeriod(date) : null;
   if (!period) return false;
-  if (value === "today") return overlaps(period, dayPeriod(today));
-  if (value === "week") return overlaps(period, weekPeriod(today));
   if (value === "overdue") return !node.done && period.end < today;
-  return overlaps(period, duePeriod(value)!);
+  const operator = OPERATOR.exec(value)?.[0];
+  const bound = boundPeriod(value.slice(operator?.length ?? 0), today);
+  if (operator === "<") return period.end < bound.start;
+  if (operator === ">") return period.start > bound.end;
+  return period.start <= bound.end && bound.start <= period.end;
 }
 
 function matchesTerm(term: Term, node: Pick<Task, "text" | "done">, listTitle: string, today: string): boolean {
@@ -231,7 +250,8 @@ export function filterPills(text: string): Pill[] {
   return pills;
 }
 
-export type Completion = { from: number; options: { label: string; apply: string }[] };
+export type CompletionOption = { label: string; apply: string; detail?: string };
+export type Completion = { from: number; options: CompletionOption[] };
 
 const needsQuotes = (title: string) => /[\s,]/.test(title);
 
@@ -239,7 +259,7 @@ const needsQuotes = (title: string) => /[\s,]/.test(title);
  * The popup of the filter bar for the value being typed at `cursor`, after `list:` or `due:` and after a comma.
  * `from` is where the replaced text starts. Null when there is nothing to offer.
  */
-export function filterCompletion(text: string, cursor: number, listTitles: string[]): Completion | null {
+export function filterCompletion(text: string, cursor: number, listTitles: string[], today: string): Completion | null {
   // Find the start of the token under the cursor and of its current comma-separated value, honoring quotes.
   let quoted = false;
   let tokenStart = 0;
@@ -263,10 +283,19 @@ export function filterCompletion(text: string, cursor: number, listTitles: strin
     return options.length > 0 ? { from, options } : null;
   }
   if (key === "due") {
-    const words = ["today", "week", "overdue"].filter((w) => w.startsWith(lower));
-    const options = words.map((w) => ({ label: w, apply: w }));
-    if (!words.includes(typed) && duePeriod(typed)) options.push({ label: typed, apply: typed });
-    return options.length > 0 ? { from, options } : null;
+    // An operator is typed text that stays in place, so the entries replace what follows it.
+    const operator = OPERATOR.exec(typed)?.[0];
+    const word = typed.slice(operator?.length ?? 0);
+    const start = from + (typed.length - word.length);
+    const options: CompletionOption[] = (operator ? ["today", "week"] : ["today", "week", "overdue"])
+      .filter((w) => w.startsWith(word.toLowerCase()))
+      .map((w) => ({ label: w, apply: w }));
+    if (!options.some((o) => o.label === word)) {
+      const date = resolveShortcut(word, today);
+      if (date) options.push(date === word ? { label: word, apply: word } : { label: word, apply: word, detail: date });
+      for (const e of dueCompletions(word, today)) options.push({ label: e.label, apply: e.label, detail: e.date });
+    }
+    return options.length > 0 ? { from: start, options } : null;
   }
   return null;
 }

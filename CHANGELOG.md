@@ -27,6 +27,10 @@ Features that were added and later removed are listed in both places, so that th
 - `<https://…>` autolinks render as links under the scheme rules.
 - The link rules are read again when the window regains the focus, and the lists are drawn again when they changed, so an edit of `.kryss.json` applies without a reload.
 
+- `due:` takes the shortcuts of the due dates (`+1w`, `-tue`, `W`, `+1Q`) and a `<` or `>` in front of each comma value, which compare whole periods strictly, completed tasks included.
+- The `due:` popup shows the date of a typed shortcut, offers `today` and `week` after an operator, and completes a sign and number into its units and a sign and weekday prefix into weekdays, like the `->` popup.
+- A shortcut that does not resolve to a valid date, week or quarter is unknown.
+
 ### Changed
 
 - The saved filters now live in the `kryss-filters` key of the frontmatter instead of `filters`.

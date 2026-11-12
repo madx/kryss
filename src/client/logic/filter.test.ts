@@ -103,6 +103,50 @@ describe("parseFilter", () => {
     expect(parseFilter("due:today,nope is:todo").error).toBe("Unknown due value: nope");
   });
 
+  test("a due value can be a shortcut, kept as typed", () => {
+    expect(parseFilter("due:+1w,-tue,W,+1Q,tomorrow")).toEqual({ terms: [{ kind: "due", values: ["+1w", "-tue", "W", "+1Q", "tomorrow"] }], error: null });
+  });
+
+  test("a due value can start with < or >, for a literal, a shortcut, today and week", () => {
+    expect(parseFilter("due:<+1w").terms).toEqual([{ kind: "due", values: ["<+1w"] }]);
+    expect(parseFilter("due:>2026-W47").terms).toEqual([{ kind: "due", values: [">2026-W47"] }]);
+    expect(parseFilter("due:>TODAY,<Week").terms).toEqual([{ kind: "due", values: [">today", "<week"] }]);
+  });
+
+  test("each comma value has its own operator", () => {
+    expect(parseFilter("due:<-1w,>+1w").terms).toEqual([{ kind: "due", values: ["<-1w", ">+1w"] }]);
+    expect(parseFilter("due:<today,2026-W50").terms).toEqual([{ kind: "due", values: ["<today", "2026-W50"] }]);
+  });
+
+  test("overdue is invalid after an operator", () => {
+    expect(parseFilter("due:<overdue").error).toBe("Unknown due value: <overdue");
+    expect(parseFilter("due:overdue").error).toBeNull();
+  });
+
+  test("a bad value after an operator, a double operator and a bad shortcut are reported", () => {
+    expect(parseFilter("due:<foo").error).toBe("Unknown due value: <foo");
+    expect(parseFilter("due:<<today").error).toBe("Unknown due value: <<today");
+    expect(parseFilter("due:+3x").error).toBe("Unknown due value: +3x");
+    expect(parseFilter("due:<2026-02-30").error).toBe("Unknown due value: <2026-02-30");
+    expect(parseFilter("due:>+0d").error).toBe("Unknown due value: >+0d");
+  });
+
+  test("a shift out of range is an unknown value, not a crash", () => {
+    expect(parseFilter("due:+8000y").error).toBe("Unknown due value: +8000y");
+    expect(parseFilter("due:<+99999999999d").error).toBe("Unknown due value: <+99999999999d");
+  });
+
+  test("an operator alone is ignored, like a key with no value yet", () => {
+    expect(parseFilter("due:<")).toEqual({ terms: [], error: null });
+    expect(parseFilter("due:>,")).toEqual({ terms: [], error: null });
+    expect(parseFilter("due:<,today").terms).toEqual([{ kind: "due", values: ["today"] }]);
+    expect(parseFilter("due:<today,>").terms).toEqual([{ kind: "due", values: ["<today"] }]);
+  });
+
+  test("a space ends the term, so an operator followed by a space is ignored and the next word is bare", () => {
+    expect(parseFilter("due:< today")).toEqual({ terms: [{ kind: "word", text: "today" }], error: null });
+  });
+
   test("the first bad value is the one reported", () => {
     expect(parseFilter("is:x due:y").error).toBe("Unknown is value: x");
   });
@@ -213,6 +257,92 @@ describe("matchesTask", () => {
   test("a bad value matches nothing, and an ignored term matches everything", () => {
     expect(match("due:foo", t("a"))).toBe(false);
     expect(match("due:", t("a"))).toBe(true);
+  });
+});
+
+describe("matchesTask: due shortcuts and operators", () => {
+  const at = (text: string, due: string, done = false, today = TODAY) => matchesTask(t(`Pay -> ${due}`, done), "Work", parseFilter(text), today);
+  const noDate = t("Pay the rent");
+
+  test("a shortcut matches like the literal it resolves to", () => {
+    expect(at("due:+1w", "2026-11-18")).toBe(true);
+    expect(at("due:+1w", "2026-11-17")).toBe(false);
+    expect(at("due:-tue", "2026-11-10")).toBe(true);
+    expect(at("due:W", "2026-11-13")).toBe(true);
+    expect(at("due:+1Q", "2027-Q1")).toBe(true);
+  });
+
+  test("a shortcut is resolved from the day given at each call", () => {
+    expect(at("due:+1w", "2026-11-18", false, "2026-11-11")).toBe(true);
+    expect(at("due:+1w", "2026-11-18", false, "2026-11-12")).toBe(false);
+    expect(at("due:+1w", "2026-11-19", false, "2026-11-12")).toBe(true);
+  });
+
+  test("< matches a due period that ends before the period of X starts", () => {
+    expect(at("due:<+1w", "2026-11-17")).toBe(true);
+    expect(at("due:<+1w", "2026-W46")).toBe(true);
+    expect(at("due:<+1w", "2026-11-18")).toBe(false);
+    expect(at("due:<+1w", "2026-W47")).toBe(false);
+    expect(at("due:<+1w", "2026-Q4")).toBe(false);
+  });
+
+  test("> matches a due period that starts after the period of X ends", () => {
+    expect(at("due:>+1w", "2026-11-19")).toBe(true);
+    expect(at("due:>+1w", "2026-W48")).toBe(true);
+    expect(at("due:>+1w", "2027-Q1")).toBe(true);
+    expect(at("due:>+1w", "2026-11-18")).toBe(false);
+    expect(at("due:>+1w", "2026-W47")).toBe(false);
+  });
+
+  test("whole periods are compared: a period that overlaps X matches neither operator", () => {
+    expect(at("due:<2026-W47", "2026-11-18")).toBe(false);
+    expect(at("due:>2026-W47", "2026-11-18")).toBe(false);
+    expect(at("due:<2026-W47", "2026-11-15")).toBe(true);
+    expect(at("due:>2026-W47", "2026-11-23")).toBe(true);
+    expect(at("due:<2026-Q4", "2026-W39")).toBe(true);
+    expect(at("due:<2026-Q4", "2026-W40")).toBe(false);
+  });
+
+  test("an inclusive bound is written with a comma", () => {
+    expect(at("due:<2026-W47,2026-W47", "2026-11-18")).toBe(true);
+    expect(at("due:<2026-W47,2026-W47", "2026-11-23")).toBe(false);
+  });
+
+  test("today and week after an operator are the current day and the current ISO week", () => {
+    expect(at("due:<today", "2026-11-10")).toBe(true);
+    expect(at("due:<today", "2026-11-11")).toBe(false);
+    expect(at("due:<today", "2026-W46")).toBe(false);
+    expect(at("due:>today", "2026-11-12")).toBe(true);
+    expect(at("due:>today", "2026-W46")).toBe(false);
+    expect(at("due:<week", "2026-11-08")).toBe(true);
+    expect(at("due:<week", "2026-11-09")).toBe(false);
+    expect(at("due:>week", "2026-11-16")).toBe(true);
+    expect(at("due:>week", "2026-11-15")).toBe(false);
+  });
+
+  test("the operators ignore the checkbox, and is:todo narrows the result", () => {
+    expect(at("due:<today", "2026-11-01", true)).toBe(true);
+    expect(at("due:>today", "2026-12-01", true)).toBe(true);
+    expect(at("due:<today is:todo", "2026-11-01", true)).toBe(false);
+    expect(at("due:<today is:todo", "2026-11-01", false)).toBe(true);
+  });
+
+  test("a task with no date, or an invalid one, matches no operator", () => {
+    expect(matchesTask(noDate, "Work", parseFilter("due:<+1w"), TODAY)).toBe(false);
+    expect(matchesTask(noDate, "Work", parseFilter("due:>+1w"), TODAY)).toBe(false);
+    expect(at("due:<+1w", "2026-02-30")).toBe(false);
+  });
+
+  test("each comma value has its own operator", () => {
+    expect(at("due:<-1w,>+1w", "2026-11-01")).toBe(true);
+    expect(at("due:<-1w,>+1w", "2026-12-01")).toBe(true);
+    expect(at("due:<-1w,>+1w", "2026-11-12")).toBe(false);
+  });
+
+  test("a range of two terms is ANDed", () => {
+    expect(at("due:>today due:<+1w", "2026-11-14")).toBe(true);
+    expect(at("due:>today due:<+1w", "2026-11-11")).toBe(false);
+    expect(at("due:>today due:<+1w", "2026-11-18")).toBe(false);
   });
 });
 
@@ -384,7 +514,7 @@ describe("pinTask", () => {
 
 describe("filterCompletion", () => {
   const titles = ["Work", "Side projects", "Home"];
-  const c = (text: string, cursor = text.length) => filterCompletion(text, cursor, titles);
+  const c = (text: string, cursor = text.length, today = TODAY) => filterCompletion(text, cursor, titles, today);
 
   test("nothing for plain words, other keys and an unfinished key", () => {
     expect(c("")).toBeNull();
@@ -426,17 +556,62 @@ describe("filterCompletion", () => {
   });
 
   test("a title with a double quote is not offered", () => {
-    expect(filterCompletion("list:", 5, ['a"b', "ok"])?.options.map((o) => o.label)).toEqual(["ok"]);
+    expect(filterCompletion("list:", 5, ['a"b', "ok"], TODAY)?.options.map((o) => o.label)).toEqual(["ok"]);
   });
 
   test("duplicate titles are offered once", () => {
-    expect(filterCompletion("list:", 5, ["A", "A"])?.options).toHaveLength(1);
+    expect(filterCompletion("list:", 5, ["A", "A"], TODAY)?.options).toHaveLength(1);
   });
 
   test("due: offers today, week and overdue", () => {
     expect(c("due:")).toEqual({ from: 4, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }, { label: "overdue", apply: "overdue" }] });
     expect(c("due:o")?.options.map((o) => o.label)).toEqual(["overdue"]);
     expect(c("due:today,")?.from).toBe(10);
+  });
+
+  test("after < or >, today and week are offered, without overdue", () => {
+    expect(c("due:<")).toEqual({ from: 5, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }] });
+    expect(c("due:>w")?.options.map((o) => o.label)).toEqual(["week"]);
+    expect(c("due:<o")).toBeNull();
+    expect(c("due:<today,>")).toEqual({ from: 12, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }] });
+  });
+
+  test("a typed shortcut is one entry that shows the date it resolves to, inserted as typed", () => {
+    expect(c("due:+1w", 7, TODAY)).toEqual({ from: 4, options: [{ label: "+1w", apply: "+1w", detail: "2026-11-18" }] });
+    expect(c("due:<+1w", 8, TODAY)).toEqual({ from: 5, options: [{ label: "+1w", apply: "+1w", detail: "2026-11-18" }] });
+    expect(c("due:W", 5, TODAY)?.options).toContainEqual({ label: "W", apply: "W", detail: "2026-W46" });
+    expect(c("due:2026-11-20", 14, TODAY)?.options).toEqual([{ label: "2026-11-20", apply: "2026-11-20" }]);
+  });
+
+  test("the entries after due: do not include the default set of shortcuts or the operators", () => {
+    expect(c("due:", 4, TODAY)?.options.map((o) => o.label)).toEqual(["today", "week", "overdue"]);
+  });
+
+  test("a sign and a number, or a sign and a weekday prefix, get the unit and weekday completion", () => {
+    expect(c("due:+3", 6, TODAY)).toEqual({
+      from: 4,
+      options: [
+        { label: "+3d", apply: "+3d", detail: "2026-11-14" },
+        { label: "+3w", apply: "+3w", detail: "2026-12-02" },
+        { label: "+3m", apply: "+3m", detail: "2027-02-11" },
+        { label: "+3y", apply: "+3y", detail: "2029-11-11" },
+        { label: "+3W", apply: "+3W", detail: "2026-W49" },
+        { label: "+3Q", apply: "+3Q", detail: "2027-Q3" },
+      ],
+    });
+    expect(c("due:<-t", 7, TODAY)).toEqual({ from: 5, options: [{ label: "-tue", apply: "-tue", detail: "2026-11-10" }, { label: "-thu", apply: "-thu", detail: "2026-11-05" }] });
+    expect(c("due:today,+t", 12, TODAY)?.from).toBe(10);
+  });
+
+  test("a huge shift offers nothing and does not throw", () => {
+    expect(c("due:+99999999999", 16, TODAY)).toBeNull();
+    expect(c("due:<+8000y", 11, TODAY)).toBeNull();
+  });
+
+  test("a bare sign, a bad shortcut and an operator typed twice offer nothing", () => {
+    expect(c("due:+", 5, TODAY)).toBeNull();
+    expect(c("due:+3x", 7, TODAY)).toBeNull();
+    expect(c("due:<<", 6, TODAY)).toBeNull();
   });
 
   test("due: adds an entry for a typed valid day, week or quarter", () => {
