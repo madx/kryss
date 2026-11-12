@@ -18,6 +18,8 @@ Features that were added and later removed are listed in both places, so that th
 - Wikilinks: `[[Note]]`, `[[Note|alias]]` and the heading and block forms render as `obsidian://open` links in Vault mode, and stay literal text in single-file mode.
 - `[[` opens a popup of the note index, filtered on names and aliases, which inserts the path format of `newLinkFormat` read from `.obsidian/app.json`, and the live preview hides the brackets away from the cursor.
 - `GET /api/notes` returns the note index and the link format, and `GET /api/files` carries the vault name in its `X-Vault-Name` header.
+- Each note of `GET /api/notes` carries its `modified` time, and the `[[` popup lists the matches that start with the typed text first, then the others, the most recently modified note first in each group.
+- The detail of a popup entry is muted like a completed task, and drawn in the entry color at a lower opacity on the selected one.
 
 - Link rules: `.kryss.json` at the root of the Vault holds `match` and `label` rules served by `GET /api/config`, and `GET /api/icons/<name>` serves Lucide icons.
 - A link that matches a rule shows its icon, or the `Link` icon, as an inline SVG in the text color, rebuilt from an allow-list of shapes.

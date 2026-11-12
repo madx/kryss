@@ -1005,7 +1005,7 @@ Single-file mode keeps one file and has none of them.
 - The suggestions come in two tiers, the matches that start with what was typed and then the others, and inside each tier the most recently modified note comes first.
   An entry that matches an alias uses the `modified` of its note, and two entries with the same `modified` are ordered by the matched text, ignoring case, then by path.
   With nothing typed after `[[`, the popup therefore lists the most recent notes.
-- The `detail` of an entry (the folder, or the note name and its folder for an alias) is drawn in the muted color of completed tasks (`--color-done-text`), and on the selected entry in the accent text color with a slight opacity, so that it stays readable on the accent background.
+- The `detail` of an entry (the folder, or the note name and its folder for an alias) is drawn in the muted color of completed tasks (`--color-done-text`), and on the selected entry in the text color of the entry (the accent text color) at an opacity of 0.6, so that it stays readable on the accent background.
 - A suggestion that matches the name inserts `[[Note]]`, and one that matches an alias inserts `[[Note|alias]]`, so the label stays the alias that was typed.
   Two entries with the same name show their folder next to the name.
 - Which path is inserted follows the Obsidian setting `newLinkFormat` (below).
