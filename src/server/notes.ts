@@ -1,11 +1,11 @@
 // The note index of a Vault (PRD 5.17): names, paths and aliases, plus the Obsidian settings that shape the links.
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { byName, listMarkdown, readFrontmatter } from "./vault";
 
 export type NewLinkFormat = "shortest" | "relative" | "absolute";
 export type ObsidianSettings = { newLinkFormat: NewLinkFormat; userIgnoreFilters: string[] };
-export type Note = { name: string; path: string; aliases: string[] };
+export type Note = { name: string; path: string; aliases: string[]; modified: number };
 export type NoteIndex = { newLinkFormat: NewLinkFormat; notes: Note[] };
 
 /** `newLinkFormat` and `userIgnoreFilters` of `.obsidian/app.json`. A missing, unreadable or malformed file, or a wrong type, means the defaults. */
@@ -82,7 +82,9 @@ export async function scanNotes(vaultDir: string): Promise<NoteIndex> {
   const notes = await Promise.all(
     kept.map(async (file) => {
       const path = file.slice(0, -3);
-      return { name: path.slice(path.lastIndexOf("/") + 1), path, aliases: parseAliases(await readFrontmatter(join(vaultDir, file))) };
+      const full = join(vaultDir, file);
+      const modified = await stat(full).then((st) => Math.floor(st.mtimeMs), () => 0);
+      return { name: path.slice(path.lastIndexOf("/") + 1), path, aliases: parseAliases(await readFrontmatter(full)), modified };
     }),
   );
   return { newLinkFormat: settings.newLinkFormat, notes };

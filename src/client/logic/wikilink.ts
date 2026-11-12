@@ -1,6 +1,6 @@
 // Pure logic of the wikilinks (PRD 5.17): parsing `[[target|alias]]`, the `obsidian://` URL, the note index filter and the inserted text.
 
-export type Note = { name: string; path: string; aliases: string[] };
+export type Note = { name: string; path: string; aliases: string[]; modified: number };
 export type NewLinkFormat = "shortest" | "relative" | "absolute";
 /** One line of the popup: a note, the alias that matched (null when the name did), and its folder when another note has the same name. */
 export type Suggestion = { note: Note; alias: string | null; folder: string };
@@ -27,7 +27,7 @@ export function wikilinkUrl(vault: string, target: string): string {
 
 const dirOf = (path: string) => path.slice(0, Math.max(path.lastIndexOf("/"), 0));
 
-/** The suggestions for what was typed after `[[`: names then aliases that contain it, ignoring case, the prefix matches first. */
+/** The suggestions for what was typed after `[[`: names and aliases that contain it, the prefix matches first, then the most recently modified note (an alias uses its note's time), then the matched text and the path. */
 export function filterNotes(notes: Note[], query: string): Suggestion[] {
   const q = query.toLowerCase();
   const count = new Map<string, number>();
@@ -42,6 +42,7 @@ export function filterNotes(notes: Note[], query: string): Suggestion[] {
   hits.sort(
     (a, b) =>
       rank(a) - rank(b) ||
+      b.suggestion.note.modified - a.suggestion.note.modified ||
       a.key.toLowerCase().localeCompare(b.key.toLowerCase()) ||
       (a.suggestion.note.path < b.suggestion.note.path ? -1 : a.suggestion.note.path > b.suggestion.note.path ? 1 : 0),
   );

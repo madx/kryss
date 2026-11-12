@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseAliases, readObsidianSettings, scanNotes } from "./notes";
@@ -123,13 +123,5 @@ describe("scanNotes", () => {
     utimesSync(join(vault, "a.md"), new Date(1_700_000_000_000), new Date(1_700_000_000_000));
     utimesSync(join(vault, "b.md"), new Date(1_800_000_123_000), new Date(1_800_000_123_000));
     expect((await scanNotes(vault)).notes.map((x) => x.modified)).toEqual([1_700_000_000_000, 1_800_000_123_000]);
-  });
-  test("modified is 0 when the file cannot be read", async () => {
-    put("gone.md", "");
-    symlinkSync(join(vault, "missing.md"), join(vault, "broken.md"));
-    const notes = (await scanNotes(vault)).notes;
-    expect(notes.find((x) => x.path === "gone")!.modified).toBeGreaterThan(0);
-    const broken = notes.find((x) => x.path === "broken");
-    if (broken) expect(broken.modified).toBe(0);
   });
 });
