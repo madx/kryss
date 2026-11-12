@@ -539,54 +539,45 @@ describe("resolveKey: cd (due date) and cL (list name)", () => {
 
 describe("resolveKey: filters and views (PRD 5.14)", () => {
   const set = (text: string) => ({ type: "set-filter", text }) as const;
-  const append = (term: string) => ({ type: "append-filter", term }) as const;
   const keys = [
-    ["F", "F", set("")],
-    ["F", "t", set("due:today,overdue")],
-    ["F", "w", set("due:week,overdue")],
-    ["F", "l", { type: "filter-list" }],
-    ["F", "x", set("is:done")],
-    ["F", "X", set("is:todo")],
-    ["f", "t", append("due:today,overdue")],
-    ["f", "w", append("due:week,overdue")],
-    ["f", "l", { type: "append-filter-list" }],
-    ["f", "x", append("is:done")],
-    ["f", "X", append("is:todo")],
-    ["f", "f", { type: "focus-filter" }],
-    ["f", "s", { type: "filter-picker" }],
+    ["a", set("")],
+    ["t", set("due:today,overdue")],
+    ["w", set("due:week,overdue")],
+    ["l", { type: "filter-list" }],
+    ["x", set("is:done")],
+    ["X", set("is:todo")],
+    ["f", { type: "focus-filter" }],
+    ["s", { type: "filter-picker" }],
   ] as const;
-  const press = (prefix: string, second: string, o: Partial<KeyInput> = {}) =>
-    resolveKey(k(second, { pending: prefix as "f" | "F", shiftKey: second !== second.toLowerCase(), ...o }));
+  const press = (second: string, o: Partial<KeyInput> = {}) =>
+    resolveKey(k(second, { pending: "f", shiftKey: second !== second.toLowerCase(), ...o }));
 
-  test("f and F set the prefix, and do not start anything alone", () => {
+  test("f sets the prefix, and does not start anything alone", () => {
     expect(resolveKey(k("f"))).toEqual({ action: null, pending: "f", preventDefault: true });
-    expect(resolveKey(k("F", { shiftKey: true }))).toEqual({ action: null, pending: "F", preventDefault: true });
     expect(resolveKey(k("f", onHeader)).pending).toBe("f");
   });
 
   test("the second key resolves the filter keys of the table", () => {
-    for (const [prefix, second, action] of keys) {
-      expect(press(prefix, second)).toEqual({ action, pending: "", preventDefault: true });
+    for (const [second, action] of keys) {
+      expect(press(second)).toEqual({ action, pending: "", preventDefault: true });
     }
   });
 
   test("the filter keys work on a header, with nothing focused and with the Markdown view open", () => {
-    for (const [prefix, second, action] of keys) {
-      expect(press(prefix, second, onHeader).action).toEqual(action);
-      expect(press(prefix, second, { target: "none" }).action).toEqual(action);
-      expect(press(prefix, second, { markdownView: true }).action).toEqual(action);
+    for (const [second, action] of keys) {
+      expect(press(second, onHeader).action).toEqual(action);
+      expect(press(second, { target: "none" }).action).toEqual(action);
+      expect(press(second, { markdownView: true }).action).toEqual(action);
     }
   });
 
-  test("the prefixes are kept in the Markdown view", () => {
+  test("the prefix is kept in the Markdown view", () => {
     expect(resolveKey(k("f", { markdownView: true })).pending).toBe("f");
-    expect(resolveKey(k("F", { markdownView: true, shiftKey: true })).pending).toBe("F");
   });
 
-  test("Ff is unassigned, and so are the other unknown second keys", () => {
-    expect(resolveKey(k("f", { pending: "F" }))).toEqual({ action: null, pending: "", preventDefault: false });
+  test("F is not a prefix any more, and the other second keys of f are unassigned", () => {
+    expect(resolveKey(k("F", { shiftKey: true }))).toEqual({ action: null, pending: "", preventDefault: false });
     expect(act("z", { pending: "f" })).toBeNull();
-    expect(act("z", { pending: "F" })).toBeNull();
     expect(act("F", { pending: "f", shiftKey: true })).toBeNull();
   });
 
@@ -619,7 +610,7 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
 
   test("the filter keys do nothing in a text field or behind the cheat sheet", () => {
     expect(act("t", { pending: "f", target: "field" })).toBeNull();
-    expect(act("t", { pending: "F", overlay: "cheatsheet" })).toBeNull();
+    expect(act("t", { pending: "f", overlay: "cheatsheet" })).toBeNull();
     expect(resolveKey(k("f", { overlay: "cheatsheet" }))).toEqual({ action: null, pending: "", preventDefault: true });
   });
 

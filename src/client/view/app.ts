@@ -519,7 +519,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     filters: {
       focus: () => bar.focus(),
       set: (text) => store.setFilter(text),
-      startList: (append) => bar.startListTerm(append),
+      startList: () => bar.startListTerm(),
       openPicker: () => picker.open(),
     },
     files: { openPicker: () => void filePicker?.open() },

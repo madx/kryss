@@ -82,13 +82,13 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
   Typing `->` opens a CodeMirror popup of space-free shortcuts (`->today`, `->+1w`, `->-tue`, `->W`, `->+1Q`), and `cd` in Normal mode opens the editor on the date and its popup.
 - **Filters and views** (PRD 5.14): there is no list selector (`H` / `L` move the focused list, not the view).
   The header filter bar (`ff`) holds one line of text: bare words, `list:name`, `due:today|week|overdue|DATE|+1w`, `due:<X` and `due:>X` (strict, whole periods), `is:done|todo`, terms ANDed and commas for OR inside a term.
-  `f` appends a term to it and `F` replaces the whole text: `ft` / `Ft` are `due:today,overdue`, `fw` / `Fw` are `due:week,overdue`, `fl` / `Fl` are `list:` with a popup, `fx` / `Fx` are `is:done`, `fX` / `FX` are `is:todo` (an append replaces the opposite `is:` term), and `FF` clears it.
+  `f` followed by a key replaces the whole text: `fa` clears it, `ft` is `due:today,overdue`, `fw` is `due:week,overdue`, `fl` is `list:` with a popup, `fx` is `is:done` and `fX` is `is:todo`.
   `fs` opens the saved filters, whose first entry saves the current text under a name.
   A task is visible if it or an ancestor or a descendant matches, tasks you just added, pasted, edited or checked stay visible until the filter changes, and moves, indent and outdent work on the visible rows: they jump over hidden tasks and lists, indent targets the previous visible task, and the moved task is pinned.
   `sh` toggles the display of the siblings of a match.
 - **Incremental search** (PRD 5.15): `/` opens a plain input above the footer, highlights every occurrence (a literal substring, ignoring case) in the visible rows and moves the cursor, `n` / `N` jump to the next / previous match with wrap, and Escape in Normal mode ends it.
   It is client-only and in memory, it never reveals a row hidden by the filter, and the Markdown view ends it.
-- **Key groups** (PRD 5.9): `g` goes (cursor, file, help), `f` appends to the filter, `F` replaces the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
+- **Key groups** (PRD 5.9): `g` goes (cursor, file, help), `f` sets the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.

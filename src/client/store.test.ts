@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import type { ChangeEvent, TodoDocument } from "../shared/types";
 import type { Api, LoadResult, SaveResult } from "./api";
 import { addTask, moveDown, moveList } from "./logic";
-import { appendTerm, visibleRows } from "./logic/filter";
+import { visibleRows } from "./logic/filter";
 import { createStore, FILTER_KEY, OLD_SELECTION_KEY, SIBLINGS_KEY, type Timers } from "./store";
 import { DEBOUNCE_MS, retryDelay } from "./sync";
 
@@ -429,11 +429,11 @@ describe("pinned rows", () => {
     expect(store.getState().filter).toBe("x");
   });
 
-  test("appending a term to the filter text drops the pins", () => {
+  test("replacing the filter text drops the pins", () => {
     store.setFilter("x");
     store.commit(doc("B"), { pin: path(1) });
-    store.setFilter(appendTerm(store.getState().filter, "is:todo"));
-    expect(store.getState().filter).toBe("x is:todo");
+    store.setFilter("is:todo");
+    expect(store.getState().filter).toBe("is:todo");
     expect(store.getState().pins).toEqual([]);
   });
 

@@ -98,15 +98,6 @@ export function parseFilter(text: string): ParsedFilter {
 /** Any non-blank text is a filter, even one whose terms are all ignored. */
 export const isFiltering = (text: string): boolean => text.trim() !== "";
 
-/** Appends a term to a filter text (PRD 5.14): after a space, nothing on an empty text, unchanged when already there, and an `is:` term replaces the opposite one in place. */
-export function appendTerm(text: string, term: string): string {
-  const words = text.split(" ");
-  if (words.includes(term)) return text;
-  const opposite = term === "is:done" ? "is:todo" : term === "is:todo" ? "is:done" : null;
-  if (opposite && words.includes(opposite)) return words.map((w) => (w === opposite ? term : w)).join(" ");
-  return text.trim() === "" ? term : `${text.trimEnd()} ${term}`;
-}
-
 /** The period of a `today`, `week`, literal or shortcut word, resolved from `today`. */
 function boundPeriod(word: string, today: string): Period {
   if (word === "today") return dayPeriod(today);

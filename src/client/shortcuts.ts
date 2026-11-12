@@ -2,7 +2,7 @@
 import type { CursorMove } from "./logic/cursor";
 import type { AddAt } from "./logic/insert";
 
-export type Pending = "" | "g" | "d" | "y" | "c" | "s" | "f" | "F";
+export type Pending = "" | "g" | "d" | "y" | "c" | "s" | "f";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
 export type Overlay = "none" | "cheatsheet";
@@ -17,7 +17,7 @@ export type Action =
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
   | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
-  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "append-filter"; term: string } | { type: "filter-list" } | { type: "append-filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
+  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean; search: boolean;
@@ -67,29 +67,18 @@ function taskKey(key: string): Action | null {
 }
 
 const set = (text: string): Action => ({ type: "set-filter", text });
-const append = (term: string): Action => ({ type: "append-filter", term });
 
-/** The second key of `f` (append to the filter text, focus the bar, open the saved filters) or `F` (replace the text), PRD 5.14, or null. `Ff` is unassigned. */
-function filterKey(prefix: "f" | "F", key: string): Action | null {
-  if (prefix === "f") {
-    switch (key) {
-      case "t": return append("due:today,overdue");
-      case "w": return append("due:week,overdue");
-      case "l": return { type: "append-filter-list" };
-      case "x": return append("is:done");
-      case "X": return append("is:todo");
-      case "f": return { type: "focus-filter" };
-      case "s": return { type: "filter-picker" };
-      default: return null;
-    }
-  }
+/** The second key of `f`: each one replaces the filter text, focuses the bar or opens the saved filters (PRD 5.14), or null. */
+function filterKey(key: string): Action | null {
   switch (key) {
-    case "F": return set("");
+    case "a": return set("");
     case "t": return set("due:today,overdue");
     case "w": return set("due:week,overdue");
     case "l": return { type: "filter-list" };
     case "x": return set("is:done");
     case "X": return set("is:todo");
+    case "f": return { type: "focus-filter" };
+    case "s": return { type: "filter-picker" };
     default: return null;
   }
 }
@@ -109,10 +98,10 @@ function resolveMarkdownKey({ key, pending, altKey }: KeyInput): Resolution {
   if (pending === "s" && key === "m") return done({ type: "toggle-markdown" });
   if (pending === "s" && key === "h") return done({ type: "toggle-siblings" });
   if (pending === "g" && goKey(key)) return done(goKey(key));
-  if ((pending === "f" || pending === "F") && filterKey(pending, key)) return done(filterKey(pending, key));
+  if (pending === "f" && filterKey(key)) return done(filterKey(key));
   if (pending === "y" && key === "y") return done({ type: "copy-markdown" });
   if (pending) return NOTHING;
-  if (key === "g" || key === "s" || key === "y" || key === "f" || key === "F") return { action: null, pending: key, preventDefault: true };
+  if (key === "g" || key === "s" || key === "y" || key === "f") return { action: null, pending: key, preventDefault: true };
   return key === "Escape" ? done({ type: "toggle-markdown" }) : NOTHING;
 }
 
@@ -153,7 +142,7 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "s" && key === "m") return done({ type: "toggle-markdown" });
   if (pending === "s" && key === "h") return done({ type: "toggle-siblings" });
   if (pending === "g" && goKey(key)) return done(goKey(key));
-  if ((pending === "f" || pending === "F") && filterKey(pending, key)) return done(filterKey(pending, key));
+  if (pending === "f" && filterKey(key)) return done(filterKey(key));
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });
   if (pending === "c" && key === "c") return done({ type: "change" });
@@ -162,7 +151,7 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "c" && key === "l") return done(onHeader ? null : { type: "move-to-list" });
   if (pending === "y" && key === "y") return done({ type: "yank" });
   if (pending) return NOTHING;
-  if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s" || key === "f" || key === "F") return { action: null, pending: key, preventDefault: true };
+  if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s" || key === "f") return { action: null, pending: key, preventDefault: true };
 
   if (input.search && key === "Escape") return done({ type: "search-end" });
   if (input.search && key === "n") return done({ type: "search-next" });
