@@ -521,8 +521,19 @@ describe("resolveKey: cd (due date) and cL (list name)", () => {
     expect(resolveKey(k("L", { pending: "c" }))).toEqual({ action: { type: "change-list" }, pending: "", preventDefault: true });
     expect(act("L", { pending: "c", ...onHeader })).toEqual({ type: "change-list" });
   });
-  test("cl does nothing and clears the prefix", () => {
-    expect(resolveKey(k("l", { pending: "c" }))).toEqual({ action: null, pending: "", preventDefault: false });
+  test("cl on a task opens the list picker and clears the prefix", () => {
+    expect(resolveKey(k("l", { pending: "c" }))).toEqual({ action: { type: "move-to-list" }, pending: "", preventDefault: true });
+  });
+  test("cl has no effect on a header", () => {
+    expect(act("l", { pending: "c", ...onHeader })).toBeNull();
+  });
+  test("cl is ignored in the Markdown view, in a text field and behind the cheat sheet", () => {
+    for (const o of [{ markdownView: true }, { target: "field" }, { overlay: "cheatsheet" }] as const) {
+      expect(act("l", { pending: "c", ...o })).toBeNull();
+    }
+  });
+  test("c then another key cancels the prefix", () => {
+    expect(resolveKey(k("x", { pending: "c" }))).toEqual({ action: null, pending: "", preventDefault: false });
   });
 });
 
