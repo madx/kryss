@@ -1,6 +1,6 @@
 // Client entry point, built by Bun.
 import { createApi, createFile, getLinkConfig, listFiles, subscribeEvents } from "./api";
-import { setLinkRules } from "./link-rules";
+import { getLinkRules, setLinkRules } from "./link-rules";
 import "./view/link-icon"; // installs the icon of the link rules
 import { chooseFile, fileHref, LAST_FILE_KEY } from "./logic/files";
 import { setWikilinkFile } from "./editor/wikilink";
@@ -50,13 +50,26 @@ if (listing.kind === "vault") {
 let linkProblems: string[] = [];
 if (listing.kind === "vault") {
   const config = await getLinkConfig();
-  setLinkRules(config.links);
-  linkProblems = config.problems;
+  setLinkRules(config?.links ?? []);
+  linkProblems = config?.problems ?? [];
 }
 
 if (listing.kind !== "vault" || file !== null) {
   const store = createStore({ api: createApi(file), storage: localStorage, file });
-  mountApp(roots, store, localStorage, file === null ? undefined : { file, ...vaultCalls, linkProblems });
+  const app = mountApp(roots, store, localStorage, file === null ? undefined : { file, ...vaultCalls, linkProblems });
+
+  if (listing.kind === "vault") {
+    // An edit of `.kryss.json` applies when the window is back in focus, links on screen included. A failed fetch keeps the rules in use.
+    let known = JSON.stringify(getLinkRules());
+    window.addEventListener("focus", () => {
+      void getLinkConfig().then((fresh) => {
+        if (!fresh || JSON.stringify(fresh.links) === known) return;
+        known = JSON.stringify(fresh.links);
+        setLinkRules(fresh.links);
+        app.refresh();
+      });
+    });
+  }
 
   window.addEventListener("beforeunload", (e) => {
     if (store.hasPendingChanges()) {
