@@ -8,6 +8,9 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- `cl` on a task opens a list picker below its row, with a plain input that narrows the lists on their title, and Enter moves the task with its subtree to the end of the chosen list.
+  A subtask becomes a top-level task there, the moved task is pinned under a filter, the cursor follows it, and the move is one undoable change.
+
 - Vault mode: with `VAULT_DIR` set, Kryss manages every `.md` file of an Obsidian Vault whose frontmatter has `kryss-enabled: true`, and `NEW_FILE_DIR` says where new files go.
 - `GET /api/files` and `POST /api/files`, and a `file` parameter on `GET` and `PUT /api/todos` and on `GET /api/events`, with a `404` for any path outside the Vault, symbolic links included.
 - The ETag, `409`, `422`, the watcher and the SSE stream work per file, and a file is watched only while it has an open stream.

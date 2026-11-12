@@ -10,6 +10,7 @@ import {
   listMoveTarget,
   moveDown,
   moveList,
+  moveToList,
   moveUp,
   outdent,
   renameList,
@@ -38,6 +39,7 @@ import { createHeader } from "./header";
 import { switchRefusal } from "../logic/files";
 import { createFilePicker, type FilePickerEnv } from "./file-picker";
 import { createFilterPicker } from "./filter-picker";
+import { createListPicker } from "./list-picker";
 import { visibleOf } from "./visible";
 import { firstMatch, matchingStops, searchCounter, stepMatch } from "../logic/search";
 import { visibleStops } from "../logic/filter";
@@ -103,6 +105,23 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       })
     : null;
   if (filePicker) roots.header.append(filePicker.el);
+  /** The task whose list the `cl` picker is choosing. */
+  let moving: TaskPath | null = null;
+  const listPicker = createListPicker({
+    doc: () => doc(),
+    pick(list) {
+      const path = moving;
+      moving = null;
+      if (!path) return;
+      if (!apply(moveToList(doc(), path, list))) cursor.focusStop({ kind: "task", path });
+    },
+    closed() {
+      const path = moving;
+      moving = null;
+      if (path) cursor.focusStop({ kind: "task", path });
+    },
+  });
+  document.body.append(listPicker.el);
   if (vault?.linkProblems?.length) footer.flash(`.kryss.json: ${vault.linkProblems[0]}${vault.linkProblems.length > 1 ? ` (+${vault.linkProblems.length - 1})` : ""}`, true);
 
   /** A switch is a navigation, after the pending changes are saved, and it is refused while a save fails or is in conflict. */
@@ -380,6 +399,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       // The disk version wins: a list name being typed is discarded, and clearing it first keeps the blur on removal from committing it.
       ctx.renaming = null;
       ctx.placeholder = null;
+      moving = null; // the picker holds list indexes and a path of the old document
+      listPicker.close();
     }
     if (kind !== "status") {
       renderAll(state);
@@ -505,6 +526,12 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     renameList: lists.rename,
     registerKeys,
     changeList: (list) => lists.rename(list, true),
+    moveToList(path) {
+      const row = document.querySelector(rowSelector(path));
+      if (!row) return;
+      moving = path;
+      listPicker.open(row, path.list);
+    },
     search: { active: () => search !== null, start: startSearch, step: stepSearch, end: () => endSearch() },
     moveList: lists.moveByKey,
     beginAdd,

@@ -1,0 +1,36 @@
+/* The list picker of `cl` (PRD 5.12): the panel look of the other pickers, anchored below the row of the task. */
+.list-picker {
+  position: fixed;
+  box-sizing: border-box;
+  max-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--panel-padding);
+  background: var(--color-surface);
+  border-radius: var(--radius-panel);
+  z-index: 50;
+}
+
+.list-picker[hidden] {
+  display: none;
+}
+
+.list-picker-input {
+  flex: none;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--row-padding-y) var(--row-padding);
+  background: var(--color-input);
+  border: 0;
+  border-radius: var(--radius-control);
+  outline: none;
+}
+
+.list-picker .picker-menu {
+  padding: var(--space-4) 0 0;
+  background: transparent;
+}
+
+.list-picker .picker-item[aria-current="true"] .picker-item-label {
+  color: var(--color-accent);
+}

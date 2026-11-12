@@ -28,6 +28,8 @@ export type KeyboardEnv = {
   renameList(list: number): void;
   /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop): void };
+  /** `cl` on a task: opens the list picker below its row. */
+  moveToList(path: TaskPath): void;
   /** `cc` on a header: opens the name input with no text. */
   changeList(list: number): void;
   /** Incremental search (PRD 5.15). `step` moves the cursor to the next or previous match. */
@@ -188,6 +190,9 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "change":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(CHANGE_EDIT));
+        return;
+      case "move-to-list":
+        env.moveToList(path);
         return;
       case "set-due":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(DUE_EDIT));

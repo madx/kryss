@@ -23,6 +23,7 @@ const GROUPS: Group[] = [
       ["yy", "copy into the register, without deleting"],
       ["cc", "clear the text to retype it (Escape restores it)"],
       ["cL", "clear the name of its list to retype it"],
+      ["cl", "change the list: pick another list, the task goes to its end"],
       ["cd", "change the due date: edit the date with its popup"],
       ["p", "paste the register below, after the subtasks"],
       ["> / <", "indent / outdent, over the visible rows under a filter"],
