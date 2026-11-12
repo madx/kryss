@@ -494,7 +494,7 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
   });
 });
 
-describe("resolveKey: cd (due date) and cl (list name)", () => {
+describe("resolveKey: cd (due date) and cL (list name)", () => {
   test("s and c set the pending prefix without an action", () => {
     expect(resolveKey(k("s"))).toEqual({ action: null, pending: "s", preventDefault: true });
     expect(resolveKey(k("c"))).toEqual({ action: null, pending: "c", preventDefault: true });
@@ -511,15 +511,18 @@ describe("resolveKey: cd (due date) and cl (list name)", () => {
   test("cd has no effect on a header", () => {
     expect(act("d", { pending: "c", ...onHeader })).toBeNull();
   });
-  test("cd and cl are ignored in the Markdown view, in a text field and behind the cheat sheet", () => {
+  test("cd and cL are ignored in the Markdown view, in a text field and behind the cheat sheet", () => {
     for (const o of [{ markdownView: true }, { target: "field" }, { overlay: "cheatsheet" }] as const) {
       expect(act("d", { pending: "c", ...o })).toBeNull();
-      expect(act("l", { pending: "c", ...o })).toBeNull();
+      expect(act("L", { pending: "c", ...o })).toBeNull();
     }
   });
-  test("cl changes the name of the list, from a task and from a header", () => {
-    expect(resolveKey(k("l", { pending: "c" }))).toEqual({ action: { type: "change-list" }, pending: "", preventDefault: true });
-    expect(act("l", { pending: "c", ...onHeader })).toEqual({ type: "change-list" });
+  test("cL changes the name of the list, from a task and from a header", () => {
+    expect(resolveKey(k("L", { pending: "c" }))).toEqual({ action: { type: "change-list" }, pending: "", preventDefault: true });
+    expect(act("L", { pending: "c", ...onHeader })).toEqual({ type: "change-list" });
+  });
+  test("cl does nothing and clears the prefix", () => {
+    expect(resolveKey(k("l", { pending: "c" }))).toEqual({ action: null, pending: "", preventDefault: false });
   });
 });
 

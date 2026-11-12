@@ -93,6 +93,20 @@ describe("dueState against a horizon", () => {
     expect(dueState("2026-11-16", week)).toBe("later");
     expect(dueState("2026-11-08", week)).toBe("overdue");
   });
+  test("a day after today but within the current ISO week is due this week", () => {
+    expect(dueState("2026-11-13", today)).toBe("week");
+    expect(dueState("2026-11-15", today)).toBe("week");
+  });
+  test("a day in the next week, a later week and a later quarter are later", () => {
+    expect(dueState("2026-11-16", today)).toBe("later");
+    expect(dueState("2026-W47", today)).toBe("later");
+    expect(dueState("2027-Q1", today)).toBe("later");
+  });
+  test("the current week and quarter stay due now, and today stays due now", () => {
+    expect(dueState("2026-W46", today)).toBe("now");
+    expect(dueState("2026-Q4", today)).toBe("now");
+    expect(dueState(TODAY, today)).toBe("now");
+  });
   test("an invalid date has no state", () => {
     expect(dueState("2026-02-30", today)).toBeNull();
   });
