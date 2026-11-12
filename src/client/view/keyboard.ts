@@ -3,7 +3,7 @@ import type { TodoDocument } from "../../shared/types";
 import { indent, moveDown, moveUp, outdent, type OpResult, type TaskPath } from "../logic";
 import { firstChanged, moveCursor, type Stop } from "../logic/cursor";
 import type { AddAt, Anchor } from "../logic/insert";
-import { visibleStops } from "../logic/filter";
+import { appendTerm, visibleStops } from "../logic/filter";
 import { visibleOf } from "./visible";
 import { isTextField, resolveKey, type Action, type Overlay, type Pending, type TargetKind } from "../shortcuts";
 import type { Store } from "../store";
@@ -22,7 +22,7 @@ export type KeyboardEnv = {
   /** Toggles the task at `path` (the due date rewrite and the pin included) and keeps the focus on it. */
   toggle(path: TaskPath): void;
   /** The filter bar and the saved filter picker (PRD 5.14). */
-  filters: { focus(): void; set(text: string): void; startList(): void; openPicker(): void };
+  filters: { focus(): void; set(text: string): void; startList(append: boolean): void; openPicker(): void };
   /** The file picker of a Vault (PRD 5.16): it does nothing in single-file mode. */
   files: { openPicker(): void };
   renameList(list: number): void;
@@ -54,7 +54,7 @@ export function targetKind(target: EventTarget | null): TargetKind {
 }
 
 /** Actions that make sense when the page holds no document. */
-const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "set-filter", "filter-list", "filter-picker", "file-picker"]);
+const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "set-filter", "append-filter", "filter-list", "append-filter-list", "filter-picker", "file-picker"]);
 
 export function installKeyboard(env: KeyboardEnv): void {
   const { store, cursor } = env;
@@ -121,8 +121,15 @@ export function installKeyboard(env: KeyboardEnv): void {
         env.filters.set(action.text);
         cursor.focusIndex(0); // the first visible stop
         return;
+      case "append-filter":
+        env.filters.set(appendTerm(store.getState().filter, action.term));
+        cursor.focusIndex(0);
+        return;
       case "filter-list":
-        env.filters.startList();
+        env.filters.startList(false);
+        return;
+      case "append-filter-list":
+        env.filters.startList(true);
         return;
       case "filter-picker":
         env.filters.openPicker();

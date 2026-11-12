@@ -58,10 +58,14 @@ const GROUPS: Group[] = [
   {
     title: "Filters and views",
     rows: [
-      ["gf", "focus the filter bar (Enter or Escape applies)"],
-      ["ga / gt / gw", "all / due today or overdue / due this week or overdue"],
-      ["gl", "replace the filter with list:, with a popup of the lists"],
-      ["gF", "saved filters (dd deletes one)"],
+      ["ff", "focus the filter bar (Enter or Escape applies)"],
+      ["ft / fw", "add due today or overdue / due this week or overdue to the filter"],
+      ["fl", "add list: to the filter, with a popup of the lists"],
+      ["fx / fX", "add is:done / is:todo to the filter (replaces the opposite)"],
+      ["FF", "clear the filter"],
+      ["Ft / Fw / Fx / FX", "replace the filter with the same terms"],
+      ["Fl", "replace the filter with list:, with a popup of the lists"],
+      ["fs", "saved filters (dd deletes one)"],
       ["go", "open another file of the Vault, or create one"],
       ["sh", "tasks with a matching subtask: show all their subtasks / only the matching ones"],
       ["words", "match the task text, ignoring case", true],
