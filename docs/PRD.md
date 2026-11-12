@@ -703,6 +703,7 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
   `W` and `Q` alone are the current week and quarter.
   `+mon` is the first Monday strictly after today and `-mon` the last Monday strictly before it, with the weekdays `mon`, `tue`, `wed`, `thu`, `fri`, `sat` and `sun`.
   `N` is a positive integer, there is no `yesterday`, and a literal date, week or quarter is accepted as is.
+  A shortcut whose result is not a valid date, week or quarter, such as `+8000y` or a shift too large to represent, is unknown, in the popups and in the `due:` terms of 5.14.
 - Month and year shifts keep the day of the month and clamp to the last day of the target month, so one month after 31 January is 28 February (29 in a leap year).
 - With today being Wednesday 2026-11-11, `+1w` is `2026-11-18`, `+mon` is `2026-11-16`, `-tue` is `2026-11-10`, `W` is `2026-W46`, `+1W` is `2026-W47`, `Q` is `2026-Q4` and `+1Q` is `2027-Q1`.
 - Accepting an entry replaces the `->` and the typed shortcut with `-> DATE`, and never touches the text before the arrow.
