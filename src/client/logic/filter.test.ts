@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { TodoDocument } from "../../shared/types";
-import { applyVisible, filterCompletion, filterPills, isFiltering, followPins, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
+import { appendTerm, applyVisible, filterCompletion, filterPills, isFiltering, followPins, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
 import { frozen } from "./helpers.test-util";
 
 // Wednesday 2026-11-11, ISO week 2026-W46, quarter 2026-Q4.
@@ -668,5 +668,25 @@ describe("followPins", () => {
   test("a subtask pin follows its parent and can change level", () => {
     const moves = [{ from: at(1, 0), to: at(2) }];
     expect(followPins([at(1, 0)], moves)).toEqual([at(2)]);
+  });
+});
+
+describe("appendTerm (PRD 5.14)", () => {
+  test("appending to an empty text gives the term alone, with no leading space", () => {
+    expect(appendTerm("", "due:week,overdue")).toBe("due:week,overdue");
+  });
+  test("appending adds the term after a space", () => {
+    expect(appendTerm("list:work", "due:today,overdue")).toBe("list:work due:today,overdue");
+  });
+  test("a term already in the text leaves it unchanged", () => {
+    expect(appendTerm("due:today,overdue list:work", "due:today,overdue")).toBe("due:today,overdue list:work");
+    expect(appendTerm("is:done", "is:done")).toBe("is:done");
+  });
+  test("an is: term replaces the opposite one in place", () => {
+    expect(appendTerm("list:work is:done foo", "is:todo")).toBe("list:work is:todo foo");
+    expect(appendTerm("is:todo list:work", "is:done")).toBe("is:done list:work");
+  });
+  test("a longer word that merely contains the term does not count as present", () => {
+    expect(appendTerm("xis:done", "is:done")).toBe("xis:done is:done");
   });
 });

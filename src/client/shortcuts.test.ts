@@ -538,23 +538,60 @@ describe("resolveKey: cd (due date) and cL (list name)", () => {
 });
 
 describe("resolveKey: filters and views (PRD 5.14)", () => {
-  const views = [
-    ["a", { type: "set-filter", text: "" }],
-    ["t", { type: "set-filter", text: "due:today,overdue" }],
-    ["w", { type: "set-filter", text: "due:week,overdue" }],
-    ["l", { type: "filter-list" }],
-    ["f", { type: "focus-filter" }],
-    ["F", { type: "filter-picker" }],
+  const set = (text: string) => ({ type: "set-filter", text }) as const;
+  const append = (term: string) => ({ type: "append-filter", term }) as const;
+  const keys = [
+    ["F", "F", set("")],
+    ["F", "t", set("due:today,overdue")],
+    ["F", "w", set("due:week,overdue")],
+    ["F", "l", { type: "filter-list" }],
+    ["F", "x", set("is:done")],
+    ["F", "X", set("is:todo")],
+    ["f", "t", append("due:today,overdue")],
+    ["f", "w", append("due:week,overdue")],
+    ["f", "l", { type: "append-filter-list" }],
+    ["f", "x", append("is:done")],
+    ["f", "X", append("is:todo")],
+    ["f", "f", { type: "focus-filter" }],
+    ["f", "s", { type: "filter-picker" }],
   ] as const;
+  const press = (prefix: string, second: string, o: Partial<KeyInput> = {}) =>
+    resolveKey(k(second, { pending: prefix as "f" | "F", shiftKey: second !== second.toLowerCase(), ...o }));
 
-  test("gf focuses the filter bar, on a task, on a header and with nothing focused", () => {
-    expect(resolveKey(k("f", { pending: "g" }))).toEqual({ action: { type: "focus-filter" }, pending: "", preventDefault: true });
-    expect(act("f", { pending: "g", ...onHeader })).toEqual({ type: "focus-filter" });
-    expect(act("f", { pending: "g", target: "none" })).toEqual({ type: "focus-filter" });
+  test("f and F set the prefix, and do not start anything alone", () => {
+    expect(resolveKey(k("f"))).toEqual({ action: null, pending: "f", preventDefault: true });
+    expect(resolveKey(k("F", { shiftKey: true }))).toEqual({ action: null, pending: "F", preventDefault: true });
+    expect(resolveKey(k("f", onHeader)).pending).toBe("f");
   });
 
-  test("gF opens the saved filter picker", () => {
-    expect(resolveKey(k("F", { pending: "g", shiftKey: true }))).toEqual({ action: { type: "filter-picker" }, pending: "", preventDefault: true });
+  test("the second key resolves the filter keys of the table", () => {
+    for (const [prefix, second, action] of keys) {
+      expect(press(prefix, second)).toEqual({ action, pending: "", preventDefault: true });
+    }
+  });
+
+  test("the filter keys work on a header, with nothing focused and with the Markdown view open", () => {
+    for (const [prefix, second, action] of keys) {
+      expect(press(prefix, second, onHeader).action).toEqual(action);
+      expect(press(prefix, second, { target: "none" }).action).toEqual(action);
+      expect(press(prefix, second, { markdownView: true }).action).toEqual(action);
+    }
+  });
+
+  test("the prefixes are kept in the Markdown view", () => {
+    expect(resolveKey(k("f", { markdownView: true })).pending).toBe("f");
+    expect(resolveKey(k("F", { markdownView: true, shiftKey: true })).pending).toBe("F");
+  });
+
+  test("Ff is unassigned, and so are the other unknown second keys", () => {
+    expect(resolveKey(k("f", { pending: "F" }))).toEqual({ action: null, pending: "", preventDefault: false });
+    expect(act("z", { pending: "f" })).toBeNull();
+    expect(act("z", { pending: "F" })).toBeNull();
+    expect(act("F", { pending: "f", shiftKey: true })).toBeNull();
+  });
+
+  test("ga, gt, gw, gl, gf and gF do nothing any more", () => {
+    for (const second of ["a", "t", "w", "l", "f", "F"]) expect(act(second, { pending: "g" })).toBeNull();
   });
 
   test("go opens the file picker, on a task, on a header, with nothing focused and in the Markdown view", () => {
@@ -575,27 +612,15 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     expect(act("h", { pending: "s", ...onHeader })).toEqual({ type: "toggle-siblings" });
   });
 
-  test("g sets the prefix, then a, t, w, l, f and F resolve the filter keys", () => {
-    for (const [second, action] of views) {
-      expect(resolveKey(k(second, { pending: "g" }))).toEqual({ action, pending: "", preventDefault: true });
-    }
-  });
-
-  test("the view keys work on a header and with the Markdown view open", () => {
-    for (const [second, action] of views) {
-      expect(act(second, { pending: "g", ...onHeader })).toEqual(action);
-      expect(act(second, { pending: "g", markdownView: true })).toEqual(action);
-    }
-  });
-
   test("gg and sm still work", () => {
     expect(act("g", { pending: "g" })).toEqual({ type: "cursor", to: "first" });
     expect(act("m", { pending: "s" })).toEqual({ type: "toggle-markdown" });
   });
 
-  test("the view keys do nothing in a text field or behind the cheat sheet", () => {
-    expect(act("a", { pending: "g", target: "field" })).toBeNull();
-    expect(act("d", { pending: "g", overlay: "cheatsheet" })).toBeNull();
+  test("the filter keys do nothing in a text field or behind the cheat sheet", () => {
+    expect(act("t", { pending: "f", target: "field" })).toBeNull();
+    expect(act("t", { pending: "F", overlay: "cheatsheet" })).toBeNull();
+    expect(resolveKey(k("f", { overlay: "cheatsheet" }))).toEqual({ action: null, pending: "", preventDefault: true });
   });
 
   test("a prefix other than g does not start a view", () => {
