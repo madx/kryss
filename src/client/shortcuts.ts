@@ -15,7 +15,7 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste" } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
+  | { type: "change" } | { type: "yank" } | { type: "paste"; at: "after" | "before" } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
   | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
@@ -44,7 +44,8 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "u": return { type: "undo" };
     case "U": return { type: "redo" };
     case "+": return { type: "new-list" };
-    case "p": return { type: "paste" };
+    case "p": return { type: "paste", at: "after" };
+    case "P": return { type: "paste", at: "before" };
     case "/": return { type: "search-start" };
     case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
     case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
