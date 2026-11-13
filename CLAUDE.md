@@ -91,6 +91,8 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 - **Key groups** (PRD 5.9): `g` goes (cursor, file, help), `f` sets the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
+- **Highlights** (PRD 5.19): `==text==` renders in a gray, and `==🔴text==` picks a color with a leading circle (🔴 🟠 🟡 🟢 🔵 🟣), hidden in the rendered view.
+  It is a plain inline node like `~~strike~~`, unknown to the server, the live preview draws it, and typing `==` opens a popup of the colors that inserts both markers.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
 - **Vault features** (PRD 5.16 to 5.18): `go` opens the file picker, whose first entry creates a file.
   Wikilinks `[[Note|alias]]` render as `obsidian://open` links, and typing `[[` opens a popup of the note index (names and aliases) from `GET /api/notes`, inserting the path format of `newLinkFormat` read from `.obsidian/app.json`.
@@ -99,7 +101,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 
 ## Out of scope
 
-Authentication, multi-user, a desktop shell, custom checkbox states (deferred), due dates on lists, Yjs / CRDT, offline mode, editing the frontmatter other than the `kryss-filters` and `kryss-enabled` keys, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view.
+Authentication, multi-user, a desktop shell, custom checkbox states (deferred), due dates on lists, Yjs / CRDT, offline mode, editing the frontmatter other than the `kryss-filters` and `kryss-enabled` keys, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view, HTML highlights, more than six highlight colors.
 
 ## Testing
 
