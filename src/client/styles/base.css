@@ -85,8 +85,10 @@ del {
   color: var(--color-faint);
 }
 
-/* Highlights (PRD 5.19): solid background, fixed dark text, no padding so the layout never shifts. */
+/* Highlights (PRD 5.19): solid background, fixed dark text, a small horizontal padding like inline code. */
 .hl {
+  padding: 0 var(--space-4);
+  box-decoration-break: clone;
   background: var(--highlight-background);
   color: var(--color-base-10);
   border-radius: var(--radius-chip);
