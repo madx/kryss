@@ -36,6 +36,7 @@
 /* Highlights: a tint on other rows, solid with a fixed dark text on the cursor row, with a small horizontal padding. No underline or bold. */
 .search-hit {
   padding: 0 var(--space-4);
+  margin: 0 calc(-1 * var(--space-4));
   box-decoration-break: clone;
   border-radius: var(--radius-chip);
   background: color-mix(in srgb, var(--color-match) var(--tint-match), transparent);
