@@ -66,7 +66,7 @@ const GROUPS: Group[] = [
       ["fx / fX", "replace the filter with is:done / is:todo"],
       ["fl", "replace the filter with list:, with a popup of the lists"],
       ["fs", "saved filters (dd deletes one)"],
-      ["gx", "open the link of the task, or pick one of its links"],
+      ["gx / gX", "open / copy the URL of the link of the task, or of one of its links from a picker"],
       ["go", "open another file of the Vault, or create one"],
       ["sh", "tasks with a matching subtask: show all their subtasks / only the matching ones"],
       ["words", "match the task text, ignoring case", true],

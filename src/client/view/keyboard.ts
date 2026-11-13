@@ -36,6 +36,9 @@ export type KeyboardEnv = {
   /** `gx` (PRD 5.20): opens the only link of a task, or the picker of its links. */
   openLink(path: TaskPath, link: TaskLink): void;
   linkPicker(path: TaskPath, links: TaskLink[]): void;
+  /** `gX`: the same with the URL copied to the clipboard instead of opened. */
+  copyLink(link: TaskLink): void;
+  copyLinkPicker(path: TaskPath, links: TaskLink[]): void;
   /** `cc` on a header: opens the name input with no text. */
   changeList(list: number): void;
   /** Incremental search (PRD 5.15). `step` moves the cursor to the next or previous match. */
@@ -204,10 +207,16 @@ export function installKeyboard(env: KeyboardEnv): void {
         env.moveToList(path);
         return;
       case "open-link":
-      case "link-picker": {
+      case "link-picker":
+      case "copy-link":
+      case "copy-link-picker": {
         const links = taskLinks(getNode(doc, path)?.text ?? "");
-        if (action.type === "open-link" && links[0]) env.openLink(path, links[0]);
-        else if (links.length > 0) env.linkPicker(path, links);
+        const first = links[0];
+        if (!first) return;
+        if (action.type === "open-link") env.openLink(path, first);
+        else if (action.type === "copy-link") env.copyLink(first);
+        else if (action.type === "link-picker") env.linkPicker(path, links);
+        else env.copyLinkPicker(path, links);
         return;
       }
       case "set-due":

@@ -16,7 +16,7 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" } | { type: "open-link" } | { type: "link-picker" }
+  | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" } | { type: "open-link" } | { type: "link-picker" } | { type: "copy-link" } | { type: "copy-link-picker" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
   | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
@@ -146,7 +146,11 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "s" && key === "m") return done({ type: "toggle-markdown" });
   if (pending === "s" && key === "h") return done({ type: "toggle-siblings" });
   if (pending === "g" && goKey(key)) return done(goKey(key));
-  if (pending === "g" && key === "x") return done(target !== "task" || input.links === 0 ? null : { type: input.links === 1 ? "open-link" : "link-picker" });
+  if (pending === "g" && (key === "x" || key === "X")) {
+    if (target !== "task" || input.links === 0) return done(null);
+    const copy = key === "X";
+    return done({ type: input.links === 1 ? (copy ? "copy-link" : "open-link") : copy ? "copy-link-picker" : "link-picker" });
+  }
   if (pending === "f" && filterKey(key)) return done(filterKey(key));
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });

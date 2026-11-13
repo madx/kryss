@@ -127,8 +127,13 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   document.body.append(listPicker.el);
   /** The task whose links the `gx` picker is listing. */
   let linking: TaskPath | null = null;
+  /** What the `gx` picker does with the chosen link: `gX` copies the URL instead of opening it. */
+  let linkMode: "open" | "copy" = "open";
   const linkPicker = createLinkPicker({
-    pick: (link) => openLink(link),
+    pick(link) {
+      if (linkMode === "copy") copyLinkUrl(link);
+      else openLink(link);
+    },
     closed() {
       const path = linking;
       linking = null;
@@ -136,6 +141,24 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
   });
   document.body.append(linkPicker.el);
+  /** Copies the URL of a link (PRD 5.20), with no message and no effect on a refused write. The cursor stays on the row. */
+  function copyLinkUrl(link: TaskLink) {
+    const path = linking;
+    linking = null;
+    try {
+      navigator.clipboard.writeText(link.url).catch(() => {});
+    } catch {
+      // clipboard unavailable: silent, as gx is
+    }
+    if (path) cursor.focusStop({ kind: "task", path });
+  }
+  function openLinkPicker(path: TaskPath, links: TaskLink[], mode: "open" | "copy") {
+    const row = document.querySelector(rowSelector(path));
+    if (!row) return;
+    linking = path;
+    linkMode = mode;
+    linkPicker.open(row, links);
+  }
   /** Opens a link of a task in a new tab (PRD 5.20), under the scheme rules of 5.5. The cursor stays on the row. */
   function openLink(link: TaskLink) {
     const path = linking;
@@ -560,10 +583,11 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       openLink(link);
     },
     linkPicker(path, links) {
-      const row = document.querySelector(rowSelector(path));
-      if (!row) return;
-      linking = path;
-      linkPicker.open(row, links);
+      openLinkPicker(path, links, "open");
+    },
+    copyLink: (link) => copyLinkUrl(link),
+    copyLinkPicker(path, links) {
+      openLinkPicker(path, links, "copy");
     },
     search: { active: () => search !== null, start: startSearch, step: stepSearch, end: () => endSearch() },
     moveList: lists.moveByKey,
