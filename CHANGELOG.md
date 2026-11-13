@@ -8,6 +8,11 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- Highlights: `==text==` renders in a gray, and `==🔴text==` picks one of six colors (🔴 🟠 🟡 🟢 🔵 🟣) with a leading circle that the rendered view hides.
+  A highlight is a plain inline node, unknown to the server, that can hold or sit inside bold, italic, code, strikethrough and links, and it keeps its colors in a completed task.
+  The live preview draws it, hiding the markers and the emoji away from the cursor, and typing `==` opens a popup of the seven choices that inserts both markers with the cursor inside.
+  A search match inside a highlight gets an outline, and matches and highlights share a small horizontal padding.
+
 - `P` pastes the register above the cursor row, the mirror of `p`: right before a top-level task, as the previous subtask, or before the parent for a task that has children.
   On a header it pastes a task as the first task of the list, and a list before the list of the cursor, from its header or from one of its tasks.
 
