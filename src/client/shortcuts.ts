@@ -16,12 +16,14 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
+  | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" } | { type: "open-link" } | { type: "link-picker" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
   | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean; search: boolean;
+  /** Number of links in the text of the task under the cursor (PRD 5.20). */
+  links: number;
 };
 export type Resolution = { action: Action | null; pending: Pending; preventDefault: boolean };
 
@@ -144,6 +146,7 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "s" && key === "m") return done({ type: "toggle-markdown" });
   if (pending === "s" && key === "h") return done({ type: "toggle-siblings" });
   if (pending === "g" && goKey(key)) return done(goKey(key));
+  if (pending === "g" && key === "x") return done(target !== "task" || input.links === 0 ? null : { type: input.links === 1 ? "open-link" : "link-picker" });
   if (pending === "f" && filterKey(key)) return done(filterKey(key));
   if (pending === "g" && key === "g") return done({ type: "cursor", to: "first" });
   if (pending === "d" && key === "d") return done({ type: "delete" });

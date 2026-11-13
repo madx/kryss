@@ -40,6 +40,9 @@ import { switchRefusal } from "../logic/files";
 import { createFilePicker, type FilePickerEnv } from "./file-picker";
 import { createFilterPicker } from "./filter-picker";
 import { createListPicker } from "./list-picker";
+import { createLinkPicker } from "./link-picker";
+import { isAllowedUrl } from "../markdown/inline";
+import type { TaskLink } from "../logic/task-links";
 import { visibleOf } from "./visible";
 import { firstMatch, matchingStops, searchCounter, stepMatch } from "../logic/search";
 import { visibleStops } from "../logic/filter";
@@ -122,6 +125,24 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
   });
   document.body.append(listPicker.el);
+  /** The task whose links the `gx` picker is listing. */
+  let linking: TaskPath | null = null;
+  const linkPicker = createLinkPicker({
+    pick: (link) => openLink(link),
+    closed() {
+      const path = linking;
+      linking = null;
+      if (path) cursor.focusStop({ kind: "task", path });
+    },
+  });
+  document.body.append(linkPicker.el);
+  /** Opens a link of a task in a new tab (PRD 5.20), under the scheme rules of 5.5. The cursor stays on the row. */
+  function openLink(link: TaskLink) {
+    const path = linking;
+    linking = null;
+    if (isAllowedUrl(link.url)) window.open(link.url, "_blank", "noopener,noreferrer");
+    if (path) cursor.focusStop({ kind: "task", path });
+  }
   if (vault?.linkProblems?.length) footer.flash(`.kryss.json: ${vault.linkProblems[0]}${vault.linkProblems.length > 1 ? ` (+${vault.linkProblems.length - 1})` : ""}`, true);
 
   /** A switch is a navigation, after the pending changes are saved, and it is refused while a save fails or is in conflict. */
@@ -401,6 +422,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       ctx.placeholder = null;
       moving = null; // the picker holds list indexes and a path of the old document
       listPicker.close();
+      linking = null;
+      linkPicker.close();
     }
     if (kind !== "status") {
       renderAll(state);
@@ -531,6 +554,16 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       if (!row) return;
       moving = path;
       listPicker.open(row, path.list);
+    },
+    openLink(path, link) {
+      linking = path;
+      openLink(link);
+    },
+    linkPicker(path, links) {
+      const row = document.querySelector(rowSelector(path));
+      if (!row) return;
+      linking = path;
+      linkPicker.open(row, links);
     },
     search: { active: () => search !== null, start: startSearch, step: stepSearch, end: () => endSearch() },
     moveList: lists.moveByKey,

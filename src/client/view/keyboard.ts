@@ -6,6 +6,8 @@ import type { AddAt, Anchor } from "../logic/insert";
 import type { PastePlace } from "../logic/paste";
 import { visibleStops } from "../logic/filter";
 import { visibleOf } from "./visible";
+import { getNode } from "../logic/paths";
+import { taskLinks, type TaskLink } from "../logic/task-links";
 import { isTextField, resolveKey, type Action, type Overlay, type Pending, type TargetKind } from "../shortcuts";
 import type { Store } from "../store";
 import type { Cursor } from "./cursor";
@@ -31,6 +33,9 @@ export type KeyboardEnv = {
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop, at: PastePlace): void };
   /** `cl` on a task: opens the list picker below its row. */
   moveToList(path: TaskPath): void;
+  /** `gx` (PRD 5.20): opens the only link of a task, or the picker of its links. */
+  openLink(path: TaskPath, link: TaskLink): void;
+  linkPicker(path: TaskPath, links: TaskLink[]): void;
   /** `cc` on a header: opens the name input with no text. */
   changeList(list: number): void;
   /** Incremental search (PRD 5.15). `step` moves the cursor to the next or previous match. */
@@ -69,6 +74,8 @@ export function installKeyboard(env: KeyboardEnv): void {
     if (e.defaultPrevented || e.isComposing) return; // already handled, e.g. by the editor that just closed
     const state = store.getState();
     const overlay: Overlay = env.cheatsheet.isOpen() ? "cheatsheet" : "none";
+    const at = cursor.current();
+    const cursorLinks = at?.kind === "task" && state.doc ? taskLinks(getNode(state.doc, at.path)?.text ?? "") : [];
     const res = resolveKey({
       key: e.key,
       ctrlKey: e.ctrlKey,
@@ -80,6 +87,7 @@ export function installKeyboard(env: KeyboardEnv): void {
       overlay,
       markdownView: env.markdown.isOpen(),
       search: env.search.active(),
+      links: cursorLinks.length,
     });
     pending = res.pending;
     if (res.preventDefault) e.preventDefault();
@@ -195,6 +203,13 @@ export function installKeyboard(env: KeyboardEnv): void {
       case "move-to-list":
         env.moveToList(path);
         return;
+      case "open-link":
+      case "link-picker": {
+        const links = taskLinks(getNode(doc, path)?.text ?? "");
+        if (action.type === "open-link" && links[0]) env.openLink(path, links[0]);
+        else if (links.length > 0) env.linkPicker(path, links);
+        return;
+      }
       case "set-due":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(DUE_EDIT));
         return;

@@ -34,3 +34,15 @@
 .list-picker .picker-item[aria-current="true"] .picker-item-label {
   color: var(--color-accent);
 }
+
+/* The URL of a row of the link picker of `gx` (PRD 5.20): muted like a completed task, as the detail of the `[[` popup. */
+.picker-item-detail {
+  margin-left: var(--space-12);
+  font-style: normal;
+  color: var(--color-done-text);
+}
+
+.picker-item[data-active] .picker-item-detail {
+  color: inherit;
+  opacity: 0.6;
+}
