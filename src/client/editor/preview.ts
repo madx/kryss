@@ -1,12 +1,35 @@
 // Pure core of the live preview: which inline Markdown nodes exist, and which ranges to hide or style for a selection.
 // It depends on the Lezer Markdown parser only, never on the DOM, so it can be unit-tested.
 import type { Tree } from "@lezer/common";
-import { Strikethrough, parser } from "@lezer/markdown";
-import { isAllowedUrl } from "../markdown/inline";
+import { Strikethrough, parser, type DelimiterType, type MarkdownConfig } from "@lezer/markdown";
+import { highlightOpen, isAllowedUrl } from "../markdown/inline";
+import { highlightClass, highlightColor, type HighlightColor } from "../logic/highlight";
+
+const HighlightDelim: DelimiterType = { resolve: "Highlight", mark: "HighlightMark" };
+
+/** The `==text==` and `==🔴text==` inline syntax of PRD 5.19. The opening mark covers the emoji and the space after it. */
+const Highlight: MarkdownConfig = {
+  defineNodes: [{ name: "Highlight" }, { name: "HighlightMark" }],
+  parseInline: [
+    {
+      name: "Highlight",
+      after: "Emphasis",
+      parse(cx, next, pos) {
+        if (next !== 61 || cx.char(pos + 1) !== 61 || cx.char(pos + 2) === 61) return -1;
+        const before = cx.slice(pos - 1, pos);
+        const spaceBefore = /\s|^$/.test(before) || before === "=";
+        const open = highlightOpen(cx.slice(pos, pos + 12), 0);
+        // The opener extends over the emoji and the spaces that follow it, up to the first content character.
+        return cx.addDelimiter(HighlightDelim, pos, open ? pos + open.contentFrom : pos + 2, open !== null, !spaceBefore);
+      },
+    },
+  ],
+};
 
 /** The parser restricted to the inline syntax of the PRD: no block syntax, no HTML, no images, no entities. */
 export const inlineParser = parser.configure([
   Strikethrough,
+  Highlight,
   {
     remove: [
       "LinkReference", "IndentedCode", "FencedCode", "Blockquote", "HorizontalRule", "BulletList", "OrderedList",
@@ -15,10 +38,10 @@ export const inlineParser = parser.configure([
   },
 ]);
 
-export type Kind = "strong" | "em" | "code" | "strike" | "link";
+export type Kind = "strong" | "em" | "code" | "strike" | "highlight" | "link";
 
 /** An inline node: its whole range, and the ranges that are Markdown syntax (hidden when the selection is away). */
-export type PreviewNode = { kind: Kind; from: number; to: number; markers: [number, number][] };
+export type PreviewNode = { kind: Kind; from: number; to: number; markers: [number, number][]; color?: HighlightColor };
 
 /** A decoration to apply: hide a range, or style it with a CSS class. */
 export type Span = { from: number; to: number; hide: boolean; cls?: string };
@@ -28,9 +51,10 @@ const KINDS: Record<string, Kind> = {
   Emphasis: "em",
   InlineCode: "code",
   Strikethrough: "strike",
+  Highlight: "highlight",
   Link: "link",
 };
-const MARK_NAMES = new Set(["EmphasisMark", "CodeMark", "StrikethroughMark"]);
+const MARK_NAMES = new Set(["EmphasisMark", "CodeMark", "StrikethroughMark", "HighlightMark"]);
 
 /** Collects the supported inline nodes of a parsed document. Links need an allowed URL, as in the renderer. */
 export function collectNodes(tree: Tree, doc: string): PreviewNode[] {
@@ -55,6 +79,10 @@ export function collectNodes(tree: Tree, doc: string): PreviewNode[] {
           if (MARK_NAMES.has(c.name)) node.markers.push([c.from, c.to]);
         }
         if (node.markers.length < 2) return;
+        if (kind === "highlight") {
+          const color = highlightColor(String.fromCodePoint(doc.codePointAt(node.markers[0]![0] + 2) ?? 0));
+          if (color) node.color = color;
+        }
       }
       nodes.push(node);
     },
@@ -71,7 +99,7 @@ function touches(sel: readonly { from: number; to: number }[], from: number, to:
 export function previewSpans(nodes: PreviewNode[], sel: readonly { from: number; to: number }[]): Span[] {
   const spans: Span[] = [];
   for (const n of nodes) {
-    spans.push({ from: n.from, to: n.to, hide: false, cls: `cm-md-${n.kind}` });
+    spans.push({ from: n.from, to: n.to, hide: false, cls: n.kind === "highlight" ? `cm-md-highlight ${highlightClass(n.color)}` : `cm-md-${n.kind}` });
     if (touches(sel, n.from, n.to)) continue;
     for (const [from, to] of n.markers) if (to > from) spans.push({ from, to, hide: true });
   }

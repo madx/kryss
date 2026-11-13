@@ -42,3 +42,30 @@ describe("previewSpans", () => {
     expect(spans.some((x) => x.hide)).toBe(false);
   });
 });
+
+describe("highlights in the live preview (PRD 5.19)", () => {
+  const spans = (s: string, at: number) => previewSpans(nodes(s), [{ from: at, to: at }]);
+
+  test("finds a default and a colored highlight with their color", () => {
+    expect(nodes("==a==").map((n) => [n.kind, n.color])).toEqual([["highlight", undefined]]);
+    expect(nodes("==🔴a==").map((n) => [n.kind, n.color])).toEqual([["highlight", "red"]]);
+  });
+
+  test("the classes are those of the rendered highlight", () => {
+    expect(spans("==🟢a==", 20).find((x) => !x.hide)?.cls).toBe("cm-md-highlight hl hl-green");
+  });
+
+  test("hides both markers and the emoji when the cursor is away, and shows them when it touches", () => {
+    expect(hidden("==🔴a== tail", 11)).toEqual(["==🔴", "=="]);
+    expect(hidden("==🔴a== tail", 3)).toEqual([]);
+  });
+
+  test("follows the rules of the renderer for the literal cases", () => {
+    for (const s of ["==a", "====", "==🔴==", "a == b", "a == b == c", "\\==a=="]) expect(nodes(s)).toEqual([]);
+  });
+
+  test("holds and sits inside the other emphasis", () => {
+    expect(nodes("==**a**==").map((n) => n.kind).sort()).toEqual(["highlight", "strong"]);
+    expect(nodes("**==a==**").map((n) => n.kind).sort()).toEqual(["highlight", "strong"]);
+  });
+});

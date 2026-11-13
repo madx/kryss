@@ -57,6 +57,11 @@
   border-radius: var(--radius-chip);
 }
 
+/* The live preview gives a highlight the classes of the rendered one (.hl, .hl-red, ...). */
+.cm-md-highlight em, .cm-md-highlight .cm-md-em, .cm-md-highlight .cm-md-strike, .cm-md-highlight .cm-md-code, .cm-md-highlight .cm-md-link {
+  color: inherit;
+}
+
 .cm-md-link {
   color: var(--color-accent);
   text-decoration: underline;

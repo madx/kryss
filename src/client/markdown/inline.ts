@@ -111,19 +111,25 @@ function keepLastDue(nodes: InlineNode[]): InlineNode[] {
   return out;
 }
 
-/** The highlight opening at `i` (PRD 5.19): its color and the range of its content, or null. A leading space after the emoji is skipped. */
-function highlightAt(s: string, i: number): { color?: HighlightColor; contentFrom: number; contentTo: number } | null {
+/** The opening `==` at `i` (PRD 5.19): its color and where the content starts, after the emoji and the spaces that follow it, or null. */
+export function highlightOpen(s: string, i: number): { color?: HighlightColor; contentFrom: number } | null {
   let from = i + 2;
-  let color: HighlightColor | null = null;
   const emoji = String.fromCodePoint(s.codePointAt(from) ?? 0);
-  if ((color = highlightColor(emoji)) !== null) {
+  const color = highlightColor(emoji);
+  if (color !== null) {
     from += emoji.length;
     while (s[from] === " ") from++;
   }
   if (isSpace(s[from]) || s[from] === "=") return null;
-  const end = findClose(s, from, "==");
-  if (end <= from) return null;
-  return { ...(color ? { color } : {}), contentFrom: from, contentTo: end };
+  return { ...(color ? { color } : {}), contentFrom: from };
+}
+
+/** The highlight opening at `i`: its color and the range of its content, or null when it is not closed on the line. */
+function highlightAt(s: string, i: number): { color?: HighlightColor; contentFrom: number; contentTo: number } | null {
+  const open = highlightOpen(s, i);
+  if (!open) return null;
+  const end = findClose(s, open.contentFrom, "==");
+  return end > open.contentFrom ? { ...open, contentTo: end } : null;
 }
 
 /** Where the due node sits in the source: the whole `-> DATE`, where the date starts, and the date. */

@@ -44,3 +44,8 @@
   background: var(--color-match);
   color: var(--color-match-text);
 }
+
+/* A match inside a highlight has the color of the highlight yellow, so it gets an outline in the fixed dark text color. */
+.hl .search-hit {
+  outline: var(--hairline) solid var(--color-base-10);
+}
