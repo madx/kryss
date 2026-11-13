@@ -392,6 +392,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `I` / `A` | add the first / last subtask of the task. On a subtask, of its parent. |
 | `go` | open the file picker, in Vault mode only (5.16) |
 | `gx` | open a link of the task: at once if it has one, from a picker if it has several (5.20) |
+| `gX` | copy the URL of a link of the task: at once if it has one, from a picker if it has several (5.20) |
 | `g?` | open or close the cheat sheet |
 | `/` | start an incremental search (5.15) |
 | `n` / `N` | next / previous match of the active search (5.15) |
@@ -415,7 +416,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 - `J` and `K` move the list down and up, like Alt+↓ and Alt+↑, as described in 5.2.
   `H` and `L` do the same on a header, and also work on a task.
-- `x`, `>`, `<`, `cd`, `cl` and `gx` do nothing on a header.
+- `x`, `>`, `<`, `cd`, `cl`, `gx` and `gX` do nothing on a header.
 - `+` creates the list as in 5.1 and clears the filter, so that the new list is visible.
   Once the name is confirmed, the cursor stays on the new list header.
 
@@ -1186,7 +1187,7 @@ The color is chosen by a colored circle right after the opening marker, and the 
 
 ### 5.20 Open a link from the keyboard
 
-`gx` opens a link of the task under the cursor, in Normal mode.
+`gx` opens a link of the task under the cursor, in Normal mode, and `gX` copies the URL of such a link to the clipboard instead.
 It is a key with no mouse equivalent, since a click on a rendered link already opens it (5.5).
 
 **Which links**
@@ -1209,6 +1210,11 @@ It is a key with no mouse equivalent, since a click on a rendered link already o
 - Opening a link follows the rules of 5.5: a new tab, `rel="noopener noreferrer"`, and the allowed schemes only.
   The picker closes, and the cursor stays on the row.
 - With no link on the task, on a list header, with no cursor, or while the Markdown view is open, `gx` does nothing and shows no message.
+- `gX` finds the same links and uses the same picker as `gx`, and only the last step differs: with one link it copies the URL at once, and with several links Enter in the picker copies the URL of the highlighted row.
+  It copies the URL as the link resolves it, so an `obsidian://open` URL for a wikilink, with no label and no Markdown.
+  It is write-only like the clipboard of 5.12, and unlike the other copies it shows no message, neither "Copied" nor "Copy failed": a refused clipboard write is silent, as `gx` is.
+  The picker closes and the cursor stays on the row, and `gX` is not undoable and leaves the document, the filter, the pins, the register and the search alone, as `gx` does.
+  With no link, on a header, with no cursor, or with the Markdown view open, `gX` does nothing.
 - `gx` is not a change of the document: it is not undoable, and it leaves the filter, the pins, the register and the search alone.
   It works under every filter.
 
@@ -1216,7 +1222,7 @@ It is a key with no mouse equivalent, since a click on a rendered link already o
 
 - The extraction of the links of a task text is a pure function in `src/client/logic/` built on the inline parser of 5.5, so it applies the same scheme and whitespace rules as the rendering, and it has tests.
   The narrowing of the picker rows is a pure function too, with the immutable and `null` conventions of 5.7.
-- The `gx` resolution belongs to the pure key function of 5.9, as the second key of the `g` prefix.
+- The `gx` and `gX` resolution belongs to the pure key function of 5.9, as second keys of the `g` prefix, and gives two actions that differ by what the last step does.
 - The picker is the one of `cl`, with its rows built from the links, and it is verified by hand, like CodeMirror.
 
 ## 6. Tests
@@ -1224,7 +1230,7 @@ It is a key with no mouse equivalent, since a click on a rendered link already o
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the links of a task (each syntax, the order, a refused scheme, a literal wikilink in single-file mode, an autolink, a task with none, the narrowing of the picker rows, and the key `gx` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the links of a task (each syntax, the order, a refused scheme, a literal wikilink in single-file mode, an autolink, a task with none, the narrowing of the picker rows, and the keys `gx` and `gX` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - **Highlights**: the inline parser of 5.19 (plain and each of the six colors, an unknown emoji, a circle after a space, an unclosed pair, `====`, `==🔴==`, the trimmed space, an escaped marker, nesting inside and around bold, italic, code, strikethrough and links, a due date inside, a comparison such as `a == b`), the color table and the popup entries, and the decision of whether a typed `==` opens the popup.

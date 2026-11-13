@@ -749,3 +749,33 @@ describe("resolveKey: gx opens a link (PRD 5.20)", () => {
     expect(act("x", { pending: "g", links: 1, search: true })).toEqual({ type: "open-link" });
   });
 });
+
+describe("resolveKey: gX copies a link (PRD 5.20)", () => {
+  test("gX on a task with one link copies it and clears the prefix", () => {
+    expect(resolveKey(k("X", { pending: "g", links: 1 }))).toEqual({ action: { type: "copy-link" }, pending: "", preventDefault: true });
+  });
+  test("gX on a task with several links opens the picker in copy mode", () => {
+    expect(act("X", { pending: "g", links: 3 })).toEqual({ type: "copy-link-picker" });
+  });
+  test("gX on a task with no link does nothing and clears the prefix", () => {
+    const res = resolveKey(k("X", { pending: "g", links: 0 }));
+    expect(res.action).toBeNull();
+    expect(res.pending).toBe("");
+  });
+  test("gX on a header or with no cursor does nothing", () => {
+    expect(act("X", { pending: "g", links: 2, ...onHeader })).toBeNull();
+    expect(act("X", { pending: "g", links: 2, target: "none" })).toBeNull();
+  });
+  test("gX is ignored in the Markdown view, in a text field and behind the cheat sheet", () => {
+    for (const o of [{ markdownView: true }, { target: "field" }, { overlay: "cheatsheet" }] as const) {
+      expect(act("X", { pending: "g", links: 2, ...o })).toBeNull();
+    }
+  });
+  test("gX works while a search is active", () => {
+    expect(act("X", { pending: "g", links: 1, search: true })).toEqual({ type: "copy-link" });
+  });
+  test("X alone is not a link key", () => {
+    expect(act("X", { links: 2 })).toBeNull();
+  });
+});
+
