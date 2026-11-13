@@ -240,7 +240,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 
 ### 5.5 Rendering and editing
 
-- **Inline Markdown rendering only**: bold, italic, `code`, strikethrough, links.
+- **Inline Markdown rendering only**: bold, italic, `code`, strikethrough, highlights, links.
   No images, headings, lists or raw HTML.
 - At rest, the task is rendered.
   When editing, it switches to a **single-line CodeMirror 6 editor** with live preview (markers hidden away from the cursor), instantiated only on the task being edited.
@@ -250,7 +250,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   Any other scheme (`javascript:`, `data:`…) is refused.
 - Rendered text is sanitized (no raw HTML interpreted).
 - Rendering is done by a small hand-written inline parser (`src/client/markdown/inline.ts`) that produces an AST, then builds the DOM with `createElement` and text nodes only, never `innerHTML`.
-  Supported syntax: `**bold**`, `*italic*`, `_italic_`, `` `code` ``, `~~strikethrough~~`, `[label](url)`.
+  Supported syntax: `**bold**`, `*italic*`, `_italic_`, `` `code` ``, `~~strikethrough~~`, `==highlight==`, `[label](url)`.
   Images (`![alt](url)`) render as nothing.
   Raw HTML and block syntax are shown as literal text.
 - Unmatched markers are literal text.
@@ -265,6 +265,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 - An autolink, `<https://example.com>`, is recognized by the same parser and rendered as a link whose label is the URL, under the same scheme rules as `[label](url)`.
   Its scheme is checked like any other, so `<javascript:alert(1)>` stays literal text.
 - A wikilink, `[[Note]]` or `[[Note|alias]]`, is one more node, rendered as a link that opens Obsidian (5.17).
+- A highlight, `==text==` or `==🔴text==`, is one more node, rendered with a background color (5.19).
 
 ### 5.6 Undo
 
@@ -324,7 +325,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   If the task changed or disappeared, which means an external change, the disk version wins and the edit is discarded.
 - Line breaks, from paste or any other source, are replaced by one space each.
 - Tab, Shift+Tab and Alt+arrows are not bound by the editor, so it never swallows them.
-- The live preview uses the Lezer Markdown parser restricted to inline syntax (no block syntax, HTML, images or entities, plus strikethrough).
+- The live preview uses the Lezer Markdown parser restricted to inline syntax (no block syntax, HTML, images or entities, plus strikethrough and the highlight of 5.19).
   Markers of a node are hidden unless a selection range is in or touching that node, and a link is only previewed when its URL is allowed.
 - The cursor starts at the end of the text when editing begins.
 
@@ -681,7 +682,7 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
 - The due date of a task is its last valid `-> DATE`.
   Earlier ones stay plain text.
 - The server and the JSON model do not know about dates: a date never makes a file invalid, and the Markdown view, the clipboard and the register carry it as text.
-- A due date inside a link label or inside emphasis (`**`, `*`, `_`, `~~`) is plain text too, so a pill only sits at the top level of the text.
+- A due date inside a link label or inside emphasis (`**`, `*`, `_`, `~~`, `==`) is plain text too, so a pill only sits at the top level of the text.
   The editor, `cd` and the view all use the range that the inline parser finds, so they always agree.
 - A due date is not an inline Markdown syntax.
   It is recognized inside the inline parser of 5.5 only to render it, and a `-> DATE` inside a code span stays literal.
@@ -951,6 +952,8 @@ It is separate from the filter of 5.14: a filter hides rows, a search only highl
   On other rows it is a 40% tint behind the normal text color, and on the cursor row it is solid with a fixed dark text color (`#1f2328`).
   It has the chip radius, and no underline or bold, so the layout never shifts.
   An occurrence that spans several inline elements, for example across a bold marker, still matches but is not highlighted.
+  An occurrence inside a highlight of 5.19 also gets a 1 px outline in the fixed dark text color, so that it stays visible on the yellow highlight, which has the same color.
+  Both yellows stay as they are.
 - The search input is stacked right above the footer, with the same width, the 12 px font, the input tint and a 2 px bar in `--color-match`, like the focused filter bar of 5.10.
   It takes no space when it is closed, and the page grows by its height and an 8 px gap above the footer while it is shown, so that the last rows stay reachable.
 - While the search is active, the footer statusline shows `/query  3/12` after the counts, the query in yellow (`--color-match`) and the counter in the muted color, with `no match` in place of the counter when nothing matches, whether the input is open or closed.
@@ -1123,6 +1126,63 @@ Single-file mode keeps one file and has none of them.
 
 - Matching a URL against the rules, building a label, validating an icon value and the decision of the paste (selection, rule, none) are pure functions with tests.
 
+### 5.19 Highlights
+
+A highlight gives a background color to a part of a task, like the colored highlights of Obsidian themes and snippets.
+The color is chosen by a colored circle right after the opening marker, and the file stays plain Markdown.
+
+**Syntax**
+
+- `==text==` is a highlight in the default color, a gray.
+  `==🔴text==` is a highlight in a color, chosen by the emoji that follows the opening `==` immediately.
+- The six emoji are 🔴 red, 🟠 orange, 🟡 yellow, 🟢 green, 🔵 blue and 🟣 purple.
+  Any other emoji, a circle after a space, or a circle further into the text is plain content, in the default color.
+- An opening `==` needs a closing `==` on the same line, otherwise both stay literal text, as for the other markers.
+  The content after the optional emoji must be non-empty, so `====` and `==🔴==` stay literal and the emoji is not swallowed.
+  A space after the emoji is allowed, and the leading space is trimmed from the rendered text.
+- `\==` is literal text, like the other backslash escapes of 5.5.
+- A highlight can contain bold, italic, code, strikethrough and links, and can sit inside them, through the same nesting as the other emphasis markers.
+  A due date inside a highlight is plain text (5.13).
+  Highlights are not nested in each other.
+- It is not part of the JSON model: the server never parses it, and the stored text keeps the markers and the emoji, so the Markdown view and the clipboard text (5.11, 5.12) show them as typed.
+
+**Look**
+
+- The rendered highlight hides the emoji, since the background already shows the color.
+  It has the chip radius and no padding that would shift the layout.
+- The backgrounds are solid, with no opacity, and the same in both themes, and the text on them is `--color-base-10` in both themes, including inside a completed task, which does not dim a highlight.
+
+| Token | Value | Emoji |
+|---|---|---|
+| `--highlight-background` | `#b5b7bf` | none (default) |
+| `--color-red` | `#fb617e` | 🔴 |
+| `--color-orange` | `#f89860` | 🟠 |
+| `--color-yellow` | `#edc763` | 🟡 |
+| `--color-green` | `#9ed06c` | 🟢 |
+| `--color-blue` | `#508bf1` | 🔵 |
+| `--color-purple` | `#bb97ee` | 🟣 |
+| `--color-base-10` | `#252630` | text on a highlight |
+
+- These are new tokens in `theme.css`, separate from the semantic ones (`--color-danger`, `--color-filter`, `--color-match`, `--color-success`), so tuning one never changes a highlight.
+  `--color-yellow` has the same value as `--color-match`, which is why a search match gets an outline (5.15).
+
+**Editor**
+
+- The live preview draws the background of a highlight, with the same rule as the other markers: the markers and the emoji are hidden unless a selection range is in or touching the node.
+  It uses a small custom inline extension of the Lezer Markdown parser, which follows the rules above.
+- Typing `==` opens a CodeMirror autocomplete with seven entries in this order: default, red, orange, yellow, green, blue and purple, each showing its circle and its color name in title case (`🔴 Red`), and the default showing only its name (`Default`).
+  It has the same look as the due date popup (5.13), and ↑ / ↓, Enter, Tab and Escape behave as there, with Escape not committing the editor.
+- Accepting an entry replaces the typed `==` with both markers and puts the cursor inside: `==🔴==` with the cursor between the emoji and the closing `==`, and `====` with the cursor in the middle for the default.
+- The popup does not open when the typed `==` closes a highlight that is already open on the line, for example the second `==` of `==🔴text==`.
+- There is no key in Normal mode to add or change a highlight.
+
+**Implementation decisions**
+
+- The inline parser (`src/client/markdown/inline.ts`) gets a `highlight` node with an optional `color`, and the renderer builds a `mark` element with a class per color, with `createElement` and text nodes only.
+- The color table, the check that a leading emoji is a color, and the popup entries are pure functions with tests, in a module shared by the renderer and the editor.
+- The search highlight walks the text nodes after each render (5.15), so it works inside a highlight with no change, and only the outline is new.
+- The popup and the live preview are verified by hand.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
@@ -1131,8 +1191,9 @@ Single-file mode keeps one file and has none of them.
 - **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
+- **Highlights**: the inline parser of 5.19 (plain and each of the six colors, an unknown emoji, a circle after a space, an unclosed pair, `====`, `==🔴==`, the trimmed space, an escaped marker, nesting inside and around bold, italic, code, strikethrough and links, a due date inside, a comparison such as `a == b`), the color table and the popup entries, and the decision of whether a typed `==` opens the popup.
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); due dates on lists; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); due dates on lists; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; HTML `<mark>` and `style="background"` highlights, colors beyond the six of 5.19, a light theme palette for highlights, a Normal-mode key to add or change a highlight, a highlight across several lines, and showing the emoji in the rendered view; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
