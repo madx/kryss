@@ -53,6 +53,11 @@ function findClose(s: string, from: number, marker: string): number {
     } else if (c === "`") {
       const end = s.indexOf("`", j + 1);
       if (end > j + 1) j = end;
+    } else if (marker === "==" && s[j] === "=") {
+      // A closing `==` is a run of exactly two `=`: a longer run is skipped, as the parser reads it as literal.
+      const run = /^=+/.exec(s.slice(j))![0].length;
+      if (run === 2 && j > from && !isSpace(s[j - 1]) && s[j - 1] !== "=") return j;
+      j += run - 1;
     } else if (s.startsWith(marker, j)) {
       if (marker.length === 1 && s[j + 1] === marker) {
         j++; // part of a double marker: not a closer for a single one
@@ -238,7 +243,9 @@ function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRan
     }
 
     if (c === "=" && s[i + 1] === "=") {
-      const hl = highlightAt(s, i);
+      // Only a run of exactly two `=`, not touching an escaped `=`, can be a marker. Any other run is literal.
+      const run = /^=+/.exec(s.slice(i))![0].length;
+      const hl = run === 2 && s[i - 1] !== "=" ? highlightAt(s, i) : null;
       if (hl) {
         nodes.push({
           type: "highlight",
@@ -248,8 +255,8 @@ function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRan
         i = hl.contentTo + 2;
         continue;
       }
-      pushText("==");
-      i += 2;
+      pushText("=".repeat(run));
+      i += run;
       continue;
     }
 
@@ -370,4 +377,10 @@ export function renderInline(text: string, renderDue?: DueRenderer): DocumentFra
   const fragment = document.createDocumentFragment();
   build(parseInline(text), fragment, renderDue);
   return fragment;
+}
+
+/** Whether the popup of PRD 5.19 opens, given the line text up to the cursor: it ends with a typed `==` that opens a highlight, not one that closes it. */
+export function opensHighlightPopup(before: string): boolean {
+  if (!/(^|[^\\=])(\\\\)*==$/.test(before)) return false;
+  return parseInline(before).at(-1)?.type !== "highlight";
 }

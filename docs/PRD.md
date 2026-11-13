@@ -255,7 +255,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   Raw HTML and block syntax are shown as literal text.
 - Unmatched markers are literal text.
   An underscore inside a word (`snake_case`) is never italic.
-- Backslash escapes are supported for `` \ ` * _ ~ [ ] ( ) ``, any other backslash is literal.
+- Backslash escapes are supported for `` \ ` * _ ~ = [ ] ( ) ``, any other backslash is literal.
 - A link whose target is refused, or that contains whitespace, is shown as its literal source text.
   Before checking the scheme, whitespace, control and zero-width characters are removed (so `java\tscript:` is refused), and the cleaned URL is the one used as `href`.
   Relative URLs are refused.

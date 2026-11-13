@@ -33,18 +33,3 @@ export function highlightEntries(): HighlightEntry[] {
     })),
   ];
 }
-
-/** Whether the popup opens, given the line text up to the cursor: it ends with a typed `==` that opens a highlight, not one that closes it. */
-export function opensHighlightPopup(before: string): boolean {
-  let tokens = 0;
-  let lastEnd = -1;
-  for (let i = 0; i < before.length; i++) {
-    if (before[i] === "\\") i++;
-    else if (before.startsWith("==", i)) {
-      tokens++;
-      lastEnd = i + 2;
-      i++;
-    }
-  }
-  return lastEnd === before.length && tokens % 2 === 1;
-}

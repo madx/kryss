@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { astToHtml, findDueRange, isAllowedUrl, parseInline } from "./inline";
+import { astToHtml, findDueRange, isAllowedUrl, opensHighlightPopup, parseInline } from "./inline";
 
 const html = (s: string) => astToHtml(parseInline(s));
 
@@ -304,5 +304,38 @@ describe("highlights (PRD 5.19)", () => {
   test("a due date inside is plain text", () => {
     expect(html("==a -> 2026-11-22==")).toBe('<mark class="hl">a -&gt; 2026-11-22</mark>');
     expect(findDueRange("==a -> 2026-11-22==")).toBeNull();
+  });
+});
+
+describe("opensHighlightPopup", () => {
+  test("opens on a typed == at the start or after text", () => {
+    expect(opensHighlightPopup("==")).toBe(true);
+    expect(opensHighlightPopup("buy ==")).toBe(true);
+  });
+
+  test("does not open on a single = or on a longer run", () => {
+    expect(opensHighlightPopup("=")).toBe(false);
+    expect(opensHighlightPopup("buy =")).toBe(false);
+    expect(opensHighlightPopup("===")).toBe(false);
+  });
+
+  test("does not open when the typed == closes an open highlight", () => {
+    expect(opensHighlightPopup("==🔴text==")).toBe(false);
+    expect(opensHighlightPopup("==text==")).toBe(false);
+  });
+
+  test("a closing == the renderer recognizes does not open it", () => {
+    expect(opensHighlightPopup("==a == b==")).toBe(false);
+    expect(opensHighlightPopup("==a `==` b==")).toBe(false);
+    expect(opensHighlightPopup("==a====")).toBe(false);
+  });
+
+  test("an escaped == does not open it", () => {
+    expect(opensHighlightPopup("\\==")).toBe(false);
+    expect(opensHighlightPopup("\\\\==")).toBe(true);
+  });
+
+  test("opens again after a complete highlight", () => {
+    expect(opensHighlightPopup("==a== and ==")).toBe(true);
   });
 });

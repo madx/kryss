@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { parseInline } from "../markdown/inline";
 import { collectNodes, inlineParser, previewSpans } from "./preview";
 
 const nodes = (s: string) => collectNodes(inlineParser.parse(s), s);
@@ -68,4 +69,18 @@ describe("highlights in the live preview (PRD 5.19)", () => {
     expect(nodes("==**a**==").map((n) => n.kind).sort()).toEqual(["highlight", "strong"]);
     expect(nodes("**==a==**").map((n) => n.kind).sort()).toEqual(["highlight", "strong"]);
   });
+});
+
+describe("the live preview and the renderer agree on highlights", () => {
+  const rendered = (s: string): string[] => parseInline(s).flatMap(function walk(n): string[] {
+    if (n.type === "highlight") return [n.color ?? "default"];
+    return "children" in n ? n.children.flatMap(walk) : [];
+  });
+  const previewed = (s: string): string[] => nodes(s).filter((n) => n.kind === "highlight").map((n) => n.color ?? "default");
+  const cases = [
+    "==a==", "==🔴a==", "==🍎a==", "==a 🔴b==", "==🔴 a==", "==a", "====", "==🔴==", "a == b", "a == b == c",
+    "==a == b==", "==a====", "==a===", "==🔴a=====", "===a===", "\\==a==", "\\===a==", "==a\\==", "==**a**==", "**==a==**",
+    "==a== ==b==", "==🔴" + " ".repeat(15) + "a==", "1==2 and 3==4",
+  ];
+  for (const c of cases) test(JSON.stringify(c), () => expect(previewed(c)).toEqual(rendered(c)));
 });

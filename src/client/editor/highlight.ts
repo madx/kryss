@@ -1,6 +1,7 @@
 // The `==` popup of the highlights (PRD 5.19): seven entries that insert both markers with the cursor inside.
 import type { Completion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
-import { highlightEntries, opensHighlightPopup } from "../logic/highlight";
+import { highlightEntries } from "../logic/highlight";
+import { opensHighlightPopup } from "../markdown/inline";
 
 /** The popup source: it opens on a typed `==` that opens a highlight, and a closing `==` does not open it. */
 export function highlightSource(context: CompletionContext): CompletionResult | null {

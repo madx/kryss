@@ -15,10 +15,10 @@ const Highlight: MarkdownConfig = {
       name: "Highlight",
       after: "Emphasis",
       parse(cx, next, pos) {
-        if (next !== 61 || cx.char(pos + 1) !== 61 || cx.char(pos + 2) === 61) return -1;
-        const before = cx.slice(pos - 1, pos);
-        const spaceBefore = /\s|^$/.test(before) || before === "=";
-        const open = highlightOpen(cx.slice(pos, pos + 12), 0);
+        // Only a run of exactly two `=` is a marker, as in the renderer.
+        if (next !== 61 || cx.char(pos + 1) !== 61 || cx.char(pos + 2) === 61 || cx.char(pos - 1) === 61) return -1;
+        const spaceBefore = /\s|^$/.test(cx.slice(pos - 1, pos));
+        const open = highlightOpen(cx.slice(pos, cx.end), 0);
         // The opener extends over the emoji and the spaces that follow it, up to the first content character.
         return cx.addDelimiter(HighlightDelim, pos, open ? pos + open.contentFrom : pos + 2, open !== null, !spaceBefore);
       },
