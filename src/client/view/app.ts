@@ -163,7 +163,14 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   function openLink(link: TaskLink) {
     const path = linking;
     linking = null;
-    if (isAllowedUrl(link.url)) window.open(link.url, "_blank", "noopener,noreferrer");
+    if (isAllowedUrl(link.url)) {
+      // An anchor click, as for a rendered link (5.5): `window.open` can leave a blank tab for `obsidian:` and `mailto:`.
+      const a = document.createElement("a");
+      a.href = link.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.click();
+    }
     if (path) cursor.focusStop({ kind: "task", path });
   }
   if (vault?.linkProblems?.length) footer.flash(`.kryss.json: ${vault.linkProblems[0]}${vault.linkProblems.length > 1 ? ` (+${vault.linkProblems.length - 1})` : ""}`, true);

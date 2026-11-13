@@ -78,7 +78,7 @@ export function installKeyboard(env: KeyboardEnv): void {
     const state = store.getState();
     const overlay: Overlay = env.cheatsheet.isOpen() ? "cheatsheet" : "none";
     const at = cursor.current();
-    const cursorLinks = at?.kind === "task" && state.doc ? taskLinks(getNode(state.doc, at.path)?.text ?? "") : [];
+    const cursorLinks = pending === "g" && at?.kind === "task" && state.doc ? taskLinks(getNode(state.doc, at.path)?.text ?? "") : [];
     const res = resolveKey({
       key: e.key,
       ctrlKey: e.ctrlKey,
