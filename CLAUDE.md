@@ -88,12 +88,13 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
   `sh` toggles the display of the siblings of a match.
 - **Incremental search** (PRD 5.15): `/` opens a plain input above the footer, highlights every occurrence (a literal substring, ignoring case) in the visible rows and moves the cursor, `n` / `N` jump to the next / previous match with wrap, and Escape in Normal mode ends it.
   It is client-only and in memory, it never reveals a row hidden by the filter, and the Markdown view ends it.
-- **Key groups** (PRD 5.9): `g` goes (cursor, file, help), `f` sets the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
+- **Key groups** (PRD 5.9): `g` goes (cursor, file, help, link), `f` sets the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Highlights** (PRD 5.19): `==text==` renders in a gray, and `==🔴text==` picks a color with a leading circle (🔴 🟠 🟡 🟢 🔵 🟣), hidden in the rendered view.
   It is a plain inline node like `~~strike~~`, unknown to the server, the live preview draws it, and typing `==` opens a popup of the colors that inserts both markers.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
+  `gx` opens a link of the task under the cursor from the keyboard, at once if it has one and from the `cl`-style picker if it has several, with no message when there is none (PRD 5.20).
 - **Vault features** (PRD 5.16 to 5.18): `go` opens the file picker, whose first entry creates a file.
   Wikilinks `[[Note|alias]]` render as `obsidian://open` links, and typing `[[` opens a popup of the note index (names and aliases) from `GET /api/notes`, inserting the path format of `newLinkFormat` read from `.obsidian/app.json`.
   `.kryss.json` at the Vault root holds the link rules (`match` regex, `label` template, `icon` as a Lucide name or an SVG data URL), applied when a URL is pasted in the editor, with no network call.
