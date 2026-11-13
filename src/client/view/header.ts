@@ -11,7 +11,7 @@ export function createHeader(root: HTMLElement, bar: FilterBar, toggleMarkdown: 
     {
       type: "button",
       class: "icon-button header-siblings",
-      title: "Show all subtasks of a match (gh)",
+      title: "Show all subtasks of a match (sh)",
       "aria-label": "Show all subtasks of a match",
       "aria-pressed": "false",
     },
@@ -20,7 +20,7 @@ export function createHeader(root: HTMLElement, bar: FilterBar, toggleMarkdown: 
   siblings.addEventListener("click", toggleSiblings);
   const markdown = el(
     "button",
-    { type: "button", class: "icon-button header-markdown", title: "Export as Markdown", "aria-label": "Export as Markdown", "aria-pressed": "false" },
+    { type: "button", class: "icon-button header-markdown", title: "Export as Markdown (sm)", "aria-label": "Export as Markdown", "aria-pressed": "false" },
     markdownIcon(),
   );
   markdown.addEventListener("click", toggleMarkdown);
