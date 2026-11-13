@@ -234,7 +234,7 @@ A whole document is its lists joined by a blank line, followed by that final new
 ### 5.4 Drag and drop (removed)
 
 - The app has no drag and drop, for tasks or for lists, and no drag library.
-  The app is keyboard first, and every move has a key: `J` / `K` and Alt+↑ / Alt+↓ (5.2), `>` and `<` for the depth, and `dd` then `p` to carry a task or a list across lists.
+  The app is keyboard first, and every move has a key: `J` / `K` and Alt+↑ / Alt+↓ (5.2), `>` and `<` for the depth, and `dd` then `p` or `P` to carry a task or a list across lists.
 - Nothing starts a drag, no row or header is a drop target, and there is no drop indicator or dimmed row.
 - This section keeps its number so that the references to the other sections stay valid.
 
@@ -364,7 +364,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   The filter bar and the saved filter picker have their own keys (5.14), and Escape on them puts the focus back on the cursor.
   The conflict banner is the first Tab stop and has no dedicated key.
 - `sm` toggles the Markdown view of 5.11.
-  `yy`, `dd`, `cc` and `p` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
+  `yy`, `dd`, `cc`, `p` and `P` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
 - A pending first key (`g`, `f`, `d`, `y`, `c` or `s`) is cancelled by any other key or by a blur, with no timeout.
 - Each prefix has one meaning: `g` goes (cursor, file and help), `f` sets the filter, `s` shows or switches a display, `c` changes a value, `d` deletes and `y` yanks.
 - Escape in Normal mode ends the active search (5.15), and does nothing otherwise.
@@ -381,7 +381,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `cd` | change the due date: open the editor on the date and its popup (5.13) |
 | `cl` | change the list of the task: open the list picker below the row (5.12) |
 | `cL` | change the name of the list of the task: open its name input with an empty name (5.12) |
-| `p` | paste the register below the task (5.12) |
+| `p` / `P` | paste the register below / above the task (5.12) |
 | `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), over the visible rows under a filter (5.14) |
 | `H` / `L` | move the whole list of the task up / down (5.2) |
@@ -403,6 +403,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `yy` | copy the list into the register (5.12) |
 | `cc`, `cL` | change the list: open the name input with an empty name (5.12) |
 | `p` | paste the register as the first task of the list, or after the list if it holds a list (5.12) |
+| `P` | paste the register as the first task of the list, or before the list if it holds a list (5.12) |
 | `o`, `a`, `I` | add a task as the first task of the list |
 | `A` | add a task as the last task of the list |
 | `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up, over the visible lists under a filter (5.14) |
@@ -431,7 +432,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 **Focus after an action**
 
-- After `p`, the cursor goes to the pasted element (5.12).
+- After `p` or `P`, the cursor goes to the pasted element (5.12).
 - After `dd`, the cursor goes to the next stop at the same position, or to the previous stop if the deleted one was last.
 - After a move, indent, outdent, check, or leaving Insert mode, the cursor stays on the same task, following it to its new position.
 - After an undo or a redo, the cursor goes to the first task that changed, or to the same position clamped to the visible range if it cannot be determined.
@@ -589,7 +590,7 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 
 ### 5.12 Register, change and paste
 
-`dd`, `yy`, `cc` and `p` work on a register, in Normal mode only.
+`dd`, `yy`, `cc`, `p` and `P` work on a register, in Normal mode only.
 They are keyboard keys with no mouse equivalent, and the mouse controls neither fill the register nor write the clipboard.
 
 **Register**
@@ -597,8 +598,8 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - The register is one in-memory slot that holds either a task with its subtree or a list with its tasks, as a self-contained copy of the JSON model.
   It is never stored in `localStorage`, so a reload empties it.
 - An external change of the file and a change of the filter leave it alone, since it refers to no document state, unlike the undo stack of 5.6.
-- `p` does not consume it, so the same element can be pasted several times.
-  With an empty register, `p` does nothing.
+- `p` and `P` do not consume it, so the same element can be pasted several times.
+  With an empty register, `p` and `P` do nothing.
 
 **Keys**
 
@@ -627,23 +628,26 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 - `p` on a task pastes right below it, after its whole subtree, at the cursor's own level.
   A subtask pasted at the top level becomes a top-level task.
   A task that has children, pasted onto a subtask, goes to the top level right after the cursor's parent, so that its subtree survives and no third level appears.
-- `p` on a header pastes a task as the first task of the list.
+- `P` is the mirror of `p`: it pastes right above the cursor row, at the cursor's own level.
+  On a top-level task the pasted task goes right before it.
+  On a subtask, a task without children becomes the previous subtask, and a task that has children goes to the top level right before the cursor's parent, so that no third level appears.
+- `p` and `P` on a header paste a task as the first task of the list, since there is no position above the first task.
 - A pasted task is pinned while a filter is active (5.14).
-- When the register holds a list, `p` pastes it after the list the cursor is in, whether the cursor is on its header or on one of its tasks.
+- When the register holds a list, `p` pastes it after the list the cursor is in, and `P` before it, whether the cursor is on its header or on one of its tasks.
   A copied list keeps its title, since list names are not unique.
   It works under every filter, and the filter is cleared so that the pasted list is visible, as for `+` (5.9).
 - The pasted element keeps its own check states and those of its children.
   The rules of 5.3 apply at the destination: an unchecked task pasted under a checked parent unchecks that parent.
-- After `p`, the cursor goes to the pasted element, scrolled into view.
-- `p`, `dd`, `cc`, `cL` and `cl` are each one undoable change, and `yy` is not one.
+- After `p` or `P`, the cursor goes to the pasted element, scrolled into view.
+- `p`, `P`, `dd`, `cc`, `cL` and `cl` are each one undoable change, and `yy` is not one.
   Undoing the paste of a list goes back to the filter that was active when it was pasted, as in 5.6.
-- While the Markdown view is open, `cc`, `cL`, `cl`, `p` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
+- While the Markdown view is open, `cc`, `cL`, `cl`, `p`, `P` and `dd` are ignored like the other Normal keys, and `yy` copies the content of the view (5.11).
 - With no list there is no cursor, so the keys do nothing, and `+` creates the first list.
 
 **Clipboard**
 
 - `dd` and `yy` also write the Markdown of the element to the system clipboard with `navigator.clipboard`.
-  It is write-only: `p` never reads the clipboard.
+  It is write-only: `p` and `P` never read the clipboard.
   Markdown coming from another application is pasted in Insert mode, with the native paste of the editor, which replaces line breaks by spaces (5.5).
 - The text comes from the shared serializer of 3.4: a task is `- [ ] text` followed by its indented subtasks, and a list is its `## Title` line and its tasks.
 - A refused clipboard write never blocks the edit, and the register is filled in every case.
@@ -656,8 +660,8 @@ They are keyboard keys with no mouse equivalent, and the mouse controls neither 
 
 **Implementation decisions**
 
-- The register content, the paste placement and the depth rule are pure functions in `src/client/logic/`, with the immutable and `null` conventions of 5.7.
-- The `cc`, `yy` and `p` resolution belongs to the pure key function of 5.9, with `c` as one more pending prefix.
+- The register content, the paste placement (below or above) and the depth rule are pure functions in `src/client/logic/`, with the immutable and `null` conventions of 5.7.
+- The `cc`, `yy`, `p` and `P` resolution belongs to the pure key function of 5.9, with `c` as one more pending prefix.
 - The move of a task to another list is a pure function in `src/client/logic/`, with the immutable and `null` conventions of 5.7, and the picker is verified by hand.
 - The task-to-text and list-to-text functions are the shared serializer, so the register never builds Markdown by hand.
 
@@ -872,7 +876,7 @@ There is no selector, and no way to show a single list other than `list:`.
 
 **Editing under a filter**
 
-- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `cd`, `cl` and the positional adds work as usual on the visible rows.
+- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `P`, `cd`, `cl` and the positional adds work as usual on the visible rows.
 - `J` / `K`, Alt+↑ / Alt+↓, `>` and `<` work on the visible rows, for tasks and for lists.
   The visible rows are the rows shown, so the siblings toggle changes which subtasks count as neighbours.
 - **Move**: a task swaps with the next visible sibling in the direction of the key, and lands right after it (down) or right before it (up), so the hidden siblings between them stay where they were.
@@ -1124,11 +1128,11 @@ Single-file mode keeps one file and has none of them.
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement, depth rule, check states, list paste, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); due dates on lists; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, `P` (paste above), reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); due dates on lists; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
