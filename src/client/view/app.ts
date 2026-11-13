@@ -22,7 +22,7 @@ import {
 import { commitInsert, insertTarget, type AddAt, type Anchor } from "../logic/insert";
 import { isFiltering } from "../logic/filter";
 import { getNode } from "../logic/paths";
-import { paste, type PasteTarget } from "../logic/paste";
+import { paste, type PastePlace, type PasteTarget } from "../logic/paste";
 import { copyList, copyTask, registerText, type Register } from "../logic/register";
 import type { Stop } from "../logic/cursor";
 import { countVisible } from "../logic/stats";
@@ -488,8 +488,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       fillRegister(cut.register);
       store.commit(cut.doc, { clearPins: true });
     },
-    paste(stop: Stop) {
-      const result = paste(doc(), register, pasteTarget(stop));
+    paste(stop: Stop, at: PastePlace) {
+      const result = paste(doc(), register, pasteTarget(stop), at);
       if (!result) return;
       if (!("list" in result)) {
         commitFocus(result.doc, rowSelector(result.path), { pin: result.path, inserted: true });

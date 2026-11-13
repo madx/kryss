@@ -478,19 +478,31 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     expect(r.pending).toBe("");
   });
   test("p pastes, on a task and on a header", () => {
-    expect(resolveKey(k("p"))).toEqual({ action: { type: "paste" }, pending: "", preventDefault: true });
-    expect(act("p", onHeader)).toEqual({ type: "paste" });
+    expect(resolveKey(k("p"))).toEqual({ action: { type: "paste", at: "after" }, pending: "", preventDefault: true });
+    expect(act("p", onHeader)).toEqual({ type: "paste", at: "after" });
+  });
+  test("P pastes before, on a task, on a header and with no target", () => {
+    expect(resolveKey(k("P", { shiftKey: true }))).toEqual({ action: { type: "paste", at: "before" }, pending: "", preventDefault: true });
+    expect(act("P", { shiftKey: true, ...onHeader })).toEqual({ type: "paste", at: "before" });
+    expect(act("P", { shiftKey: true, target: "none" })).toEqual({ type: "paste", at: "before" });
+  });
+  test("P does nothing while the Markdown view is open", () => {
+    expect(act("P", { shiftKey: true, markdownView: true })).toBeNull();
+  });
+  test("P after a pending prefix cancels it without an action", () => {
+    for (const pending of ["c", "d", "y"] as const) expect(resolveKey(k("P", { shiftKey: true, pending })).action).toBeNull();
   });
   test("these keys do nothing in a field, in a control, in an overlay or with a modifier", () => {
     for (const o of [{ target: "field" }, { target: "control" }, { overlay: "cheatsheet" }, { ctrlKey: true }, { altKey: true }] as const) {
       expect(act("p", o)).toBeNull();
+      expect(act("P", { shiftKey: true, ...o })).toBeNull();
       expect(act("c", { pending: "c", ...o })).toBeNull();
       // Ctrl+Y redoes, so it is left out of the yank check.
       if (!("ctrlKey" in o && o.ctrlKey)) expect(act("y", { pending: "y", ...o })).toBeNull();
     }
   });
   test("with no focused element the keys still resolve, so that the caller can ignore them", () => {
-    expect(act("p", { target: "none" })).toEqual({ type: "paste" });
+    expect(act("p", { target: "none" })).toEqual({ type: "paste", at: "after" });
   });
 });
 
@@ -635,7 +647,8 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     const f = {};
     expect(act("x", f)).toEqual({ type: "toggle" });
     expect(act("i", f)).toEqual({ type: "edit" });
-    expect(act("p", f)).toEqual({ type: "paste" });
+    expect(act("p", f)).toEqual({ type: "paste", at: "after" });
+    expect(act("P", { shiftKey: true, ...f })).toEqual({ type: "paste", at: "before" });
     expect(act("o", f)).toEqual({ type: "add", at: "below" });
     expect(act("d", { pending: "d", ...f })).toEqual({ type: "delete" });
     expect(act("d", { pending: "c", ...f })).toEqual({ type: "set-due" });
