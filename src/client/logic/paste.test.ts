@@ -127,3 +127,87 @@ describe("paste", () => {
     expect(paste(sample(), null, { list: 0, task: 0 })).toBeNull();
   });
 });
+
+describe("pasteTask: before", () => {
+  test("on a top-level task goes right before it, and the path points at it", () => {
+    const r = pasteTask(frozen(sample()), leaf, { list: 0, task: 1 }, "before")!;
+    expect(texts(r.doc)).toEqual(["a0", "p", "a1", "a2"]);
+    expect(r.path).toEqual({ list: 0, task: 1 });
+  });
+  test("on a top-level task that has children leaves its subtree untouched", () => {
+    const r = pasteTask(sample(), leaf, { list: 0, task: 1 }, "before")!;
+    expect(r.doc.lists[0]!.tasks[2]).toEqual(sample().lists[0]!.tasks[1]!);
+  });
+  test("a task without children pasted on a subtask becomes the previous subtask", () => {
+    const r = pasteTask(frozen(sample()), leaf, { list: 0, task: 1, child: 1 }, "before")!;
+    expect(r.doc.lists[0]!.tasks[1]!.children!.map((c) => c.text)).toEqual(["a1x", "p", "a1y"]);
+    expect(r.path).toEqual({ list: 0, task: 1, child: 1 });
+  });
+  test("a task with children pasted on a subtask goes to the top level right before the parent", () => {
+    const r = pasteTask(frozen(sample()), parent, { list: 0, task: 1, child: 1 }, "before")!;
+    expect(texts(r.doc)).toEqual(["a0", "pp", "a1", "a2"]);
+    expect(r.doc.lists[0]!.tasks[1]).toEqual(parent);
+    expect(r.path).toEqual({ list: 0, task: 1 });
+  });
+  test("a subtask pasted on a top-level task becomes a top-level task", () => {
+    const r = pasteTask(sample(), { text: "s", done: false }, { list: 0, task: 2 }, "before")!;
+    expect(r.doc.lists[0]!.tasks[2]).toEqual({ text: "s", done: false });
+  });
+  test("on a header it becomes the first task, also on an empty list", () => {
+    const r = pasteTask(sample(), leaf, { list: 0 }, "before")!;
+    expect(texts(r.doc)).toEqual(["p", "a0", "a1", "a2"]);
+    expect(r.path).toEqual({ list: 0, task: 0 });
+    const e = pasteTask(sample(), leaf, { list: 1 }, "before")!;
+    expect(texts(e.doc, 1)).toEqual(["p"]);
+  });
+  test("an unchecked task pasted as a subtask unchecks a checked parent, a checked one does not", () => {
+    const base = sample();
+    base.lists[0]!.tasks[1]!.done = true;
+    base.lists[0]!.tasks[1]!.children!.forEach((c) => (c.done = true));
+    expect(pasteTask(base, leaf, { list: 0, task: 1, child: 0 }, "before")!.doc.lists[0]!.tasks[1]!.done).toBe(false);
+    expect(pasteTask(base, { text: "d", done: true }, { list: 0, task: 1, child: 0 }, "before")!.doc.lists[0]!.tasks[1]!.done).toBe(true);
+  });
+  test("two pastes give independent copies, and an unknown target gives null", () => {
+    const first = pasteTask(sample(), parent, { list: 0 }, "before")!;
+    const second = pasteTask(first.doc, parent, { list: 0 }, "before")!;
+    second.doc.lists[0]!.tasks[0]!.children![0]!.text = "edited";
+    expect(second.doc.lists[0]!.tasks[1]!.children![0]!.text).toBe("pc");
+    expect(pasteTask(sample(), leaf, { list: 0, task: 9 }, "before")).toBeNull();
+    expect(pasteTask(sample(), leaf, { list: 0, task: 1, child: 9 }, "before")).toBeNull();
+  });
+});
+
+describe("pasteList: before", () => {
+  test("goes at the index of the given list and returns it", () => {
+    const r = pasteList(frozen(sample()), { title: "New", tasks: [leaf] }, 1, "before")!;
+    expect(r.doc.lists.map((l) => l.title)).toEqual(["A", "New", "Empty"]);
+    expect(r.list).toBe(1);
+  });
+  test("keeps a title that another list already has, right before it", () => {
+    const r = pasteList(sample(), sample().lists[0]!, 0, "before")!;
+    expect(r.doc.lists.map((l) => l.title)).toEqual(["A", "A", "Empty"]);
+    expect(r.list).toBe(0);
+  });
+  test("an unknown list gives null", () => {
+    expect(pasteList(sample(), { title: "N", tasks: [] }, 7, "before")).toBeNull();
+  });
+});
+
+describe("paste: before", () => {
+  test("a task register is pasted above the task", () => {
+    const r = paste(sample(), { kind: "task", task: leaf }, { list: 0, task: 0 }, "before")!;
+    expect(texts(r.doc)).toEqual(["p", "a0", "a1", "a2"]);
+    expect(r).toHaveProperty("path", { list: 0, task: 0 });
+  });
+  test("a list register is pasted before the list of the cursor, from its header or from a subtask", () => {
+    const reg: Register = { kind: "list", list: { title: "N", tasks: [] } };
+    for (const target of [{ list: 1 }, { list: 0, task: 1, child: 0 }]) {
+      const r = paste(sample(), reg, target, "before")!;
+      expect(r.doc.lists.map((l) => l.title)).toEqual(target.list === 1 ? ["A", "N", "Empty"] : ["N", "A", "Empty"]);
+      expect(r).toHaveProperty("list", target.list);
+    }
+  });
+  test("an empty register pastes nothing", () => {
+    expect(paste(sample(), null, { list: 0, task: 0 }, "before")).toBeNull();
+  });
+});
