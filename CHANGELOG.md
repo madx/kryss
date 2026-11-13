@@ -39,6 +39,8 @@ Features that were added and later removed are listed in both places, so that th
 - The saved filters now live in the `kryss-filters` key of the frontmatter instead of `filters`.
 - Due date pills are yellow when due now, blue when due later in the current week (a new state), muted beyond it, and still red when overdue.
 - `cL` replaces `cl` to rename the list of the cursor, and `cl` does nothing.
+- The filter keys move from `g` to a new `f` prefix, and each one replaces the whole filter text: `fa` clears it, `ft` is `due:today,overdue`, `fw` is `due:week,overdue`, `fl` is `list:` with its popup, `fx` is `is:done` and `fX` is `is:todo`.
+  `ff` focuses the filter bar and `fs` opens the saved filters, and `ga`, `gt`, `gw`, `gl`, `gf` and `gF` no longer exist, with no alias.
 
 ## 2026-11-11
 

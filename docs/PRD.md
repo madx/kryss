@@ -553,7 +553,7 @@ It is read-only: there is no editing and no text `PUT`, and the file stays edita
 
 **Opening and closing**
 
-- A header button toggles it, with the Lucide `square-m` icon and the label "Export as Markdown" as tooltip and accessible name.
+- A header button toggles it, with the Lucide `square-m` icon and the label "Export as Markdown" as accessible name and, followed by its key in parentheses (`sm`), as tooltip.
   `sm` does the same in Normal mode, and `m` is left free for another feature.
 - The view replaces the task area in place, between the header and the footer.
   The header, the filter bar, the SSE connection and the sync state stay alive.
