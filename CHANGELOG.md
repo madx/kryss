@@ -8,6 +8,9 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- `P` pastes the register above the cursor row, the mirror of `p`: right before a top-level task, as the previous subtask, or before the parent for a task that has children.
+  On a header it pastes a task as the first task of the list, and a list before the list of the cursor, from its header or from one of its tasks.
+
 - `cl` on a task opens a list picker below its row, with a plain input that narrows the lists on their title, and Enter moves the task with its subtree to the end of the chosen list.
   A subtask becomes a top-level task there, the moved task is pinned under a filter, the cursor follows it, and the move is one undoable change.
 
