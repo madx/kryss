@@ -28,7 +28,7 @@ describe("undoActionFor", () => {
 
 const k = (key: string, o: Partial<KeyInput> = {}): KeyInput => ({
   key, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false,
-  target: "task", pending: "", overlay: "none", markdownView: false, search: false, ...o,
+  target: "task", pending: "", overlay: "none", markdownView: false, search: false, links: 0, ...o,
 });
 const act = (key: string, o: Partial<KeyInput> = {}) => resolveKey(k(key, o)).action;
 const onHeader = { target: "header" } as const;
@@ -716,5 +716,36 @@ describe("resolveKey: incremental search (PRD 5.15)", () => {
   test("the other keys are unchanged while a search is active", () => {
     expect(act("j", active)).toEqual({ type: "cursor", to: "next" });
     expect(act("+", { ...active, shiftKey: true })).toEqual({ type: "new-list" });
+  });
+});
+
+describe("resolveKey: gx opens a link (PRD 5.20)", () => {
+  test("gx on a task with one link opens it and clears the prefix", () => {
+    expect(resolveKey(k("x", { pending: "g", links: 1 }))).toEqual({ action: { type: "open-link" }, pending: "", preventDefault: true });
+  });
+  test("gx on a task with several links opens the link picker", () => {
+    expect(act("x", { pending: "g", links: 3 })).toEqual({ type: "link-picker" });
+  });
+  test("gx on a task with no link does nothing and clears the prefix", () => {
+    expect(resolveKey(k("x", { pending: "g", links: 0 })).action).toBeNull();
+    expect(resolveKey(k("x", { pending: "g", links: 0 })).pending).toBe("");
+  });
+  test("gx on a header does nothing", () => {
+    expect(act("x", { pending: "g", links: 2, ...onHeader })).toBeNull();
+  });
+  test("gx with no cursor does nothing", () => {
+    expect(act("x", { pending: "g", links: 0, target: "none" })).toBeNull();
+  });
+  test("gx is ignored in the Markdown view, in a text field and behind the cheat sheet", () => {
+    for (const o of [{ markdownView: true }, { target: "field" }, { overlay: "cheatsheet" }] as const) {
+      expect(act("x", { pending: "g", links: 2, ...o })).toBeNull();
+    }
+  });
+  test("g starts the prefix, and x alone still toggles the task", () => {
+    expect(resolveKey(k("g")).pending).toBe("g");
+    expect(act("x")).toEqual({ type: "toggle" });
+  });
+  test("gx works while a search is active", () => {
+    expect(act("x", { pending: "g", links: 1, search: true })).toEqual({ type: "open-link" });
   });
 });
