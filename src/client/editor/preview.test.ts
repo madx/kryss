@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { parseInline } from "../markdown/inline";
 import { collectNodes, inlineParser, previewSpans } from "./preview";
 
 const nodes = (s: string) => collectNodes(inlineParser.parse(s), s);
@@ -41,4 +42,45 @@ describe("previewSpans", () => {
     const spans = previewSpans(nodes(s), [{ from: 0, to: 3 }]);
     expect(spans.some((x) => x.hide)).toBe(false);
   });
+});
+
+describe("highlights in the live preview (PRD 5.19)", () => {
+  const spans = (s: string, at: number) => previewSpans(nodes(s), [{ from: at, to: at }]);
+
+  test("finds a default and a colored highlight with their color", () => {
+    expect(nodes("==a==").map((n) => [n.kind, n.color])).toEqual([["highlight", undefined]]);
+    expect(nodes("==🔴a==").map((n) => [n.kind, n.color])).toEqual([["highlight", "red"]]);
+  });
+
+  test("the classes are those of the rendered highlight", () => {
+    expect(spans("==🟢a==", 20).find((x) => !x.hide)?.cls).toBe("cm-md-highlight hl hl-green");
+  });
+
+  test("hides both markers and the emoji when the cursor is away, and shows them when it touches", () => {
+    expect(hidden("==🔴a== tail", 11)).toEqual(["==🔴", "=="]);
+    expect(hidden("==🔴a== tail", 3)).toEqual([]);
+  });
+
+  test("follows the rules of the renderer for the literal cases", () => {
+    for (const s of ["==a", "====", "==🔴==", "a == b", "a == b == c", "\\==a=="]) expect(nodes(s)).toEqual([]);
+  });
+
+  test("holds and sits inside the other emphasis", () => {
+    expect(nodes("==**a**==").map((n) => n.kind).sort()).toEqual(["highlight", "strong"]);
+    expect(nodes("**==a==**").map((n) => n.kind).sort()).toEqual(["highlight", "strong"]);
+  });
+});
+
+describe("the live preview and the renderer agree on highlights", () => {
+  const rendered = (s: string): string[] => parseInline(s).flatMap(function walk(n): string[] {
+    if (n.type === "highlight") return [n.color ?? "default"];
+    return "children" in n ? n.children.flatMap(walk) : [];
+  });
+  const previewed = (s: string): string[] => nodes(s).filter((n) => n.kind === "highlight").map((n) => n.color ?? "default");
+  const cases = [
+    "==a==", "==🔴a==", "==🍎a==", "==a 🔴b==", "==🔴 a==", "==a", "====", "==🔴==", "a == b", "a == b == c",
+    "==a == b==", "==a====", "==a===", "==🔴a=====", "===a===", "\\==a==", "\\===a==", "==a\\==", "==**a**==", "**==a==**",
+    "==a== ==b==", "==🔴" + " ".repeat(15) + "a==", "1==2 and 3==4",
+  ];
+  for (const c of cases) test(JSON.stringify(c), () => expect(previewed(c)).toEqual(rendered(c)));
 });

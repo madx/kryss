@@ -1,11 +1,12 @@
 // Small hand-written inline Markdown parser and DOM renderer.
-// Supported: **bold**, *italic*, _italic_, `code`, ~~strike~~, [label](url) and backslash escapes.
+// Supported: **bold**, *italic*, _italic_, `code`, ~~strike~~, ==highlight==, [label](url) and backslash escapes.
 // `![alt](url)` renders as nothing.
 // A top-level `-> DATE` becomes a `due` node (PRD 5.13), the view adds its state.
 // Everything else (raw HTML, headings, lists) stays literal text.
 // The DOM is only ever built with createElement and textContent, never innerHTML.
 
 import { duePeriod } from "../logic/due";
+import { highlightClass, highlightColor, type HighlightColor } from "../logic/highlight";
 import { parseWikilink, wikilinkUrl } from "../logic/wikilink";
 
 // The name of the Vault, set once at startup in Vault mode. Without it, wikilinks stay literal text (PRD 5.17).
@@ -20,13 +21,14 @@ export type InlineNode =
   | { type: "code"; value: string }
   | { type: "due"; value: string }
   | { type: "strong" | "em" | "strike"; children: InlineNode[] }
+  | { type: "highlight"; color?: HighlightColor; children: InlineNode[] }
   | { type: "link"; href: string; children: InlineNode[] };
 
 const ALLOWED_SCHEMES = new Set(["http", "https", "mailto", "obsidian"]);
 // ASCII controls and whitespace, C1 controls, soft hyphen, zero-width and line separator characters.
 // Browsers ignore some of them inside a URL, so they are removed before checking the scheme.
 const IGNORABLE = new RegExp("[\\u0000-\\u0020\\u007f-\\u009f\\u00ad\\u200b-\\u200f\\u2028\\u2029\\u2060\\ufeff]", "g");
-const ESCAPABLE = "\\`*_~[]()";
+const ESCAPABLE = "\\`*_~=[]()";
 
 /** Removes the characters a browser may ignore inside a URL. The result is what gets validated and used as href. */
 export function normalizeUrl(url: string): string {
@@ -51,6 +53,11 @@ function findClose(s: string, from: number, marker: string): number {
     } else if (c === "`") {
       const end = s.indexOf("`", j + 1);
       if (end > j + 1) j = end;
+    } else if (marker === "==" && s[j] === "=") {
+      // A closing `==` is a run of exactly two `=`: a longer run is skipped, as the parser reads it as literal.
+      const run = /^=+/.exec(s.slice(j))![0].length;
+      if (run === 2 && j > from && !isSpace(s[j - 1]) && s[j - 1] !== "=") return j;
+      j += run - 1;
     } else if (s.startsWith(marker, j)) {
       if (marker.length === 1 && s[j + 1] === marker) {
         j++; // part of a double marker: not a closer for a single one
@@ -107,6 +114,27 @@ function keepLastDue(nodes: InlineNode[]): InlineNode[] {
     else out.push(node);
   });
   return out;
+}
+
+/** The opening `==` at `i` (PRD 5.19): its color and where the content starts, after the emoji and the spaces that follow it, or null. */
+export function highlightOpen(s: string, i: number): { color?: HighlightColor; contentFrom: number } | null {
+  let from = i + 2;
+  const emoji = String.fromCodePoint(s.codePointAt(from) ?? 0);
+  const color = highlightColor(emoji);
+  if (color !== null) {
+    from += emoji.length;
+    while (s[from] === " ") from++;
+  }
+  if (isSpace(s[from]) || s[from] === "=") return null;
+  return { ...(color ? { color } : {}), contentFrom: from };
+}
+
+/** The highlight opening at `i`: its color and the range of its content, or null when it is not closed on the line. */
+function highlightAt(s: string, i: number): { color?: HighlightColor; contentFrom: number; contentTo: number } | null {
+  const open = highlightOpen(s, i);
+  if (!open) return null;
+  const end = findClose(s, open.contentFrom, "==");
+  return end > open.contentFrom ? { ...open, contentTo: end } : null;
 }
 
 /** Where the due node sits in the source: the whole `-> DATE`, where the date starts, and the date. */
@@ -214,6 +242,24 @@ function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRan
       continue;
     }
 
+    if (c === "=" && s[i + 1] === "=") {
+      // Only a run of exactly two `=`, not touching an escaped `=`, can be a marker. Any other run is literal.
+      const run = /^=+/.exec(s.slice(i))![0].length;
+      const hl = run === 2 && s[i - 1] !== "=" ? highlightAt(s, i) : null;
+      if (hl) {
+        nodes.push({
+          type: "highlight",
+          ...(hl.color ? { color: hl.color } : {}),
+          children: parse(s.slice(hl.contentFrom, hl.contentTo), allowLinks),
+        });
+        i = hl.contentTo + 2;
+        continue;
+      }
+      pushText("=".repeat(run));
+      i += run;
+      continue;
+    }
+
     if (c === "*" || c === "_" || c === "~") {
       const double = s[i + 1] === c;
       if (c === "~" && !double) {
@@ -271,6 +317,8 @@ export function astToHtml(nodes: InlineNode[]): string {
           return `<code>${escapeHtml(n.value)}</code>`;
         case "due":
           return `<span class="due">${escapeHtml(n.value)}</span>`;
+        case "highlight":
+          return `<mark class="${highlightClass(n.color)}">${astToHtml(n.children)}</mark>`;
         case "link":
           return `<a href="${escapeHtml(n.href)}" target="_blank" rel="noopener noreferrer">${astToHtml(n.children)}</a>`;
         default:
@@ -304,7 +352,10 @@ function build(nodes: InlineNode[], parent: Node, renderDue?: DueRenderer): void
       }
       continue;
     }
-    const el = document.createElement(n.type === "link" ? "a" : n.type === "code" ? "code" : TAGS[n.type]);
+    const el = document.createElement(
+      n.type === "link" ? "a" : n.type === "code" ? "code" : n.type === "highlight" ? "mark" : TAGS[n.type],
+    );
+    if (n.type === "highlight") el.className = highlightClass(n.color);
     if (n.type === "code") {
       el.textContent = n.value;
     } else {
@@ -326,4 +377,10 @@ export function renderInline(text: string, renderDue?: DueRenderer): DocumentFra
   const fragment = document.createDocumentFragment();
   build(parseInline(text), fragment, renderDue);
   return fragment;
+}
+
+/** Whether the popup of PRD 5.19 opens, given the line text up to the cursor: it ends with a typed `==` that opens a highlight, not one that closes it. */
+export function opensHighlightPopup(before: string): boolean {
+  if (!/(^|[^\\=])(\\\\)*==$/.test(before)) return false;
+  return parseInline(before).at(-1)?.type !== "highlight";
 }

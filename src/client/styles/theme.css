@@ -27,6 +27,16 @@
   --color-error-text: #7a1f14;
   --color-focus: #2f6fed;
 
+  /* Highlights (PRD 5.19): solid backgrounds, the same in both themes, with a dark text on them. */
+  --highlight-background: #b5b7bf;
+  --color-red: #fb617e;
+  --color-orange: #f89860;
+  --color-yellow: #edc763;
+  --color-green: #9ed06c;
+  --color-blue: #508bf1;
+  --color-purple: #bb97ee;
+  --color-base-10: #252630;
+
   /* Due date states (PRD 5.10). */
   --color-due-overdue: var(--color-danger);
   --color-due-now: #8a6100;

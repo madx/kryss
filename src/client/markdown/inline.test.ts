@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { astToHtml, findDueRange, isAllowedUrl, parseInline } from "./inline";
+import { astToHtml, findDueRange, isAllowedUrl, opensHighlightPopup, parseInline } from "./inline";
 
 const html = (s: string) => astToHtml(parseInline(s));
 
@@ -232,5 +232,110 @@ describe("autolinks", () => {
     expect(parseInline("[<https://a.test>](https://b.test)")).toEqual([
       { type: "link", href: "https://b.test", children: [{ type: "text", value: "<https://a.test>" }] },
     ]);
+  });
+});
+
+describe("highlights (PRD 5.19)", () => {
+  test("the default and each of the six colors", () => {
+    expect(html("==a==")).toBe('<mark class="hl">a</mark>');
+    const colors = { "🔴": "red", "🟠": "orange", "🟡": "yellow", "🟢": "green", "🔵": "blue", "🟣": "purple" };
+    for (const [emoji, color] of Object.entries(colors)) {
+      expect(html(`==${emoji}a==`)).toBe(`<mark class="hl hl-${color}">a</mark>`);
+    }
+  });
+
+  test("the node carries an optional color", () => {
+    expect(parseInline("==🔴a==")).toEqual([{ type: "highlight", color: "red", children: [{ type: "text", value: "a" }] }]);
+    expect(parseInline("==a==")).toEqual([{ type: "highlight", children: [{ type: "text", value: "a" }] }]);
+  });
+
+  test("another emoji or a circle further in is content in the default color", () => {
+    expect(html("==🍎a==")).toBe('<mark class="hl">🍎a</mark>');
+    expect(html("==a 🔴b==")).toBe('<mark class="hl">a 🔴b</mark>');
+  });
+
+  test("a space after the emoji is trimmed", () => {
+    expect(html("==🔴 a==")).toBe('<mark class="hl hl-red">a</mark>');
+  });
+
+  test("text around a highlight is kept", () => {
+    expect(html("x ==🟢a b== y")).toBe('x <mark class="hl hl-green">a b</mark> y');
+  });
+
+  test("an unclosed pair stays literal", () => {
+    expect(html("==a")).toBe("==a");
+    expect(html("==🔴a")).toBe("==🔴a");
+  });
+
+  test("an empty content stays literal and keeps the emoji", () => {
+    expect(html("====")).toBe("====");
+    expect(html("==🔴==")).toBe("==🔴==");
+  });
+
+  test("an escaped marker is literal", () => {
+    expect(html("\\==a==")).toBe("==a==");
+  });
+
+  test("a comparison is not a highlight", () => {
+    expect(html("a == b")).toBe("a == b");
+    expect(html("a == b == c")).toBe("a == b == c");
+  });
+
+  test("it holds bold, italic, code, strikethrough and links", () => {
+    expect(html("==**a** *b* `c` ~~d~~==")).toBe('<mark class="hl"><strong>a</strong> <em>b</em> <code>c</code> <del>d</del></mark>');
+    expect(html("==[l](http://x.y)==")).toBe(
+      '<mark class="hl"><a href="http://x.y" target="_blank" rel="noopener noreferrer">l</a></mark>',
+    );
+  });
+
+  test("it sits inside bold, italic, strikethrough and links", () => {
+    expect(html("**==a==**")).toBe('<strong><mark class="hl">a</mark></strong>');
+    expect(html("*==🔴a==*")).toBe('<em><mark class="hl hl-red">a</mark></em>');
+    expect(html("~~==a==~~")).toBe('<del><mark class="hl">a</mark></del>');
+    expect(html("[==a==](http://x.y)")).toBe(
+      '<a href="http://x.y" target="_blank" rel="noopener noreferrer"><mark class="hl">a</mark></a>',
+    );
+  });
+
+  test("highlights do not nest", () => {
+    expect(html("==a ==b== c==")).toBe('<mark class="hl">a ==b</mark> c==');
+  });
+
+  test("a due date inside is plain text", () => {
+    expect(html("==a -> 2026-11-22==")).toBe('<mark class="hl">a -&gt; 2026-11-22</mark>');
+    expect(findDueRange("==a -> 2026-11-22==")).toBeNull();
+  });
+});
+
+describe("opensHighlightPopup", () => {
+  test("opens on a typed == at the start or after text", () => {
+    expect(opensHighlightPopup("==")).toBe(true);
+    expect(opensHighlightPopup("buy ==")).toBe(true);
+  });
+
+  test("does not open on a single = or on a longer run", () => {
+    expect(opensHighlightPopup("=")).toBe(false);
+    expect(opensHighlightPopup("buy =")).toBe(false);
+    expect(opensHighlightPopup("===")).toBe(false);
+  });
+
+  test("does not open when the typed == closes an open highlight", () => {
+    expect(opensHighlightPopup("==🔴text==")).toBe(false);
+    expect(opensHighlightPopup("==text==")).toBe(false);
+  });
+
+  test("a closing == the renderer recognizes does not open it", () => {
+    expect(opensHighlightPopup("==a == b==")).toBe(false);
+    expect(opensHighlightPopup("==a `==` b==")).toBe(false);
+    expect(opensHighlightPopup("==a====")).toBe(false);
+  });
+
+  test("an escaped == does not open it", () => {
+    expect(opensHighlightPopup("\\==")).toBe(false);
+    expect(opensHighlightPopup("\\\\==")).toBe(true);
+  });
+
+  test("opens again after a complete highlight", () => {
+    expect(opensHighlightPopup("==a== and ==")).toBe(true);
   });
 });

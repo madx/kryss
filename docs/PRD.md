@@ -255,7 +255,7 @@ A whole document is its lists joined by a blank line, followed by that final new
   Raw HTML and block syntax are shown as literal text.
 - Unmatched markers are literal text.
   An underscore inside a word (`snake_case`) is never italic.
-- Backslash escapes are supported for `` \ ` * _ ~ [ ] ( ) ``, any other backslash is literal.
+- Backslash escapes are supported for `` \ ` * _ ~ = [ ] ( ) ``, any other backslash is literal.
 - A link whose target is refused, or that contains whitespace, is shown as its literal source text.
   Before checking the scheme, whitespace, control and zero-width characters are removed (so `java\tscript:` is refused), and the cleaned URL is the one used as `href`.
   Relative URLs are refused.
@@ -950,7 +950,7 @@ It is separate from the filter of 5.14: a filter hides rows, a search only highl
 
 - Every occurrence is highlighted with `--color-match`, which is `#edc763` (the Sonokai yellow) in both themes.
   On other rows it is a 40% tint behind the normal text color, and on the cursor row it is solid with a fixed dark text color (`#1f2328`).
-  It has the chip radius, and no underline or bold, so the layout never shifts.
+  It has the chip radius and a small horizontal padding (`--space-2`), the same as a highlight of 5.19, and no underline or bold.
   An occurrence that spans several inline elements, for example across a bold marker, still matches but is not highlighted.
   An occurrence inside a highlight of 5.19 also gets a 1 px outline in the fixed dark text color, so that it stays visible on the yellow highlight, which has the same color.
   Both yellows stay as they are.
@@ -1149,7 +1149,7 @@ The color is chosen by a colored circle right after the opening marker, and the 
 **Look**
 
 - The rendered highlight hides the emoji, since the background already shows the color.
-  It has the chip radius and no padding that would shift the layout.
+  It has the chip radius and a small horizontal padding (`--space-2`) and no vertical padding.
 - The backgrounds are solid, with no opacity, and the same in both themes, and the text on them is `--color-base-10` in both themes, including inside a completed task, which does not dim a highlight.
 
 | Token | Value | Emoji |

@@ -85,6 +85,25 @@ del {
   color: var(--color-faint);
 }
 
+/* Highlights (PRD 5.19): solid background, fixed dark text, a small horizontal padding like inline code. */
+.hl {
+  padding: 0 var(--space-2);
+  box-decoration-break: clone;
+  background: var(--highlight-background);
+  color: var(--color-base-10);
+  border-radius: var(--radius-chip);
+}
+
+.hl-red { background: var(--color-red); }
+.hl-orange { background: var(--color-orange); }
+.hl-yellow { background: var(--color-yellow); }
+.hl-green { background: var(--color-green); }
+.hl-blue { background: var(--color-blue); }
+.hl-purple { background: var(--color-purple); }
+
+/* A highlight keeps its look inside the other emphasis and inside a completed task. */
+.hl em, .hl del, .hl code, .hl a { color: inherit; }
+
 code {
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
