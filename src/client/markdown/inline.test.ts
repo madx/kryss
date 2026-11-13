@@ -302,7 +302,7 @@ describe("highlights (PRD 5.19)", () => {
   });
 
   test("a due date inside is plain text", () => {
-    expect(html("==a -> 2026-11-22==")).toBe('<mark class="hl">a -> 2026-11-22</mark>');
+    expect(html("==a -> 2026-11-22==")).toBe('<mark class="hl">a -&gt; 2026-11-22</mark>');
     expect(findDueRange("==a -> 2026-11-22==")).toBeNull();
   });
 });

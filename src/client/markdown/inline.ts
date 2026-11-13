@@ -1,11 +1,12 @@
 // Small hand-written inline Markdown parser and DOM renderer.
-// Supported: **bold**, *italic*, _italic_, `code`, ~~strike~~, [label](url) and backslash escapes.
+// Supported: **bold**, *italic*, _italic_, `code`, ~~strike~~, ==highlight==, [label](url) and backslash escapes.
 // `![alt](url)` renders as nothing.
 // A top-level `-> DATE` becomes a `due` node (PRD 5.13), the view adds its state.
 // Everything else (raw HTML, headings, lists) stays literal text.
 // The DOM is only ever built with createElement and textContent, never innerHTML.
 
 import { duePeriod } from "../logic/due";
+import { highlightClass, highlightColor, type HighlightColor } from "../logic/highlight";
 import { parseWikilink, wikilinkUrl } from "../logic/wikilink";
 
 // The name of the Vault, set once at startup in Vault mode. Without it, wikilinks stay literal text (PRD 5.17).
@@ -20,13 +21,14 @@ export type InlineNode =
   | { type: "code"; value: string }
   | { type: "due"; value: string }
   | { type: "strong" | "em" | "strike"; children: InlineNode[] }
+  | { type: "highlight"; color?: HighlightColor; children: InlineNode[] }
   | { type: "link"; href: string; children: InlineNode[] };
 
 const ALLOWED_SCHEMES = new Set(["http", "https", "mailto", "obsidian"]);
 // ASCII controls and whitespace, C1 controls, soft hyphen, zero-width and line separator characters.
 // Browsers ignore some of them inside a URL, so they are removed before checking the scheme.
 const IGNORABLE = new RegExp("[\\u0000-\\u0020\\u007f-\\u009f\\u00ad\\u200b-\\u200f\\u2028\\u2029\\u2060\\ufeff]", "g");
-const ESCAPABLE = "\\`*_~[]()";
+const ESCAPABLE = "\\`*_~=[]()";
 
 /** Removes the characters a browser may ignore inside a URL. The result is what gets validated and used as href. */
 export function normalizeUrl(url: string): string {
@@ -107,6 +109,21 @@ function keepLastDue(nodes: InlineNode[]): InlineNode[] {
     else out.push(node);
   });
   return out;
+}
+
+/** The highlight opening at `i` (PRD 5.19): its color and the range of its content, or null. A leading space after the emoji is skipped. */
+function highlightAt(s: string, i: number): { color?: HighlightColor; contentFrom: number; contentTo: number } | null {
+  let from = i + 2;
+  let color: HighlightColor | null = null;
+  const emoji = String.fromCodePoint(s.codePointAt(from) ?? 0);
+  if ((color = highlightColor(emoji)) !== null) {
+    from += emoji.length;
+    while (s[from] === " ") from++;
+  }
+  if (isSpace(s[from]) || s[from] === "=") return null;
+  const end = findClose(s, from, "==");
+  if (end <= from) return null;
+  return { ...(color ? { color } : {}), contentFrom: from, contentTo: end };
 }
 
 /** Where the due node sits in the source: the whole `-> DATE`, where the date starts, and the date. */
@@ -214,6 +231,22 @@ function parse(s: string, allowLinks: boolean, topLevel = false, ranges?: DueRan
       continue;
     }
 
+    if (c === "=" && s[i + 1] === "=") {
+      const hl = highlightAt(s, i);
+      if (hl) {
+        nodes.push({
+          type: "highlight",
+          ...(hl.color ? { color: hl.color } : {}),
+          children: parse(s.slice(hl.contentFrom, hl.contentTo), allowLinks),
+        });
+        i = hl.contentTo + 2;
+        continue;
+      }
+      pushText("==");
+      i += 2;
+      continue;
+    }
+
     if (c === "*" || c === "_" || c === "~") {
       const double = s[i + 1] === c;
       if (c === "~" && !double) {
@@ -271,6 +304,8 @@ export function astToHtml(nodes: InlineNode[]): string {
           return `<code>${escapeHtml(n.value)}</code>`;
         case "due":
           return `<span class="due">${escapeHtml(n.value)}</span>`;
+        case "highlight":
+          return `<mark class="${highlightClass(n.color)}">${astToHtml(n.children)}</mark>`;
         case "link":
           return `<a href="${escapeHtml(n.href)}" target="_blank" rel="noopener noreferrer">${astToHtml(n.children)}</a>`;
         default:
@@ -304,7 +339,10 @@ function build(nodes: InlineNode[], parent: Node, renderDue?: DueRenderer): void
       }
       continue;
     }
-    const el = document.createElement(n.type === "link" ? "a" : n.type === "code" ? "code" : TAGS[n.type]);
+    const el = document.createElement(
+      n.type === "link" ? "a" : n.type === "code" ? "code" : n.type === "highlight" ? "mark" : TAGS[n.type],
+    );
+    if (n.type === "highlight") el.className = highlightClass(n.color);
     if (n.type === "code") {
       el.textContent = n.value;
     } else {
