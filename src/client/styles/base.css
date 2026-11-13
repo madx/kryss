@@ -87,8 +87,7 @@ del {
 
 /* Highlights (PRD 5.19): solid background, fixed dark text, a small horizontal padding like inline code. */
 .hl {
-  padding: 0 var(--space-4);
-  margin: 0 calc(-1 * var(--space-4));
+  padding: 0 var(--space-2);
   box-decoration-break: clone;
   background: var(--highlight-background);
   color: var(--color-base-10);
