@@ -486,6 +486,9 @@ describe("resolveKey: register keys (PRD 5.12)", () => {
     expect(act("P", { shiftKey: true, ...onHeader })).toEqual({ type: "paste", at: "before" });
     expect(act("P", { shiftKey: true, target: "none" })).toEqual({ type: "paste", at: "before" });
   });
+  test("P does nothing while the Markdown view is open", () => {
+    expect(act("P", { shiftKey: true, markdownView: true })).toBeNull();
+  });
   test("P after a pending prefix cancels it without an action", () => {
     for (const pending of ["c", "d", "y"] as const) expect(resolveKey(k("P", { shiftKey: true, pending })).action).toBeNull();
   });

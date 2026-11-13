@@ -1,6 +1,7 @@
 // Global keyboard shortcuts: undo and redo, and the pure key resolver of PRD 5.9.
 import type { CursorMove } from "./logic/cursor";
 import type { AddAt } from "./logic/insert";
+import type { PastePlace } from "./logic/paste";
 
 export type Pending = "" | "g" | "d" | "y" | "c" | "s" | "f";
 /** field = text input or editor focused (Insert), control = button or selector. */
@@ -15,7 +16,7 @@ export type Action =
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
-  | { type: "change" } | { type: "yank" } | { type: "paste"; at: "after" | "before" } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
+  | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
   | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {

@@ -3,6 +3,7 @@ import type { TodoDocument } from "../../shared/types";
 import { indent, moveDown, moveUp, outdent, type OpResult, type TaskPath } from "../logic";
 import { firstChanged, moveCursor, type Stop } from "../logic/cursor";
 import type { AddAt, Anchor } from "../logic/insert";
+import type { PastePlace } from "../logic/paste";
 import { visibleStops } from "../logic/filter";
 import { visibleOf } from "./visible";
 import { isTextField, resolveKey, type Action, type Overlay, type Pending, type TargetKind } from "../shortcuts";
@@ -27,7 +28,7 @@ export type KeyboardEnv = {
   files: { openPicker(): void };
   renameList(list: number): void;
   /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
-  registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop, at: "after" | "before"): void };
+  registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop, at: PastePlace): void };
   /** `cl` on a task: opens the list picker below its row. */
   moveToList(path: TaskPath): void;
   /** `cc` on a header: opens the name input with no text. */
