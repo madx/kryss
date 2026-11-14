@@ -45,6 +45,8 @@ export type KeyboardEnv = {
   search: { active(): boolean; start(): void; step(dir: "next" | "prev"): void; end(): void };
   /** `J` / `K` on a header: moves the list down or up, over the visible lists under a filter. */
   moveList(list: number, dir: "up" | "down", focus?: Stop): void;
+  /** `Sl`, `SL`, `SA` (PRD 5.21): `stop` is the cursor, null when it has none. */
+  sort(kind: "list" | "lists" | "all", stop: Stop | null): void;
   beginAdd(at: AddAt, anchor: Anchor): void;
   newList(): void;
   markdown: { isOpen(): boolean; toggle(): void; copy(): void };
@@ -148,6 +150,15 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "toggle-siblings":
         store.toggleSiblings();
+        return;
+      case "sort-list": {
+        const at = cursor.current();
+        if (at) env.sort("list", at); // with no cursor there is no list to sort
+        return;
+      }
+      case "sort-lists":
+      case "sort-all":
+        env.sort(action.type === "sort-lists" ? "lists" : "all", cursor.current());
         return;
       case "undo":
       case "redo": {

@@ -3,7 +3,7 @@ import type { CursorMove } from "./logic/cursor";
 import type { AddAt } from "./logic/insert";
 import type { PastePlace } from "./logic/paste";
 
-export type Pending = "" | "g" | "d" | "y" | "c" | "s" | "f";
+export type Pending = "" | "g" | "d" | "y" | "c" | "s" | "f" | "S";
 /** field = text input or editor focused (Insert), control = button or selector. */
 export type TargetKind = "task" | "header" | "none" | "field" | "control";
 export type Overlay = "none" | "cheatsheet";
@@ -18,6 +18,7 @@ export type Action =
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
   | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" } | { type: "open-link" } | { type: "link-picker" } | { type: "copy-link" } | { type: "copy-link-picker" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
+  | { type: "sort-list" } | { type: "sort-lists" } | { type: "sort-all" }
   | { type: "focus-filter" } | { type: "clear-focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
@@ -97,6 +98,16 @@ function goKey(key: string): Action | null {
   }
 }
 
+/** The second key of `S`: sort the tasks of the list, the lists or the tasks of every list by due date (PRD 5.21), or null. */
+function sortKey(key: string): Action | null {
+  switch (key) {
+    case "l": return { type: "sort-list" };
+    case "L": return { type: "sort-lists" };
+    case "A": return { type: "sort-all" };
+    default: return null;
+  }
+}
+
 /** Keys while the Markdown view is open (PRD 5.11): everything that changes a task is ignored. */
 function resolveMarkdownKey({ key, pending, altKey }: KeyInput): Resolution {
   if (altKey) return NOTHING;
@@ -160,8 +171,9 @@ export function resolveKey(input: KeyInput): Resolution {
   if (pending === "c" && key === "L") return done({ type: "change-list" });
   if (pending === "c" && key === "l") return done(onHeader ? null : { type: "move-to-list" });
   if (pending === "y" && key === "y") return done({ type: "yank" });
+  if (pending === "S" && sortKey(key)) return done(sortKey(key));
   if (pending) return NOTHING;
-  if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s" || key === "f") return { action: null, pending: key, preventDefault: true };
+  if (key === "g" || key === "d" || key === "c" || key === "y" || key === "s" || key === "f" || key === "S") return { action: null, pending: key, preventDefault: true };
 
   if (input.search && key === "Escape") return done({ type: "search-end" });
   if (input.search && key === "n") return done({ type: "search-next" });
