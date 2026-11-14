@@ -354,7 +354,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 - `j` / `k` and ↓ / ↑ move to the next / previous stop, and `gg` / `G` jump to the first / last stop.
 - `h` / `l` move to the previous / next visible list header, in every view.
 - `go` opens the file picker in Vault mode (5.16).
-- `f` and `F` are the filter keys: `ff` focuses the filter bar, `fF` clears it and focuses it, `fs` opens the saved filters, and `fa`, `ft`, `fw`, `fl`, `fx` and `fX` replace the whole text (5.14).
+- `f` and `F` are the filter keys: `ff` focuses the filter bar, `fF` clears it and focuses it, `fs` opens the saved filters, and `fa`, `ft`, `fw`, `fu`, `fl`, `fx` and `fX` replace the whole text (5.14).
   `sh` toggles the display of the siblings of a match (5.14).
   `/` starts an incremental search, `n` / `N` jump to the next / previous match and Escape ends it (5.15).
   `H` / `L` move the whole list up / down (5.2).
@@ -511,7 +511,7 @@ The static prototype that settled these decisions was a throwaway and is not kep
 
 - A due date is a small chip in the task text: a Lucide `ArrowRight` icon (a `CircleExclamationPoint` icon instead when the date is overdue and the task is not completed), then the date exactly as written, with no `->`.
   It follows the radii and spacing tokens, with a fully rounded shape (the pill radius), a semi-bold date and a tint stronger than the hover tint so that it stands out.
-- Its colors depend on the state of 5.13: the danger color for overdue, yellow for due now, the accent color for due this week, and the muted color for later.
+- Its colors depend on the state of 5.13: the danger color for overdue, yellow for due now, the accent color for upcoming, and the muted color for later.
   The yellow is a dark amber in the light theme, so that it stays readable on the light surface.
   On a completed task the pill is neutral, in the same muted text color as the task, with no state color.
 - In the editor, the same colors apply to the literal text of a valid date, with no icon and no widget.
@@ -705,10 +705,13 @@ It is plain text in the task, `-> DATE`, and the app only adds formatting and an
   The `due:` terms of 5.14 use the same periods, with their own matching rules.
 - **Overdue**: the due period ends before the horizon starts.
   **Due now**: the due period overlaps the horizon.
-  **Due this week**: the due period starts after the horizon ends, within the ISO week of the horizon end.
-  **Later**: the due period starts after the end of that week.
+  **Upcoming**: the due period starts after the horizon ends and no later than the end of the upcoming window.
+  **Later**: the due period starts after the end of the upcoming window.
+- The upcoming window ends 7 days after the horizon end, which is always on or after the end of the current ISO week.
+  It therefore covers the rest of the current week and reaches into the next one, and a week or a quarter that starts inside it is upcoming.
 - With today as the horizon, `2026-11-11` is due now on that day and overdue the day after, `2026-W46` is due now for the whole week and overdue from the following Monday, and `2026-Q4` is due now for the whole quarter.
-  On Thursday `2026-11-12`, `2026-11-15` is due this week and `2026-11-16` is later.
+  On Thursday `2026-11-12` the window ends on `2026-11-19`, so `2026-11-15`, `2026-11-16` and `2026-W47` are upcoming, and `2026-11-20` and `2026-W48` are later.
+  On Sunday `2026-11-15` the window ends on `2026-11-22`, so all of `2026-W47` is upcoming, and on Monday `2026-11-16` it ends on `2026-11-23`, which makes the next Monday upcoming.
 - Today is read from the local clock.
   The states are recomputed on every render and when the tab becomes visible again or gets the focus, with no timer, and this only restyles the pills, never the editor.
 - The state is classified by one pure function in `src/client/logic/`.
@@ -802,6 +805,7 @@ To refine a filter, type in the bar.
 | `fa` | empty, which shows everything |
 | `ft` | `due:today,overdue` |
 | `fw` | `due:week,overdue` |
+| `fu` | `due:upcoming,overdue` |
 | `fl` | `list:`, followed by the list popup |
 | `fx` | `is:done` |
 | `fX` | `is:todo` |
@@ -829,16 +833,17 @@ There is no selector, and no way to show a single list other than `list:`.
 - A bare word matches when it is a substring of the task text.
 - `list:name` matches the tasks of every list with that title.
   A name with spaces is quoted, as in `list:"Side projects"`, and a quote that is not closed runs to the end of the text.
-- `due:` values are `today`, `week`, `overdue`, a literal day, ISO week or quarter (5.13), or a shortcut of 5.13 such as `+1w`, `-tue`, `W` or `+1Q`.
+- `due:` values are `today`, `week`, `upcoming`, `overdue`, a literal day, ISO week or quarter (5.13), or a shortcut of 5.13 such as `+1w`, `-tue`, `W` or `+1Q`.
   A shortcut is replaced by the literal it resolves to, from today, and then matches like that literal, so with today being 2026-11-11 `due:+1w` is `due:2026-11-18`.
-  `due:today` matches a task whose due period overlaps today, `due:week` one that overlaps the current ISO week, and `due:2026-11-10` one that overlaps that period.
+  `due:today` matches a task whose due period overlaps today, `due:week` one that overlaps the current ISO week, `due:upcoming` one that is due now or upcoming in the sense of 5.13, which is a period that overlaps today or starts after today and no later than the end of the upcoming window, and `due:2026-11-10` one that overlaps that period.
+  `due:upcoming` ignores the checkbox like `due:today` and `due:week`, and it uses the same function as the pill, so the two never disagree.
   `due:overdue` matches a task that is not completed and whose due period ends before today.
   A task with no valid due date matches no `due:` term, and a due date before the period does not match `due:today`, so late tasks only come from `overdue`.
 - A `due:` value can start with `<` or `>`, as in `due:<+1w` or `due:>today`.
   Both operators are strict and compare whole periods.
   `due:<X` matches a task whose due period ends before the period of X starts, and `due:>X` one whose due period starts after the period of X ends.
   A task whose period overlaps X matches neither, so it is found with `due:X`, and an inclusive bound is written with a comma, as in `due:<X,X`.
-  After an operator the value is a literal, a shortcut, `today` or `week`, which are the current day and the current ISO week, and `overdue` is an invalid value.
+  After an operator the value is a literal, a shortcut, `today` or `week`, which are the current day and the current ISO week, and `overdue` and `upcoming` are invalid values.
   The operators ignore the checkbox, so completed tasks match, and `is:todo` narrows the result.
   With today being Wednesday 2026-11-11, `due:<+1w` matches `2026-11-17` and `2026-W46` but not `2026-11-18`, `2026-W47` or `2026-Q4`, and `due:>+1w` matches `2026-11-19`, `2026-W48` and `2027-Q1`.
 - A range is two terms, as in `due:>today due:<+1w`, which are ANDed like any other terms.
@@ -855,7 +860,7 @@ There is no selector, and no way to show a single list other than `list:`.
 
 **Popups**
 
-- Typing `list:` opens a popup of the list titles, quoted when they need it, and `due:` opens one of `today`, `week` and `overdue`, plus one entry for a typed valid day, week, quarter or shortcut, which shows the date it resolves to, as in `+1w  2026-11-18`.
+- Typing `list:` opens a popup of the list titles, quoted when they need it, and `due:` opens one of `today`, `week`, `upcoming` and `overdue`, plus one entry for a typed valid day, week, quarter or shortcut, which shows the date it resolves to, as in `+1w  2026-11-18`.
   After a comma, the popup completes the next value.
   After `<` or `>`, it offers `today` and `week` instead, with no `overdue`, plus the same typed entry.
 - A typed sign and number with no unit, or a sign and a weekday prefix, gets the unit and weekday completion of 5.13.
@@ -1388,7 +1393,7 @@ They handle a single selection range only, like the paste of 5.18.
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff`, `fF` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the links of a task (each syntax, the order, a refused scheme, a literal wikilink in single-file mode, an autolink, a task with none, the narrowing of the picker rows, and the keys `gx` and `gX` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search), and the sorts (the sort date of an unchecked task, of a checked task and of a list, the tie of a day, a week and a quarter on the same last day, stable ties, the two groups, tasks with no date, recursion, a checked parent with an unchecked subtask, a parent ranked by a subtask, the no-op returning `null`, the filter ignored, the cursor kept, and the keys `Sl`, `SL` and `SA` on a task, on a header and with the Markdown view open).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fu`, `fl`, `fx`, `fX`, `ff`, `fF` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, including the upcoming window on each weekday and across a year boundary, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, `upcoming`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the links of a task (each syntax, the order, a refused scheme, a literal wikilink in single-file mode, an autolink, a task with none, the narrowing of the picker rows, and the keys `gx` and `gX` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search), and the sorts (the sort date of an unchecked task, of a checked task and of a list, the tie of a day, a week and a quarter on the same last day, stable ties, the two groups, tasks with no date, recursion, a checked parent with an unchecked subtask, a parent ranked by a subtask, the no-op returning `null`, the filter ignored, the cursor kept, and the keys `Sl`, `SL` and `SA` on a task, on a header and with the Markdown view open).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - **Highlights**: the inline parser of 5.19 (plain and each of the six colors, an unknown emoji, a circle after a space, an unclosed pair, `====`, `==🔴==`, the trimmed space, an escaped marker, nesting inside and around bold, italic, code, strikethrough and links, a due date inside, a comparison such as `a == b`), the color table and the popup entries, and the decision of whether a typed `==` opens the popup.
