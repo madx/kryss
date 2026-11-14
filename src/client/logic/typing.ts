@@ -65,28 +65,71 @@ export function emptyPairRemoval(text: string, cursor: number, pairs: readonly P
   return p ? { from: cursor - p.open, to: cursor + p.closer.length } : null;
 }
 
-/** Whether a run of `n` asterisks on each side holds `marker`: bold needs two, italic an odd count, so `**x**` is not italic. */
-const hasMarker = (n: number, marker: "**" | "*") => (marker === "**" ? n >= 2 : n % 2 === 1);
-const run = (s: string, from: number, step: 1 | -1): number => {
+/** What Ctrl+B and Ctrl+I look for: bold is a run of two or more `*`, italic an odd run of `_` or `*`, so `**x**` is not italic. */
+type Spec = { c: "*" | "_"; len: 1 | 2; ok: (n: number) => boolean };
+const BOLD: Spec[] = [{ c: "*", len: 2, ok: (n) => n >= 2 }];
+const odd = (n: number) => n % 2 === 1;
+const ITALIC: Spec[] = [
+  { c: "_", len: 1, ok: odd },
+  { c: "*", len: 1, ok: odd },
+];
+
+type Run = { start: number; end: number };
+function runsOf(text: string, c: string): Run[] {
+  return [...text.matchAll(new RegExp(`\\${c}+`, "g"))].map((m) => ({ start: m.index!, end: m.index! + m[0].length }));
+}
+const runLength = (s: string, from: number, step: 1 | -1, c: string): number => {
   let n = 0;
-  for (let i = step === 1 ? from : from - 1; s[i] === "*"; i += step) n++;
+  for (let i = step === 1 ? from : from - 1; s[i] === c; i += step) n++;
   return n;
 };
 
-/**
- * Ctrl+B (`**`) and Ctrl+I (`*`): wraps the selection, or removes the marker when it sits just inside or just outside the selection.
- * With no selection it inserts the pair, with no check of the surroundings.
- */
-export function toggleMarker(text: string, from: number, to: number, marker: "**" | "*"): Edit {
-  const m = marker.length;
-  if (from === to) return { from, to, insert: marker + marker, anchor: from + m, head: from + m, track: { at: from + m, closer: marker, open: m } };
-  const selected = text.slice(from, to);
-  if (hasMarker(Math.min(run(text, from, -1), run(text, to, 1)), marker)) {
-    return { from: from - m, to: to + m, insert: selected, anchor: from - m, head: to - m };
+/** With no selection: the edit that removes the markers of the span around the cursor, or of the empty pair it is in, or null. */
+function unwrapAtCursor(text: string, cursor: number, specs: Spec[]): Edit | null {
+  for (const { c, len } of specs) {
+    const empty = runsOf(text, c).find((r) => {
+      const left = cursor - r.start, right = r.end - cursor;
+      return left > 0 && right > 0 && (len === 2 ? left >= 2 && right >= 2 : left === 1 && right === 1);
+    });
+    if (empty) return { from: cursor - len, to: cursor + len, insert: "", anchor: cursor - len, head: cursor - len };
   }
-  if (selected.length >= 2 * m && hasMarker(Math.min(run(selected, selected.length, -1), run(selected, 0, 1)), marker)) {
-    const inner = selected.slice(m, -m);
-    return { from, to, insert: inner, anchor: from, head: from + inner.length };
+  let best: { a: Run; b: Run; len: number } | null = null;
+  for (const { c, len, ok } of specs) {
+    const tokens = runsOf(text, c).filter((r) => ok(r.end - r.start));
+    for (let i = 0; i + 1 < tokens.length; i += 2) {
+      const a = tokens[i]!, b = tokens[i + 1]!;
+      if (a.end <= cursor && cursor <= b.start && (!best || a.start > best.a.start)) best = { a, b, len };
+    }
+  }
+  if (!best) return null;
+  const { a, b, len } = best;
+  return { from: a.start, to: b.end, insert: text.slice(a.start + len, b.end - len), anchor: cursor - len, head: cursor - len };
+}
+
+/**
+ * Ctrl+B (`**`) and Ctrl+I (`_`): wraps the selection, or removes the markers when they sit just inside or just outside it.
+ * Italic is written with `_` and recognized in `_` or `*`.
+ * With no selection it removes the markers of the span around the cursor, and otherwise inserts the pair, with no check of the surroundings.
+ */
+export function toggleMarker(text: string, from: number, to: number, marker: "**" | "_"): Edit {
+  const m = marker.length;
+  const specs = marker === "**" ? BOLD : ITALIC;
+  if (from === to) {
+    return (
+      unwrapAtCursor(text, from, specs) ?? { from, to, insert: marker + marker, anchor: from + m, head: from + m, track: { at: from + m, closer: marker, open: m } }
+    );
+  }
+  const selected = text.slice(from, to);
+  for (const { c, len, ok } of specs) {
+    if (ok(Math.min(runLength(text, from, -1, c), runLength(text, to, 1, c)))) {
+      return { from: from - len, to: to + len, insert: selected, anchor: from - len, head: to - len };
+    }
+  }
+  for (const { c, len, ok } of specs) {
+    if (selected.length >= 2 * len && ok(Math.min(runLength(selected, selected.length, -1, c), runLength(selected, 0, 1, c)))) {
+      const inner = selected.slice(len, -len);
+      return { from, to, insert: inner, anchor: from, head: from + inner.length };
+    }
   }
   return { from, to, insert: marker + selected + marker, anchor: from + m, head: to + m };
 }
@@ -104,6 +147,16 @@ export function linkEdit(text: string, from: number, to: number, clipboard: stri
   return { from, to, insert, anchor: cursor, head: cursor };
 }
 
-export function composedEdit(_before: string, _after: string, _start: number, _pairs: readonly Pair[]): Edit | null {
-  return null;
+/**
+ * A dead key, such as `~` or the backtick on an AZERTY keyboard, is composed by the browser, so the editor already holds the character when the composition ends.
+ * `before` and `after` are the document before and after it, `start` is where the cursor was and `pairs` are the tracked pairs of `after`.
+ * When exactly one character was inserted at `start`, this gives the edit that a typed character would have given, as a replacement of that character.
+ * `drop` and `track` are positions of `after`.
+ */
+export function composedEdit(before: string, after: string, start: number, pairs: readonly Pair[]): Edit | null {
+  if (after.length !== before.length + 1 || after.slice(0, start) !== before.slice(0, start) || after.slice(start + 1) !== before.slice(start)) return null;
+  const earlier = pairs.filter((p) => p.at !== start).map((p) => ({ ...p, at: p.at > start ? p.at - 1 : p.at }));
+  const edit = typedEdit(before, start, start, after[start]!, earlier);
+  if (!edit) return null;
+  return { ...edit, from: start, to: start + 1, drop: edit.drop === undefined ? undefined : edit.drop >= start ? edit.drop + 1 : edit.drop };
 }

@@ -46,10 +46,17 @@ export function highlightFill(entry: HighlightEntry, closerAfter: boolean): { ba
   return { back: 0, insert: emoji, cursor: emoji.length };
 }
 
-export function isWrappedHighlight(_text: string, _from: number, _to: number): boolean {
-  return false;
+/** True when a non-empty selection has `==` right before and right after it, and not a longer run of `=`. */
+export function isWrappedHighlight(text: string, from: number, to: number): boolean {
+  return from < to && /(^|[^=])==$/.test(text.slice(0, from)) && /^==([^=]|$)/.test(text.slice(to));
 }
 
-export function highlightWrapFill(_entry: HighlightEntry, _from: number, _to: number): { insertAt: number; insert: string; cursor: number } {
-  return { insertAt: 0, insert: "", cursor: 0 };
+/**
+ * What accepting an entry changes when the `==` popup is open over a wrapped selection (PRD 5.22).
+ * Only the emoji goes in, right after the opening marker, and the cursor ends after the closing marker, so typing goes on after the highlight.
+ * `from` and `to` are the selection before the change, and `cursor` is a position after it.
+ */
+export function highlightWrapFill(entry: HighlightEntry, from: number, to: number): { insertAt: number; insert: string; cursor: number } {
+  const emoji = entry.insert.slice(2, -2);
+  return { insertAt: from, insert: emoji, cursor: to + emoji.length + 2 };
 }

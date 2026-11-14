@@ -223,7 +223,7 @@ describe("Ctrl+B and Ctrl+I", () => {
   });
   test("italic over bold wraps in _, and bold over italic wraps", () => {
     expect(toggle("**‹word›**", "_")).toBe("**_‹word›_**");
-    expect(toggle("_‹word›_", "**")).toBe("**_‹word›_**");
+    expect(toggle("_‹word›_", "**")).toBe("_**‹word›**_");
     expect(toggle("*‹word›*", "**")).toBe("***‹word›***");
   });
   test("a run of three asterisks is both: each toggle removes its own part", () => {

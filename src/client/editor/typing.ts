@@ -1,7 +1,7 @@
 // CodeMirror part of the typing aids (PRD 5.22): the decisions are the pure functions of `logic/typing.ts`.
 import { EditorSelection, type EditorState, MapMode, StateEffect, StateField, type Extension } from "@codemirror/state";
 import { EditorView, type KeyBinding } from "@codemirror/view";
-import { emptyPairRemoval, linkEdit, toggleMarker, typedEdit, type Edit, type Pair } from "../logic/typing";
+import { composedEdit, emptyPairRemoval, linkEdit, toggleMarker, typedEdit, type Edit, type Pair } from "../logic/typing";
 
 /** `drop` is a pair position before the change, `add` a pair position after it. */
 const trackPairs = StateEffect.define<{ drop?: number; add?: Pair }>();
@@ -38,17 +38,44 @@ function single(state: EditorState): { from: number; to: number } | null {
   return state.selection.ranges.length === 1 ? state.selection.main : null;
 }
 
-/** Typed characters: pairs, growth, step over a closer, and wrapping a selection. Anything else is the native input. */
+/**
+ * Typed characters: pairs, growth, step over a closer, and wrapping a selection. Anything else is the native input.
+ * While a composition is running (a dead key such as `~` or the backtick on an AZERTY keyboard) the browser owns the text, so nothing is done here, see `composition`.
+ */
 const typed = EditorView.inputHandler.of((view, from, to, text) => {
   const sel = single(view.state);
-  if (!sel || sel.from !== from || sel.to !== to) return false;
+  if (!sel || sel.from !== from || sel.to !== to || view.composing) return false;
   const edit = typedEdit(view.state.doc.toString(), from, to, text, view.state.field(pairsField));
   if (!edit) return false;
   apply(view, edit, "input.type");
   return true;
 });
 
-function toggle(marker: "**" | "*"): (view: EditorView) => boolean {
+/**
+ * A dead key is composed, so the editor holds the character when the composition ends, and no typed character reaches `typed`.
+ * The document is remembered when the composition starts, and once it has ended, `composedEdit` decides as for a typed character.
+ * The wait lets CodeMirror read the composed text first, and the decision is dropped if anything else changed meanwhile.
+ */
+const composition = EditorView.domEventHandlers({
+  compositionstart(_event, view) {
+    const sel = single(view.state);
+    started = sel && sel.from === sel.to ? { doc: view.state.doc.toString(), at: sel.from } : null;
+  },
+  compositionend(_event, view) {
+    const from = started;
+    started = null;
+    if (!from) return;
+    setTimeout(() => {
+      const sel = single(view.state);
+      if (!view.dom.isConnected || view.composing || !sel || sel.from !== sel.to || sel.from !== from.at + 1) return;
+      const edit = composedEdit(from.doc, view.state.doc.toString(), from.at, view.state.field(pairsField));
+      if (edit) apply(view, edit, "input.type");
+    }, 20);
+  },
+});
+let started: { doc: string; at: number } | null = null;
+
+function toggle(marker: "**" | "_"): (view: EditorView) => boolean {
   return (view) => {
     const sel = single(view.state);
     if (sel) apply(view, toggleMarker(view.state.doc.toString(), sel.from, sel.to, marker), "input.format");
@@ -83,8 +110,8 @@ function backspace(view: EditorView): boolean {
 export const typingKeymap: readonly KeyBinding[] = [
   { key: "Backspace", run: backspace },
   { key: "Mod-b", run: toggle("**") },
-  { key: "Mod-i", run: toggle("*") },
+  { key: "Mod-i", run: toggle("_") },
   { key: "Mod-k", run: link },
 ];
 
-export const typingAids: Extension = [pairsField, typed];
+export const typingAids: Extension = [pairsField, typed, composition];
