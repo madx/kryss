@@ -555,6 +555,7 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     ["a", set("")],
     ["t", set("due:today,overdue")],
     ["w", set("due:week,overdue")],
+    ["u", set("due:upcoming,overdue")],
     ["l", { type: "filter-list" }],
     ["x", set("is:done")],
     ["X", set("is:todo")],

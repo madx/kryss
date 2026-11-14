@@ -79,6 +79,7 @@ function filterKey(key: string): Action | null {
     case "a": return set("");
     case "t": return set("due:today,overdue");
     case "w": return set("due:week,overdue");
+    case "u": return set("due:upcoming,overdue");
     case "l": return { type: "filter-list" };
     case "x": return set("is:done");
     case "X": return set("is:todo");

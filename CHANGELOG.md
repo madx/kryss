@@ -8,6 +8,10 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- Upcoming due dates: the due state "due this week" becomes "upcoming" and its window now ends 7 days after the horizon end, so it covers the rest of the current week and reaches into the next one.
+  The `due:` filter gets an `upcoming` value, which matches a task that is due now or upcoming like its pill, ignores the checkbox and is invalid after `<` and `>`.
+  `fu` sets the filter to `due:upcoming,overdue`, the `due:` popup offers `upcoming`, and the cheat sheet lists both.
+
 - Sort by due date: `Sl` sorts the tasks of the list that holds the cursor, `SL` sorts the lists and `SA` sorts the tasks of every list on its own, as one undoable change each.
   Unchecked tasks come first and checked tasks last, each group by the earliest due date of its subtree compared by the last day of the period, with the finer period first on a tie, a stable order otherwise and tasks with no date last.
   A list is ranked by the earliest due date of its unchecked tasks, and the sort is recursive, ignores the filter and keeps the cursor on its task or list.
