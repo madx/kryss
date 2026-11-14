@@ -45,3 +45,11 @@ export function highlightFill(entry: HighlightEntry, closerAfter: boolean): { ba
   const emoji = entry.insert.slice(2, -2);
   return { back: 0, insert: emoji, cursor: emoji.length };
 }
+
+export function isWrappedHighlight(_text: string, _from: number, _to: number): boolean {
+  return false;
+}
+
+export function highlightWrapFill(_entry: HighlightEntry, _from: number, _to: number): { insertAt: number; insert: string; cursor: number } {
+  return { insertAt: 0, insert: "", cursor: 0 };
+}

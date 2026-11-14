@@ -103,3 +103,7 @@ export function linkEdit(text: string, from: number, to: number, clipboard: stri
   const cursor = from === to ? from + 1 : url === null ? from + insert.length - 1 : from + insert.length;
   return { from, to, insert, anchor: cursor, head: cursor };
 }
+
+export function composedEdit(_before: string, _after: string, _start: number, _pairs: readonly Pair[]): Edit | null {
+  return null;
+}

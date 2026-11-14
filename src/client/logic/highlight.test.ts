@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { highlightClass, highlightColor, highlightEntries, highlightFill } from "./highlight";
+import { highlightClass, highlightColor, highlightEntries, highlightFill, highlightWrapFill, isWrappedHighlight } from "./highlight";
 
 describe("highlightColor", () => {
   test("each of the six circles is a color", () => {
@@ -51,5 +51,33 @@ describe("highlightFill", () => {
   });
   test("with the closer already there, the default entry changes nothing", () => {
     expect(highlightFill(plain!, true)).toEqual({ back: 0, insert: "", cursor: 0 });
+  });
+});
+
+describe("isWrappedHighlight", () => {
+  const sel = (s: string) => {
+    const a = s.indexOf("‹"), b = s.indexOf("›");
+    return isWrappedHighlight(s.slice(0, a) + s.slice(a + 1, b) + s.slice(b + 1), a, b - 1);
+  };
+  test("a selection with == on both sides is a wrapped highlight", () => {
+    expect(sel("a ==‹word›== b")).toBe(true);
+    expect(sel("==‹word›==")).toBe(true);
+  });
+  test("a single marker, three markers, a missing marker or no selection are not", () => {
+    expect(sel("a =‹word›= b")).toBe(false);
+    expect(sel("===‹word›===")).toBe(false);
+    expect(sel("==‹word›")).toBe(false);
+    expect(sel("a ==‹›== b")).toBe(false);
+  });
+});
+
+describe("highlightWrapFill", () => {
+  const [plain, red] = highlightEntries();
+  test("the emoji goes right after the opening marker and the cursor ends after the closing marker", () => {
+    // `==word==` with the word at [2, 6]
+    expect(highlightWrapFill(red!, 2, 6)).toEqual({ insertAt: 2, insert: "🔴", cursor: 10 });
+  });
+  test("the default entry inserts nothing and the cursor ends after the closing marker", () => {
+    expect(highlightWrapFill(plain!, 2, 6)).toEqual({ insertAt: 2, insert: "", cursor: 8 });
   });
 });

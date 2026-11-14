@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { emptyPairRemoval, linkEdit, toggleMarker, typedEdit, type Edit, type Pair } from "./typing";
+import { composedEdit, emptyPairRemoval, linkEdit, toggleMarker, typedEdit, type Edit, type Pair } from "./typing";
 
 // Test notation: `|` is the cursor, `‹` and `›` delimit a selection.
 function parse(s: string): { text: string; from: number; to: number } {
@@ -203,37 +203,107 @@ describe("wrapping a selection", () => {
 });
 
 describe("Ctrl+B and Ctrl+I", () => {
-  const toggle = (s: string, marker: "**" | "*") => {
+  const toggle = (s: string, marker: "**" | "_") => {
     const { text, from, to } = parse(s);
     return show(text, toggleMarker(text, from, to, marker));
   };
-  test("a selection is wrapped and stays selected", () => {
+  test("a selection is wrapped and stays selected, bold in ** and italic in _", () => {
     expect(toggle("a ‹word› b", "**")).toBe("a **‹word›** b");
-    expect(toggle("a ‹word› b", "*")).toBe("a *‹word›* b");
+    expect(toggle("a ‹word› b", "_")).toBe("a _‹word›_ b");
   });
-  test("markers just inside the selection are removed", () => {
+  test("markers just inside the selection are removed, italic in _ or *", () => {
     expect(toggle("a ‹**word**› b", "**")).toBe("a ‹word› b");
-    expect(toggle("a ‹*word*› b", "*")).toBe("a ‹word› b");
+    expect(toggle("a ‹_word_›", "_")).toBe("a ‹word›");
+    expect(toggle("a ‹*word*› b", "_")).toBe("a ‹word› b");
   });
-  test("markers just outside the selection are removed", () => {
+  test("markers just outside the selection are removed, italic in _ or *", () => {
     expect(toggle("a **‹word›** b", "**")).toBe("a ‹word› b");
-    expect(toggle("a *‹word›* b", "*")).toBe("a ‹word› b");
+    expect(toggle("a _‹word›_ b", "_")).toBe("a ‹word› b");
+    expect(toggle("a *‹word›* b", "_")).toBe("a ‹word› b");
   });
-  test("italic over bold adds a layer instead of removing a marker of the bold", () => {
-    expect(toggle("**‹word›**", "*")).toBe("***‹word›***");
-    expect(toggle("***‹word›***", "*")).toBe("**‹word›**");
-    expect(toggle("***‹word›***", "**")).toBe("*‹word›*");
-  });
-  test("bold over italic wraps", () => {
+  test("italic over bold wraps in _, and bold over italic wraps", () => {
+    expect(toggle("**‹word›**", "_")).toBe("**_‹word›_**");
+    expect(toggle("_‹word›_", "**")).toBe("**_‹word›_**");
     expect(toggle("*‹word›*", "**")).toBe("***‹word›***");
   });
-  test("with no selection the pair is inserted with the cursor between, whatever surrounds it", () => {
+  test("a run of three asterisks is both: each toggle removes its own part", () => {
+    expect(toggle("***‹word›***", "_")).toBe("**‹word›**");
+    expect(toggle("***‹word›***", "**")).toBe("*‹word›*");
+  });
+  test("with no selection and no span the pair is inserted with the cursor between, whatever surrounds it", () => {
     expect(toggle("a|b", "**")).toBe("a**|**b");
-    expect(toggle("a|b", "*")).toBe("a*|*b");
+    expect(toggle("a|b", "_")).toBe("a_|_b");
   });
   test("the inserted pair is tracked", () => {
-    const e = toggleMarker("ab", 1, 1, "**");
-    expect(e.track).toEqual({ at: 3, closer: "**", open: 2 });
+    expect(toggleMarker("ab", 1, 1, "**").track).toEqual({ at: 3, closer: "**", open: 2 });
+    expect(toggleMarker("ab", 1, 1, "_").track).toEqual({ at: 2, closer: "_", open: 1 });
+  });
+  test("with no selection and the cursor inside a span, the markers are removed and the cursor stays on its text", () => {
+    expect(toggle("**bo|ld**", "**")).toBe("bo|ld");
+    expect(toggle("a **bo|ld** b", "**")).toBe("a bo|ld b");
+    expect(toggle("**bold|**", "**")).toBe("bold|");
+    expect(toggle("**|bold**", "**")).toBe("|bold");
+    expect(toggle("_it|alic_", "_")).toBe("it|alic");
+    expect(toggle("*it|alic*", "_")).toBe("it|alic");
+  });
+  test("the span that holds the cursor is chosen among several", () => {
+    expect(toggle("**a** **b|c**", "**")).toBe("**a** b|c");
+    expect(toggle("**a|** **bc**", "**")).toBe("a| **bc**");
+  });
+  test("the cursor between two spans is not in a span", () => {
+    expect(toggle("**a** b| **c**", "**")).toBe("**a** b**|** **c**");
+  });
+  test("an italic span in a bold one, and a bold one in an italic one, are different spans", () => {
+    expect(toggle("**bo|ld**", "_")).toBe("**bo_|_ld**");
+    expect(toggle("_it|alic_", "**")).toBe("_it**|**alic_");
+  });
+  test("a lone underscore of a word is not a span", () => {
+    expect(toggle("snake_ca|se", "_")).toBe("snake_ca_|_se");
+  });
+  test("three asterisks around the cursor hold bold and italic", () => {
+    expect(toggle("***ab|c***", "_")).toBe("**ab|c**");
+    expect(toggle("***ab|c***", "**")).toBe("*ab|c*");
+  });
+  test("an empty pair is removed by the same key", () => {
+    expect(toggle("a **|** b", "**")).toBe("a | b");
+    expect(toggle("a _|_ b", "_")).toBe("a | b");
+    expect(toggle("a *|* b", "_")).toBe("a | b");
+    expect(toggle("**|**", "_")).toBe("**_|_**");
+  });
+});
+
+describe("dead keys (composition)", () => {
+  // `before` and `after` are the document before and after the composition, with the cursor marked in `before` and the composed character in `after`.
+  const composed = (before: string, after: string, pairs: Pair[] = []) => {
+    const { text, from } = parse(before);
+    const e = composedEdit(text, after, from, pairs);
+    return e === null ? null : show(after, e);
+  };
+  test("a composed backtick pairs like a typed one", () => {
+    expect(composed("a |", "a `")).toBe("a `|`");
+    expect(composed("|", "`")).toBe("`|`");
+  });
+  test("a composed backtick inside a word stays literal", () => {
+    expect(composed("ab|", "ab`")).toBeNull();
+  });
+  test("a first composed ~ stays literal and the second gives ~~|~~", () => {
+    expect(composed("a |", "a ~")).toBeNull();
+    expect(composed("a ~|", "a ~~")).toBe("a ~~|~~");
+  });
+  test("a composed ~ steps over a tracked ~~ closer, one character at a time", () => {
+    const pairs: Pair[] = [{ at: 4, closer: "~~", open: 2 }];
+    expect(composed("~~x|~~", "~~x~~~", pairs)).toBe("~~x~|~");
+  });
+  test("an accented letter, several characters, or another change are not typed pairs", () => {
+    expect(composed("a |", "a ẽ")).toBeNull();
+    expect(composed("a |", "a ~~")).toBeNull();
+    expect(composed("a |", "b `")).toBeNull();
+    expect(composed("a |", "a ")).toBeNull();
+  });
+  test("the dropped pair is given as a position of the document after the composition", () => {
+    const e = composedEdit("~~x~~", "~~x~~~", 3, [{ at: 4, closer: "~~", open: 2 }])!;
+    expect(e.drop).toBe(4);
+    expect(e.track).toEqual({ at: 4, closer: "~", open: 2 });
   });
 });
 
