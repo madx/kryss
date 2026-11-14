@@ -377,7 +377,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | Key | Action |
 |---|---|
 | `x`, Space | toggle the check state (rules of 5.3) |
-| `i`, Enter, F2 | edit the task, caret at the end |
+| `e`, Enter | edit the task, caret at the end |
 | `dd`, Delete | delete the task with its subtree, into the register (5.12) |
 | `yy` | copy the task with its subtree into the register (5.12) |
 | `cc` | change the task: open the editor with an empty text (5.12) |
@@ -392,9 +392,9 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `SL` | sort the lists by due date (5.21) |
 | `SA` | sort the tasks of every list by due date, each list on its own (5.21) |
 | `u` / `U`, Ctrl+Z / Ctrl+Shift+Z | undo / redo |
-| `o` / `O` | add a sibling below / above, always at the same level |
-| `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
-| `I` / `A` | add the first / last subtask of the task. On a subtask, of its parent. |
+| `o` / `O` | add a sibling below / above, always at the same level, so `o` on a top-level task comes after its whole subtree |
+| `a` | add the last subtask of the task. On a subtask, the last subtask of its parent. |
+| `A` | add the first subtask of the task. On a subtask, the first subtask of its parent. |
 | `go` | open the file picker, in Vault mode only (5.16) |
 | `gx` | open a link of the task: at once if it has one, from a picker if it has several (5.20) |
 | `gX` | copy the URL of a link of the task: at once if it has one, from a picker if it has several (5.20) |
@@ -406,14 +406,15 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 | Key | Action |
 |---|---|
-| `i`, Enter | rename the list in its inline name input (a click on the title does the same) |
+| `e`, Enter | rename the list in its inline name input (a click on the title does the same) |
 | `dd`, Delete | delete the list at once, into the register (5.12), with no prompt since the register and undo recover it |
 | `yy` | copy the list into the register (5.12) |
 | `cc`, `cL` | change the list: open the name input with an empty name (5.12) |
 | `p` | paste the register as the first task of the list, or after the list if it holds a list (5.12) |
 | `P` | paste the register as the first task of the list, or before the list if it holds a list (5.12) |
-| `o`, `a`, `I` | add a task as the first task of the list |
-| `A` | add a task as the last task of the list |
+| `o`, `A` | add a task as the first task of the list |
+| `a` | add a task as the last task of the list |
+| `O` | add a task as the last task of the previous visible list, and do nothing if there is none |
 | `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up, over the visible lists under a filter (5.14) |
 | `H` / `L` | move the list up / down, like `K` / `J` |
 | `Sl` | sort the tasks of the list by due date (5.21) |
@@ -430,8 +431,9 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 **Positional add and Insert mode**
 
-- `o`, `O`, `a`, `I` and `A` create an empty task at the target position, focus it and open the task editor on it.
+- `o`, `O`, `a` and `A` create an empty task at the target position, focus it and open the task editor on it.
   The empty task exists only in the client until it is committed, because an empty text is invalid in the file, and autosave never sends it.
+- There is no `i`, `I` or F2: `e` and Enter are the only keys that edit, and the add keys are named by position (`o` / `O` below / above, `a` / `A` last / first of the children group) rather than by Vim's insert verbs.
 - Enter commits a non-empty text and opens a new empty sibling right below it, at the same level, to chain several tasks.
   Enter on an empty text does nothing.
 - Escape always commits and returns to Normal mode.
@@ -460,6 +462,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   A bare `?` does nothing, since the keys that start with `g` all mean "go".
   The keys are drawn as accent-colored chips, one per key, the group titles are in the accent color, the filter grammar is in the filter orange, and the groups flow in as many columns as fit.
   It is not configurable.
+- The cheat sheet words the edit and add keys as `e`, Enter "edit", `o` / `O` "add below / above", `a` "add last subtask, or last task of a list" and `A` "add first subtask, or first task of a list".
 
 **Implementation decisions**
 
@@ -893,7 +896,7 @@ There is no selector, and no way to show a single list other than `list:`.
 
 **Editing under a filter**
 
-- The keys `x`, `i`, `cc`, `dd`, `yy`, `p`, `P`, `cd`, `cl` and the positional adds work as usual on the visible rows.
+- The keys `x`, `e`, `cc`, `dd`, `yy`, `p`, `P`, `cd`, `cl` and the positional adds work as usual on the visible rows.
 - `J` / `K`, Alt+↑ / Alt+↓, `>` and `<` work on the visible rows, for tasks and for lists.
   The visible rows are the rows shown, so the siblings toggle changes which subtasks count as neighbours.
 - **Move**: a task swaps with the next visible sibling in the direction of the key, and lands right after it (down) or right before it (up), so the hidden siblings between them stay where they were.
