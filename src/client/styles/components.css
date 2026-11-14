@@ -194,7 +194,7 @@
 .due[data-state="overdue"] .due-arrow { display: none; }
 .due[data-state="overdue"] .due-alert { display: block; }
 .due[data-state="now"] { color: var(--color-due-now); }
-.due[data-state="week"] { color: var(--color-due-week); }
+.due[data-state="upcoming"] { color: var(--color-due-upcoming); }
 
 /* A completed task has a neutral pill, in the muted color of its text. */
 .task-row[data-done="true"] .due {

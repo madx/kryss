@@ -3,10 +3,10 @@
 import type { Task, TodoDocument } from "../../shared/types";
 import { findDueRange } from "../markdown/inline";
 import type { Stop } from "./cursor";
-import { dayPeriod, dueCompletions, duePeriod, resolveShortcut, weekPeriod, type Period } from "./due";
+import { dayPeriod, dueCompletions, duePeriod, dueState, resolveShortcut, weekPeriod, type Period } from "./due";
 import { samePath, type PathMove, type TaskPath } from "./paths";
 
-/** A due value as typed, lowercased for the words: `today`, `week`, `overdue`, a day, week or quarter, or a shortcut, with `<` or `>` in front except for `overdue`. */
+/** A due value as typed, lowercased for the words: `today`, `week`, `upcoming`, `overdue`, a day, week or quarter, or a shortcut, with `<` or `>` in front except for `overdue` and `upcoming`. */
 export type DueValue = string;
 export type Term =
   | { kind: "word"; text: string }
@@ -64,7 +64,7 @@ function dueValue(value: string): DueValue | null {
   const operator = OPERATOR.exec(value)?.[0] ?? "";
   const rest = value.slice(operator.length);
   const lower = rest.toLowerCase();
-  if (lower === "today" || lower === "week" || (lower === "overdue" && !operator)) return operator + lower;
+  if (lower === "today" || lower === "week" || ((lower === "overdue" || lower === "upcoming") && !operator)) return operator + lower;
   return resolveShortcut(rest, ANY_DAY) ? value : null;
 }
 
@@ -110,6 +110,10 @@ function matchesDue(value: DueValue, node: Pick<Task, "text" | "done">, today: s
   const period = date ? duePeriod(date) : null;
   if (!period) return false;
   if (value === "overdue") return !node.done && period.end < today;
+  if (value === "upcoming") {
+    const state = dueState(date!, dayPeriod(today));
+    return state === "now" || state === "upcoming";
+  }
   const operator = OPERATOR.exec(value)?.[0];
   const bound = boundPeriod(value.slice(operator?.length ?? 0), today);
   if (operator === "<") return period.end < bound.start;
@@ -287,7 +291,7 @@ export function filterCompletion(text: string, cursor: number, listTitles: strin
     const operator = OPERATOR.exec(typed)?.[0];
     const word = typed.slice(operator?.length ?? 0);
     const start = from + (typed.length - word.length);
-    const options: CompletionOption[] = (operator ? ["today", "week"] : ["today", "week", "overdue"])
+    const options: CompletionOption[] = (operator ? ["today", "week"] : ["today", "week", "upcoming", "overdue"])
       .filter((w) => w.startsWith(word.toLowerCase()))
       .map((w) => ({ label: w, apply: w }));
     if (!options.some((o) => o.label === word)) {
