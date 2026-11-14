@@ -3,6 +3,7 @@ import type { ChangeEvent, TodoDocument } from "../shared/types";
 import type { Api, LoadResult, SaveResult } from "./api";
 import { addTask, moveDown, moveList } from "./logic";
 import { visibleRows } from "./logic/filter";
+import { sortAll, sortedStop, sortList, sortLists } from "./logic/sort";
 import { createStore, FILTER_KEY, OLD_SELECTION_KEY, SIBLINGS_KEY, type Timers } from "./store";
 import { DEBOUNCE_MS, retryDelay } from "./sync";
 
@@ -565,5 +566,59 @@ describe("per-file storage (PRD 5.16)", () => {
     await store.flush();
     expect(store.getState().status).toBe("saved");
     expect(store.hasPendingChanges()).toBe(false);
+  });
+});
+
+describe("sort (PRD 5.21)", () => {
+  const dated = (): TodoDocument => ({
+    filters: [],
+    lists: [{ title: "L", tasks: [{ text: "b -> 2026-12-01", done: false }, { text: "a -> 2026-11-01", done: false }] }],
+  });
+  test("a sort is one undo entry that remembers the filter text", () => {
+    store.replace(dated(), '"x"');
+    store.setFilter("is:todo");
+    store.commit(sortList(store.getState().doc!, 0)!.doc);
+    expect(store.getState().doc!.lists[0]!.tasks[0]!.text).toBe("a -> 2026-11-01");
+    store.setFilter("");
+    expect(store.undo()).toBe(true);
+    expect(store.getState().doc).toEqual(dated());
+    expect(store.getState().filter).toBe("is:todo");
+    expect(store.undo()).toBe(false);
+  });
+  test("a sort that changes nothing returns null, so no entry is created", () => {
+    store.replace(dated(), '"x"');
+    store.commit(sortList(store.getState().doc!, 0)!.doc);
+    expect(sortList(store.getState().doc!, 0)).toBeNull();
+    expect(store.undo()).toBe(true);
+    expect(store.undo()).toBe(false);
+  });
+  test("a sort leaves the filter text alone and the pins follow their tasks", () => {
+    store.replace(dated(), '"x"');
+    store.setFilter("list:L");
+    const edited = dated();
+    edited.lists[0]!.tasks[0]!.done = true;
+    store.commit(edited, { pin: { list: 0, task: 0 } });
+    const result = sortList(store.getState().doc!, 0)!;
+    store.commit(result.doc, { moves: result.moves });
+    expect(store.getState().filter).toBe("list:L");
+    expect(store.getState().pins).toEqual([{ list: 0, task: 1 }]);
+  });
+  test("a sort triggers one PUT through the autosave", async () => {
+    store.replace(dated(), '"x"');
+    store.commit(sortAll(store.getState().doc!)!.doc);
+    await clock.advance(DEBOUNCE_MS);
+    expect(api.calls).toHaveLength(1);
+  });
+  test("sortedStop moves the cursor with its task or its list", () => {
+    const d: TodoDocument = { filters: [], lists: [
+      { title: "B", tasks: [{ text: "b -> 2026-12-01", done: false }, { text: "a -> 2026-11-01", done: false }] },
+      { title: "A", tasks: [{ text: "x -> 2026-10-01", done: false }] },
+    ] };
+    const tasks = sortList(d, 0)!;
+    expect(sortedStop({ kind: "task", path: { list: 0, task: 0 } }, tasks)).toEqual({ kind: "task", path: { list: 0, task: 1 } });
+    expect(sortedStop({ kind: "header", list: 0 }, tasks)).toEqual({ kind: "header", list: 0 });
+    const all = sortLists(d)!;
+    expect(sortedStop({ kind: "header", list: 0 }, all)).toEqual({ kind: "header", list: 1 });
+    expect(sortedStop({ kind: "task", path: { list: 0, task: 1 } }, all)).toEqual({ kind: "task", path: { list: 1, task: 1 } });
   });
 });

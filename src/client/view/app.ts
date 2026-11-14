@@ -25,6 +25,7 @@ import { getNode } from "../logic/paths";
 import { paste, type PastePlace, type PasteTarget } from "../logic/paste";
 import { copyList, copyTask, registerText, type Register } from "../logic/register";
 import type { Stop } from "../logic/cursor";
+import { sortAll, sortedStop, sortList, sortLists } from "../logic/sort";
 import { countVisible } from "../logic/stats";
 import type { CommitOptions, Store, StoreState } from "../store";
 import { renderBanners, renderEmptyState, renderInvalid, renderNoMatch, renderStatus, renderUnreachable } from "./banners";
@@ -305,6 +306,19 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       if (step) lists.move(list, step.target, step.place, focus);
     },
   };
+
+  /** `Sl`, `SL` and `SA` (PRD 5.21): one undoable change, the pins follow their tasks and the cursor follows its row. `stop` is the cursor, null when it has none. */
+  function sort(kind: "list" | "lists" | "all", stop: Stop | null) {
+    const d = doc();
+    const listIndex = stop ? (stop.kind === "header" ? stop.list : stop.path.list) : -1;
+    const sorted = kind === "list" ? sortList(d, listIndex) : kind === "lists" ? sortLists(d) : sortAll(d);
+    if (kind === "list" && !d.lists[listIndex]) return;
+    if (!sorted) return footer.flash("Already sorted", false);
+    ctx.renaming = null; // keyed by list index, which may shift
+    const focus = stop ? sortedStop(stop, sorted) : null;
+    commitFocus(sorted.doc, focus ? stopSelector(focus) : null, { moves: sorted.moves });
+    footer.flash(kind === "list" ? `Sorted tasks of "${d.lists[listIndex]!.title}"` : kind === "lists" ? "Sorted lists" : "Sorted tasks of all lists", false);
+  }
 
   /** The notice shown in place of the lists when the page holds no document: the invalid file, the unreachable server, or nothing while loading. */
   function noDocumentNotice(state: StoreState): Node {
@@ -598,6 +612,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     },
     search: { active: () => search !== null, start: startSearch, step: stepSearch, end: () => endSearch() },
     moveList: lists.moveByKey,
+    sort,
     beginAdd,
     newList: createList,
     markdown: { isOpen: () => markdownOpen, toggle: toggleMarkdown, copy: markdownView.copy },

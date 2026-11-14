@@ -78,6 +78,14 @@ const GROUPS: Group[] = [
     ],
   },
   {
+    title: "Sort by due date",
+    rows: [
+      ["Sl", "sort the tasks of the list under the cursor: unchecked first, then checked, undated last"],
+      ["SL", "sort the lists by their earliest unchecked due date"],
+      ["SA", "sort the tasks of every list, each on its own"],
+    ],
+  },
+  {
     title: "Search",
     rows: [
       ["/", "search the visible rows as you type (Enter or Escape keeps it)"],

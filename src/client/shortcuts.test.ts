@@ -784,3 +784,40 @@ describe("resolveKey: gX copies a link (PRD 5.20)", () => {
   });
 });
 
+describe("resolveKey: the S prefix sorts by due date (PRD 5.21)", () => {
+  test("the first S sets the pending prefix without an action", () => {
+    expect(resolveKey(k("S"))).toEqual({ action: null, pending: "S", preventDefault: true });
+    expect(resolveKey(k("S", onHeader)).pending).toBe("S");
+  });
+  test("Sl, SL and SA give the three sort actions on a task and on a header", () => {
+    for (const o of [{}, onHeader]) {
+      expect(resolveKey(k("l", { pending: "S", ...o }))).toEqual({ action: { type: "sort-list" }, pending: "", preventDefault: true });
+      expect(act("L", { pending: "S", ...o })).toEqual({ type: "sort-lists" });
+      expect(act("A", { pending: "S", ...o })).toEqual({ type: "sort-all" });
+    }
+  });
+  test("with no cursor Sl still resolves, the view decides there is nothing to do", () => {
+    expect(act("l", { pending: "S", target: "none" })).toEqual({ type: "sort-list" });
+  });
+  test("another key after S drops the prefix with no action", () => {
+    const r = resolveKey(k("j", { pending: "S" }));
+    expect(r.action).toBeNull();
+    expect(r.pending).toBe("");
+  });
+  test("the three keys do nothing in the Markdown view, with no message", () => {
+    for (const key of ["l", "L", "A"]) expect(act(key, { pending: "S", markdownView: true })).toBeNull();
+  });
+  test("S does not start a prefix in the Markdown view", () => {
+    expect(resolveKey(k("S", { markdownView: true })).pending).toBe("");
+  });
+  test("the sort keys are ignored in a text field and behind the cheat sheet", () => {
+    expect(act("l", { pending: "S", target: "field" })).toBeNull();
+    expect(act("l", { pending: "S", overlay: "cheatsheet" })).toBeNull();
+  });
+  test("l, L and A alone keep their meaning", () => {
+    expect(act("l")).toEqual({ type: "cursor", to: "next-header" });
+    expect(act("L")).toEqual({ type: "move-list", dir: "down" });
+    expect(act("A")).toEqual({ type: "add", at: "last-child" });
+  });
+});
+
