@@ -8,7 +8,7 @@
 ## Typing aids in the editor
 - [ ] Decide whether a typed character pairs, grows or steps over from the text around the cursor, with tests
 - [ ] Wrap a selection with a typed marker, repeat the wrap, and toggle `**` and `*` around a selection, with tests
-- [ ] Build the text and cursor of Ctrl+B, Ctrl+I and Ctrl+K with and without a selection, with tests
+- [ ] Build the text and cursor of Ctrl+B, Ctrl+I and Ctrl+K with and without a selection and a clipboard URL, with tests
 - [ ] Wire the pairs, the Backspace removal and the three shortcuts into the editor as single undo steps
 - [ ] Let the `==` and `[[` popups fill the pair that already exists, and update the cheat sheet
 

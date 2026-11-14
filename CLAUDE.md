@@ -94,7 +94,8 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 - **Highlights** (PRD 5.19): `==text==` renders in a gray, and `==🔴text==` picks a color with a leading circle (🔴 🟠 🟡 🟢 🔵 🟣), hidden in the rendered view.
   It is a plain inline node like `~~strike~~`, unknown to the server, the live preview draws it, and typing `==` pairs it as `==│==` and opens a popup of the colors that inserts only the emoji.
 - **Typing aids** (PRD 5.22): in the task editor, `*`, `_`, backtick, `[`, `(`, `"`, `~~` and `==` close themselves, only when the character before is not a letter or digit and the one after is a space, the end or a closing character, `*` and `[` grow to `**` and `[[`, a typed closer steps over its pair, and Backspace removes an empty pair.
-  Typing one of these characters over a selection wraps it, Ctrl+B, Ctrl+I and Ctrl+K format or toggle it, and each is one editor undo step.
+  Typing one of these characters over a selection wraps it, Ctrl+B, Ctrl+I and Ctrl+K (Cmd on macOS) format or toggle it, and each is one editor undo step.
+  Ctrl+K is the only place that reads the clipboard: a single `http` or `https` URL there fills the link, and anything else leaves an empty URL part.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
   `gx` opens a link of the task under the cursor from the keyboard, at once if it has one and from the `cl`-style picker if it has several, with no message when there is none, and `gX` does the same but copies the URL, with no message either (PRD 5.20).
 - **Vault features** (PRD 5.16 to 5.18): `go` opens the file picker, whose first entry creates a file.
