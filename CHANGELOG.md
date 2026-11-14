@@ -8,6 +8,9 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- `fF` clears the filter and focuses the filter bar in one key: it empties the text and drops the pins like `fa`, then focuses the bar like `ff`.
+  It works in the Markdown view like the other `f` keys, and it is listed in the cheat sheet.
+
 - `gx` opens a link of the task under the cursor: at once if it has one, from a picker below the row if it has several.
   The picker narrows the links on their label or URL, shows the URL of each row in a muted style, and works like the picker of `cl`.
   The links are the ones that render as links in the task text (Markdown links, autolinks and, in Vault mode, wikilinks), with the scheme rules of the rendering, and the key does nothing, with no message, when there is none.
