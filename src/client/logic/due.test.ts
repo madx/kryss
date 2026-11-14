@@ -68,16 +68,18 @@ describe("duePeriod: periods", () => {
 
 describe("dueState against a horizon", () => {
   const today = dayPeriod(TODAY);
-  test("a day is due now on that day, overdue the day after, later the week before", () => {
+  test("a day is due now on that day, overdue the day after, upcoming a few days before", () => {
     expect(dueState("2026-11-11", today)).toBe("now");
     expect(dueState("2026-11-11", dayPeriod("2026-11-12"))).toBe("overdue");
-    expect(dueState("2026-11-11", dayPeriod("2026-11-08"))).toBe("later");
+    expect(dueState("2026-11-11", dayPeriod("2026-11-08"))).toBe("upcoming");
+    expect(dueState("2026-11-11", dayPeriod("2026-11-03"))).toBe("later");
   });
   test("a week is due now all week and overdue from the next Monday", () => {
     expect(dueState("2026-W46", dayPeriod("2026-11-09"))).toBe("now");
     expect(dueState("2026-W46", dayPeriod("2026-11-15"))).toBe("now");
     expect(dueState("2026-W46", dayPeriod("2026-11-16"))).toBe("overdue");
-    expect(dueState("2026-W46", dayPeriod("2026-11-08"))).toBe("later");
+    expect(dueState("2026-W46", dayPeriod("2026-11-08"))).toBe("upcoming");
+    expect(dueState("2026-W46", dayPeriod("2026-11-01"))).toBe("later");
   });
   test("a quarter is due now for the whole quarter", () => {
     expect(dueState("2026-Q4", dayPeriod("2026-10-01"))).toBe("now");
@@ -90,17 +92,49 @@ describe("dueState against a horizon", () => {
     const week = { start: "2026-11-09", end: "2026-11-15" };
     expect(dueState("2026-11-15", week)).toBe("now");
     expect(dueState("2026-Q4", week)).toBe("now");
-    expect(dueState("2026-11-16", week)).toBe("later");
+    expect(dueState("2026-11-22", week)).toBe("upcoming");
+    expect(dueState("2026-11-23", week)).toBe("later");
     expect(dueState("2026-11-08", week)).toBe("overdue");
   });
-  test("a day after today but within the current ISO week is due this week", () => {
-    expect(dueState("2026-11-13", today)).toBe("week");
-    expect(dueState("2026-11-15", today)).toBe("week");
+  test("the upcoming window ends 7 days after the horizon end", () => {
+    // Thursday 2026-11-12: the window ends on 2026-11-19.
+    const thursday = dayPeriod("2026-11-12");
+    expect(dueState("2026-11-13", thursday)).toBe("upcoming");
+    expect(dueState("2026-11-15", thursday)).toBe("upcoming");
+    expect(dueState("2026-11-16", thursday)).toBe("upcoming");
+    expect(dueState("2026-W47", thursday)).toBe("upcoming");
+    expect(dueState("2026-11-19", thursday)).toBe("upcoming");
+    expect(dueState("2026-11-20", thursday)).toBe("later");
+    expect(dueState("2026-W48", thursday)).toBe("later");
   });
-  test("a day in the next week, a later week and a later quarter are later", () => {
-    expect(dueState("2026-11-16", today)).toBe("later");
-    expect(dueState("2026-W47", today)).toBe("later");
-    expect(dueState("2027-Q1", today)).toBe("later");
+  test("on a Sunday the window holds the whole next ISO week", () => {
+    const sunday = dayPeriod("2026-11-15");
+    expect(dueState("2026-W47", sunday)).toBe("upcoming");
+    expect(dueState("2026-11-22", sunday)).toBe("upcoming");
+    expect(dueState("2026-11-23", sunday)).toBe("later");
+    expect(dueState("2026-W48", sunday)).toBe("later");
+  });
+  test("on a Monday the next Monday is upcoming", () => {
+    const monday = dayPeriod("2026-11-16");
+    expect(dueState("2026-11-23", monday)).toBe("upcoming");
+    expect(dueState("2026-11-24", monday)).toBe("later");
+  });
+  test("the window crosses a year boundary", () => {
+    const tuesday = dayPeriod("2026-12-29");
+    expect(dueState("2027-01-05", tuesday)).toBe("upcoming");
+    expect(dueState("2027-W01", tuesday)).toBe("upcoming");
+    expect(dueState("2027-01-06", tuesday)).toBe("later");
+  });
+  test("a quarter that starts inside the window is upcoming, and a later one is later", () => {
+    const day = dayPeriod("2026-12-28");
+    expect(dueState("2027-Q1", day)).toBe("upcoming");
+    expect(dueState("2027-Q2", day)).toBe("later");
+  });
+  test("the rest of the current ISO week is never later, whatever the weekday", () => {
+    for (let d = 9; d <= 14; d++) {
+      const day = dayPeriod(`2026-11-${String(d).padStart(2, "0")}`);
+      expect(dueState("2026-11-15", day)).toBe("upcoming");
+    }
   });
   test("the current week and quarter stay due now, and today stays due now", () => {
     expect(dueState("2026-W46", today)).toBe("now");

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { TodoDocument } from "../../shared/types";
+import { dayPeriod, dueState } from "./due";
 import { applyVisible, filterCompletion, filterPills, isFiltering, followPins, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
 import { frozen } from "./helpers.test-util";
 
@@ -113,6 +114,12 @@ describe("parseFilter", () => {
     expect(parseFilter("due:>TODAY,<Week").terms).toEqual([{ kind: "due", values: [">today", "<week"] }]);
   });
 
+  test("upcoming is an invalid value after an operator", () => {
+    expect(parseFilter("due:<upcoming").error).toBe("Unknown due value: <upcoming");
+    expect(parseFilter("due:>upcoming").error).toBe("Unknown due value: >upcoming");
+    expect(parseFilter("due:today,<upcoming").error).toBe("Unknown due value: <upcoming");
+  });
+
   test("each comma value has its own operator", () => {
     expect(parseFilter("due:<-1w,>+1w").terms).toEqual([{ kind: "due", values: ["<-1w", ">+1w"] }]);
     expect(parseFilter("due:<today,2026-W50").terms).toEqual([{ kind: "due", values: ["<today", "2026-W50"] }]);
@@ -217,6 +224,43 @@ describe("matchesTask", () => {
     expect(match("due:week", t("x -> 2026-11-08"))).toBe(false);
     expect(match("due:week", t("x -> 2026-W46"))).toBe(true);
     expect(match("due:week", t("x -> 2026-Q4"))).toBe(true);
+  });
+
+  test("due:upcoming matches a period that overlaps today or starts inside the upcoming window", () => {
+    // Wednesday 2026-11-11: the window ends on 2026-11-18.
+    expect(match("due:upcoming", t("x -> 2026-11-11"))).toBe(true);
+    expect(match("due:upcoming", t("x -> 2026-W46"))).toBe(true);
+    expect(match("due:upcoming", t("x -> 2026-Q4"))).toBe(true);
+    expect(match("due:upcoming", t("x -> 2026-11-12"))).toBe(true);
+    expect(match("due:upcoming", t("x -> 2026-11-18"))).toBe(true);
+    expect(match("due:upcoming", t("x -> 2026-W47"))).toBe(true);
+    expect(match("due:upcoming", t("x -> 2026-11-19"))).toBe(false);
+    expect(match("due:upcoming", t("x -> 2026-W48"))).toBe(false);
+    expect(match("due:upcoming", t("x -> 2027-Q1"))).toBe(false);
+  });
+
+  test("due:upcoming does not match a late task or a task with no date", () => {
+    expect(match("due:upcoming", t("x -> 2026-11-10"))).toBe(false);
+    expect(match("due:upcoming", t("x -> 2026-W45"))).toBe(false);
+    expect(match("due:upcoming", t("x"))).toBe(false);
+  });
+
+  test("due:upcoming ignores the checkbox", () => {
+    expect(match("due:upcoming", t("x -> 2026-11-13", true))).toBe(true);
+  });
+
+  test("due:upcoming matches exactly the tasks whose pill is due now or upcoming", () => {
+    for (const date of ["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-18", "2026-11-19", "2026-W45", "2026-W46", "2026-W47", "2026-W48", "2026-Q3", "2026-Q4", "2027-Q1"]) {
+      const state = dueState(date, dayPeriod(TODAY));
+      expect(match("due:upcoming", t(`x -> ${date}`))).toBe(state === "now" || state === "upcoming");
+    }
+  });
+
+  test("due:upcoming,overdue is one term with two values, upcoming is case-insensitive", () => {
+    expect(parseFilter("due:Upcoming,overdue").terms).toEqual([{ kind: "due", values: ["upcoming", "overdue"] }]);
+    expect(match("due:upcoming,overdue", t("x -> 2026-11-10"))).toBe(true);
+    expect(match("due:upcoming,overdue", t("x -> 2026-11-12"))).toBe(true);
+    expect(match("due:upcoming,overdue", t("x -> 2026-11-25"))).toBe(false);
   });
 
   test("due:overdue matches a period that ended before today, if the task is not done", () => {
@@ -563,8 +607,9 @@ describe("filterCompletion", () => {
     expect(filterCompletion("list:", 5, ["A", "A"], TODAY)?.options).toHaveLength(1);
   });
 
-  test("due: offers today, week and overdue", () => {
-    expect(c("due:")).toEqual({ from: 4, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }, { label: "overdue", apply: "overdue" }] });
+  test("due: offers today, week, upcoming and overdue", () => {
+    expect(c("due:")).toEqual({ from: 4, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }, { label: "upcoming", apply: "upcoming" }, { label: "overdue", apply: "overdue" }] });
+    expect(c("due:up")?.options.map((o) => o.label)).toEqual(["upcoming"]);
     expect(c("due:o")?.options.map((o) => o.label)).toEqual(["overdue"]);
     expect(c("due:today,")?.from).toBe(10);
   });
@@ -573,6 +618,7 @@ describe("filterCompletion", () => {
     expect(c("due:<")).toEqual({ from: 5, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }] });
     expect(c("due:>w")?.options.map((o) => o.label)).toEqual(["week"]);
     expect(c("due:<o")).toBeNull();
+    expect(c("due:<u")).toBeNull();
     expect(c("due:<today,>")).toEqual({ from: 12, options: [{ label: "today", apply: "today" }, { label: "week", apply: "week" }] });
   });
 
@@ -584,7 +630,7 @@ describe("filterCompletion", () => {
   });
 
   test("the entries after due: do not include the default set of shortcuts or the operators", () => {
-    expect(c("due:", 4, TODAY)?.options.map((o) => o.label)).toEqual(["today", "week", "overdue"]);
+    expect(c("due:", 4, TODAY)?.options.map((o) => o.label)).toEqual(["today", "week", "upcoming", "overdue"]);
   });
 
   test("a sign and a number, or a sign and a weekday prefix, get the unit and weekday completion", () => {
