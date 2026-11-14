@@ -44,7 +44,7 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "H": return { type: "move-list", dir: "up" };
     case "L": return { type: "move-list", dir: "down" };
     case "Delete": return { type: "delete" };
-    case "i": case "Enter": return { type: "edit" };
+    case "e": case "Enter": return { type: "edit" };
     case "u": return { type: "undo" };
     case "U": return { type: "redo" };
     case "+": return { type: "new-list" };
@@ -52,9 +52,9 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "P": return { type: "paste", at: "before" };
     case "/": return { type: "search-start" };
     case "o": return { type: "add", at: onHeader ? "list-start" : "below" };
-    case "a": return { type: "add", at: onHeader ? "list-start" : "child-end-or-below" };
-    case "I": return { type: "add", at: onHeader ? "list-start" : "first-child" };
-    case "A": return { type: "add", at: onHeader ? "list-end" : "last-child" };
+    case "a": return { type: "add", at: onHeader ? "list-end" : "last-child" };
+    case "A": return { type: "add", at: onHeader ? "list-start" : "first-child" };
+    case "O": return { type: "add", at: onHeader ? "prev-list-end" : "above" };
     default: return null;
   }
 }
@@ -63,10 +63,8 @@ function commonKey(key: string, onHeader: boolean): Action | null {
 function taskKey(key: string): Action | null {
   switch (key) {
     case "x": case " ": return { type: "toggle" };
-    case "F2": return { type: "edit" };
     case ">": return { type: "indent" };
     case "<": return { type: "outdent" };
-    case "O": return { type: "add", at: "above" };
     default: return null;
   }
 }

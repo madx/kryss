@@ -18,7 +18,7 @@ const GROUPS: Group[] = [
     title: "Task keys",
     rows: [
       ["x, Space", "toggle done"],
-      ["i, Enter, F2", "edit the task"],
+      ["e, Enter", "edit the task"],
       ["dd, Delete", "delete with its subtasks (fills the register)"],
       ["yy", "copy into the register, without deleting"],
       ["cc", "clear the text to retype it (Escape restores it)"],
@@ -36,7 +36,7 @@ const GROUPS: Group[] = [
   {
     title: "List header keys",
     rows: [
-      ["i, Enter", "rename the list"],
+      ["e, Enter", "rename the list"],
       ["dd", "delete the list at once (fills the register)"],
       ["yy", "copy the list into the register"],
       ["cc, cL", "clear the name to retype it (cL also works from a task)"],
@@ -50,11 +50,9 @@ const GROUPS: Group[] = [
   {
     title: "Add",
     rows: [
-      ["o / O", "sibling below / above"],
-      ["a", "last subtask (sibling below on a subtask)"],
-      ["I / A", "first / last subtask (of the parent on a subtask)"],
-      ["o, a, I (header)", "first task of the list"],
-      ["A (header)", "last task of the list"],
+      ["o / O", "add below / above"],
+      ["a", "add last subtask, or last task of a list"],
+      ["A", "add first subtask, or first task of a list"],
     ],
   },
   {

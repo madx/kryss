@@ -3,7 +3,7 @@ import { getNode } from "./paths";
 import type { TaskPath, OpResult } from "./paths";
 import { addChild, addTask } from "./tasks";
 
-export type AddAt = "below" | "above" | "child-end-or-below" | "first-child" | "last-child" | "list-start" | "list-end";
+export type AddAt = "below" | "above" | "first-child" | "last-child" | "list-start" | "list-end" | "prev-list-end";
 export type Anchor = { kind: "header"; list: number } | { kind: "task"; path: TaskPath };
 /** Where a new task goes: top-level of `list` at `index`, or subtask of top-level task `parent` of `list` at `index`. */
 export type InsertTarget = { list: number; parent?: number; index: number };
@@ -14,11 +14,12 @@ export function insertTarget(doc: TodoDocument, at: AddAt, anchor: Anchor): Inse
     if (!tasks) return null;
     if (at === "list-start") return { list: anchor.list, index: 0 };
     if (at === "list-end") return { list: anchor.list, index: tasks.length };
+    // "prev-list-end" needs the visible lists: the view turns it into "list-end" on the header above.
     return null;
   }
   const { path } = anchor;
   const node = getNode(doc, path);
-  if (!node || at === "list-start" || at === "list-end") return null;
+  if (!node || at === "list-start" || at === "list-end" || at === "prev-list-end") return null;
   const { list, task, child } = path;
   const sub = (index: number): InsertTarget => ({ list, parent: task, index });
   if (child !== undefined) {
@@ -35,7 +36,7 @@ export function insertTarget(doc: TodoDocument, at: AddAt, anchor: Anchor): Inse
     case "first-child":
       return sub(0);
     default:
-      return sub(node.children?.length ?? 0);
+      return sub(node.children?.length ?? 0); // "last-child"
   }
 }
 
