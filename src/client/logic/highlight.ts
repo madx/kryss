@@ -33,3 +33,15 @@ export function highlightEntries(): HighlightEntry[] {
     })),
   ];
 }
+
+/**
+ * What accepting an entry changes (PRD 5.22).
+ * With the closing `==` already after the cursor, only the emoji goes in after the typed `==`, so `back` is 0.
+ * Without it, the typed `==` is replaced by both markers (`back` is 2).
+ * `cursor` is counted from the start of the replaced range.
+ */
+export function highlightFill(entry: HighlightEntry, closerAfter: boolean): { back: number; insert: string; cursor: number } {
+  if (!closerAfter) return { back: 2, insert: entry.insert, cursor: entry.cursor };
+  const emoji = entry.insert.slice(2, -2);
+  return { back: 0, insert: emoji, cursor: emoji.length };
+}
