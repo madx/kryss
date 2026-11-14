@@ -8,6 +8,11 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- Sort by due date: `Sl` sorts the tasks of the list that holds the cursor, `SL` sorts the lists and `SA` sorts the tasks of every list on its own, as one undoable change each.
+  Unchecked tasks come first and checked tasks last, each group by the earliest due date of its subtree compared by the last day of the period, with the finer period first on a tie, a stable order otherwise and tasks with no date last.
+  A list is ranked by the earliest due date of its unchecked tasks, and the sort is recursive, ignores the filter and keeps the cursor on its task or list.
+  The statusline shows `Sorted tasks of "NAME"`, `Sorted lists`, `Sorted tasks of all lists` or `Already sorted`, and the keys do nothing in the Markdown view.
+
 - The editor previews an autolink, `<https://example.com>`, like a link: the whole range is styled as a link and its `<` and `>` are hidden away from the cursor.
   The scheme rules are the ones of a link, so an autolink with a refused scheme, such as `<javascript:alert(1)>`, and a bare URL stay plain text.
 
