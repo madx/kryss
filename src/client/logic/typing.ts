@@ -84,6 +84,14 @@ const runLength = (s: string, from: number, step: 1 | -1, c: string): number => 
   return n;
 };
 
+/** A run that is not a marker: an `_` between two word characters (`snake_case`), or a run with whitespace or an edge on both sides (`2 * 3`). */
+function isLiteralRun(text: string, r: Run, c: string): boolean {
+  const before = text[r.start - 1], after = text[r.end];
+  const word = (ch: string | undefined) => ch !== undefined && /[\p{L}\p{N}]/u.test(ch);
+  const space = (ch: string | undefined) => ch === undefined || /\s/.test(ch);
+  return (c === "_" && word(before) && word(after)) || (space(before) && space(after));
+}
+
 /** With no selection: the edit that removes the markers of the span around the cursor, or of the empty pair it is in, or null. */
 function unwrapAtCursor(text: string, cursor: number, specs: Spec[]): Edit | null {
   for (const { c, len } of specs) {
@@ -95,7 +103,7 @@ function unwrapAtCursor(text: string, cursor: number, specs: Spec[]): Edit | nul
   }
   let best: { a: Run; b: Run; len: number } | null = null;
   for (const { c, len, ok } of specs) {
-    const tokens = runsOf(text, c).filter((r) => ok(r.end - r.start));
+    const tokens = runsOf(text, c).filter((r) => ok(r.end - r.start) && !isLiteralRun(text, r, c));
     for (let i = 0; i + 1 < tokens.length; i += 2) {
       const a = tokens[i]!, b = tokens[i + 1]!;
       if (a.end <= cursor && cursor <= b.start && (!best || a.start > best.a.start)) best = { a, b, len };

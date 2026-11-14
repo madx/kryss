@@ -260,6 +260,10 @@ describe("Ctrl+B and Ctrl+I", () => {
   test("a lone underscore of a word is not a span", () => {
     expect(toggle("snake_ca|se", "_")).toBe("snake_ca_|_se");
   });
+  test("a lone underscore or a spaced asterisk earlier in the line does not shift the pairing", () => {
+    expect(toggle("snake_case and _it|alic_", "_")).toBe("snake_case and it|alic");
+    expect(toggle("2 * 3 and *it|ali*", "_")).toBe("2 * 3 and it|ali");
+  });
   test("three asterisks around the cursor hold bold and italic", () => {
     expect(toggle("***ab|c***", "_")).toBe("**ab|c**");
     expect(toggle("***ab|c***", "**")).toBe("*ab|c*");

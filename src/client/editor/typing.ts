@@ -67,7 +67,7 @@ const composition = EditorView.domEventHandlers({
     if (!from) return;
     setTimeout(() => {
       const sel = single(view.state);
-      if (!view.dom.isConnected || view.composing || !sel || sel.from !== sel.to || sel.from !== from.at + 1) return;
+      if (!view.dom.isConnected || view.compositionStarted || !sel || sel.from !== sel.to || sel.from !== from.at + 1) return;
       const edit = composedEdit(from.doc, view.state.doc.toString(), from.at, view.state.field(pairsField));
       if (edit) apply(view, edit, "input.type");
     }, 20);
