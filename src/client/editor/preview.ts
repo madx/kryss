@@ -26,14 +26,15 @@ const Highlight: MarkdownConfig = {
   ],
 };
 
-/** The parser restricted to the inline syntax of the PRD: no block syntax, no HTML, no images, no entities. */
+/** The parser restricted to the inline syntax of the PRD: no block syntax, no images, no entities, and no HTML node in the preview.
+ * `HTMLTag` stays because it is also the parser of `<url>` autolinks, and a tag such as `<b>` is not a preview node. */
 export const inlineParser = parser.configure([
   Strikethrough,
   Highlight,
   {
     remove: [
       "LinkReference", "IndentedCode", "FencedCode", "Blockquote", "HorizontalRule", "BulletList", "OrderedList",
-      "ATXHeading", "SetextHeading", "HTMLBlock", "HTMLTag", "Entity", "Image",
+      "ATXHeading", "SetextHeading", "HTMLBlock", "Entity", "Image",
     ],
   },
 ]);
@@ -53,6 +54,7 @@ const KINDS: Record<string, Kind> = {
   Strikethrough: "strike",
   Highlight: "highlight",
   Link: "link",
+  Autolink: "link",
 };
 const MARK_NAMES = new Set(["EmphasisMark", "CodeMark", "StrikethroughMark", "HighlightMark"]);
 
@@ -64,7 +66,14 @@ export function collectNodes(tree: Tree, doc: string): PreviewNode[] {
       const kind = KINDS[ref.name];
       if (!kind) return;
       const node: PreviewNode = { kind, from: ref.from, to: ref.to, markers: [] };
-      if (kind === "link") {
+      if (ref.name === "Autolink") {
+        // `<url>`: the angle brackets are the markers, and the URL follows the same scheme rules as a link.
+        // An autolink inside a link label is not drawn, as in the renderer.
+        for (let p = ref.node.parent; p; p = p.parent) if (p.name === "Link") return;
+        const url = ref.node.getChild("URL");
+        if (!url || !isAllowedUrl(doc.slice(url.from, url.to))) return;
+        node.markers.push([ref.from, ref.from + 1], [ref.to - 1, ref.to]);
+      } else if (kind === "link") {
         const marks: number[] = [];
         let url: [number, number] | null = null;
         for (let c = ref.node.firstChild; c; c = c.nextSibling) {
