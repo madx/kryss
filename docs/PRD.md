@@ -1055,6 +1055,8 @@ Single-file mode keeps one file and has none of them.
 - The `detail` of an entry (the folder, or the note name and its folder for an alias) is drawn in the muted color of completed tasks (`--color-done-text`), and on the selected entry in the text color of the entry (the accent text color) at an opacity of 0.6, so that it stays readable on the accent background.
 - A suggestion that matches the name inserts `[[Note]]`, and one that matches an alias inserts `[[Note|alias]]`, so the label stays the alias that was typed.
   Two entries with the same name show their folder next to the name.
+- With the pairing of 5.22, typing `[[` already gives `[[│]]` before the popup opens, so accepting an entry replaces what was typed between the brackets with the link text (`Note` or `Note|alias`) and moves the cursor past the `]]`.
+  When the closing `]]` is not there, because the brackets did not pair, accepting an entry inserts the whole `[[…]]` as before.
 - Which path is inserted follows the Obsidian setting `newLinkFormat` (below).
   There is no completion after `#` or `^`.
 
@@ -1180,7 +1182,8 @@ The color is chosen by a colored circle right after the opening marker, and the 
   It uses a small custom inline extension of the Lezer Markdown parser, which follows the rules above.
 - Typing `==` opens a CodeMirror autocomplete with seven entries in this order: default, red, orange, yellow, green, blue and purple, each showing its circle and its color name in title case (`🔴 Red`), and the default showing only its name (`Default`).
   It has the same look as the due date popup (5.13), and ↑ / ↓, Enter, Tab and Escape behave as there, with Escape not committing the editor.
-- Accepting an entry replaces the typed `==` with both markers and puts the cursor inside: `==🔴==` with the cursor between the emoji and the closing `==`, and `====` with the cursor in the middle for the default.
+- With the pairing of 5.22, typing `==` already gives `==│==` before the popup opens, so accepting an entry only inserts the emoji after the opening `==`: `==🔴│==` with the cursor between the emoji and the closing `==`, and nothing for the default, which leaves `==│==` with the cursor in the middle.
+  When the closing `==` is not there, because the `==` did not pair, accepting an entry replaces the typed `==` with both markers as before.
 - The popup does not open when the typed `==` closes a highlight that is already open on the line, for example the second `==` of `==🔴text==`.
 - There is no key in Normal mode to add or change a highlight.
 
@@ -1287,6 +1290,75 @@ The Markdown file stays the source of truth, so the order on screen is always th
 - The statusline text is chosen by the view layer, from what the action returned, and is verified by hand like the copy message.
 - `S` and its three keys are in the cheat sheet.
 
+### 5.22 Typing aids in the editor
+
+These aids make typing inline Markdown in the task editor feel like Obsidian: pairs that close themselves, a selection that is wrapped by a typed marker, and three formatting shortcuts.
+They change only the text typed in the editor, so the file format, the server and the JSON model are untouched.
+They apply to the task editor only, and not to the filter bar, the search input, the list pickers or the list name input.
+They handle a single selection range only, like the paste of 5.18.
+
+**Pairs**
+
+- Typing one of the characters below inserts its closer after the cursor and leaves the cursor between the two.
+
+| Typed | Result | Grows to |
+|---|---|---|
+| `*` | `*│*` | `**│**` when `*` is typed again right away |
+| `_` | `_│_` | none |
+| `` ` `` | `` `│` `` | none |
+| `[` | `[│]` | `[[│]]` when `[` is typed again right away |
+| `(` | `(│)` | none |
+| `"` | `"│"` | none |
+| `~` | `~` alone stays literal | `~~│~~` when the second `~` is typed right after it |
+| `=` | `=` alone stays literal | `==│==` when the second `=` is typed right after it |
+
+- A character pairs only when the character before the cursor is not a letter or a digit, or there is none, and the character after the cursor is a space, or there is none, or it is a closing character.
+  The closing characters are `)`, `]`, `}`, `"`, `'`, the backtick, the characters `. , ; : ! ?` and the marker characters `*`, `_`, `~` and `=`, so that a pair can be typed inside another one.
+  So `snake_case`, `2*3`, `a==b`, `don"t` and `f(x)` typed in the middle of a word stay literal, while `[label](url)` pairs, because the character before `(` is `]`.
+  For `~` and `=`, the check is made on the character before the first one, when the second one is typed.
+- Growing replaces a pair with the longer one in the same keystroke, so `*│*` becomes `**│**` and `[│]` becomes `[[│]]`, and nothing else is typed.
+- Typing a closer when the next character is the same closer of a pair that the editor inserted and that has not been stepped over yet moves the cursor past it instead of inserting a second one.
+  So `**bold│**` followed by `*` `*` ends after the markers, and the typed text stays correct.
+- Backspace with the cursor inside an empty pair that the editor inserted removes the whole pair, so `**│**`, `==│==`, `[[│]]` and `(│)` each disappear in one keystroke.
+  Backspace anywhere else is the native one: the markers hidden by the live preview are always revealed next to the cursor (5.8), so it never deletes a character that cannot be seen.
+- A pair, its growth, a step over and the removal of a pair are each one transaction, so Ctrl+Z of the editor (5.6) undoes the pair together with the character that made it, in one step.
+
+**Wrapping a selection**
+
+- With some text selected, typing `*`, `_`, a backtick, `~`, `=`, `[`, `(` or `"` wraps the selection with that character on both sides instead of replacing it, with no check of the surrounding characters.
+  The wrapped text stays selected, so typing the same character again adds one more layer, and `~` twice gives `~~text~~`, `=` twice gives `==text==`, `*` twice gives `**text**` and `[` twice gives `[[text]]`.
+- The other characters replace the selection as they do natively.
+
+**Shortcuts**
+
+- Ctrl+B wraps in `**`, Ctrl+I wraps in `*` and Ctrl+K makes a link.
+  They work in Insert mode, in the task editor only, and they are not bound anywhere else, so Ctrl+B and Ctrl+I do nothing in Normal mode.
+  They are not Obsidian's only shortcuts, but they are the ones Obsidian has by default for inline text, and there is no key for code, strikethrough or highlight: typing the marker over a selection does it.
+- With a selection, Ctrl+B and Ctrl+I wrap it and keep it selected.
+  If the selection is already wrapped in that marker, either because the markers are just inside the selection or just outside it, they remove the markers instead and keep the text selected.
+  With no selection, they insert the pair, with no check of the surrounding characters since the key is explicit, and leave the cursor between the markers.
+- With a selection, Ctrl+K gives `[selection](│)`, with the cursor in the empty URL part, and the label has its `[`, `]` and `\` escaped like the label of 5.18.
+  With no selection, it gives `[│]()`, with the cursor in the label.
+- Ctrl+K never reads the clipboard (5.12), so a URL is typed or pasted into the empty URL part with the native paste.
+  A URL pasted over a selected text already gives `[selection](url)` through 5.18.
+- The browser's own action for these keys, such as the bookmarks sidebar for Ctrl+B or the search bar for Ctrl+K, is prevented while the editor has the focus.
+- A shortcut is one transaction, so it is one undo step of the editor.
+
+**Popups**
+
+- The pairing runs before the popups, so the popups find the closer already in place.
+  Typing `==` gives `==│==` and opens the color popup of 5.19, and typing `[[` gives `[[│]]` and opens the note popup of 5.17.
+- A popup that accepts an entry when the closer is already after the cursor inserts only what goes between the markers and, for a wikilink, moves the cursor past the closer.
+  When the closer is not there, because the character did not pair, the popup inserts both markers as before.
+- The `->` popup of 5.13 is not affected, since neither `-` nor `>` pairs.
+
+**Implementation decisions**
+
+- The decisions are pure functions with tests, in `src/client/logic/`: whether a typed character pairs, grows or steps over given the text around the cursor, the result of wrapping a selection, the toggle of a marker around a selection, and the text and cursor produced by each shortcut.
+- The CodeMirror part only calls them from an input handler and a keymap, and keeps the list of pairs inserted and not yet stepped over, as a state field that follows the document changes.
+  It is verified by hand, like the other CodeMirror parts.
+- The three shortcuts are in the cheat sheet.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
@@ -1296,8 +1368,9 @@ The Markdown file stays the source of truth, so the order on screen is always th
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - **Highlights**: the inline parser of 5.19 (plain and each of the six colors, an unknown emoji, a circle after a space, an unclosed pair, `====`, `==🔴==`, the trimmed space, an escaped marker, nesting inside and around bold, italic, code, strikethrough and links, a due date inside, a comparison such as `a == b`), the color table and the popup entries, and the decision of whether a typed `==` opens the popup.
+- **Typing aids**: the decision of 5.22 for each pairing character (the guard on the character before and after, the start and the end of the text, a closing character after, a letter or a digit before, `[label](url)` pairing after `]`), the growth of `*` and `[` and the second `~` and `=`, the step over a closer, the removal of an empty pair, the wrap of a selection for each character and its repetition, the toggle of `**` and `*` with the markers inside or outside the selection, and the text and cursor of Ctrl+B, Ctrl+I and Ctrl+K with and without a selection, including the escaping of the label.
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); a due date stored on a list, since the sort date of a list is derived (5.21); `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; alphabetical or any other sort criterion, a sort direction, a persistent sorted view and a sort limited to the visible rows (5.21); "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; HTML `<mark>` and `style="background"` highlights, colors beyond the six of 5.19, a light theme palette for highlights, a Normal-mode key to add or change a highlight, a highlight across several lines, and showing the emoji in the rendered view; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); a due date stored on a list, since the sort date of a list is derived (5.21); `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; alphabetical or any other sort criterion, a sort direction, a persistent sorted view and a sort limited to the visible rows (5.21); "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; HTML `<mark>` and `style="background"` highlights, colors beyond the six of 5.19, a light theme palette for highlights, a Normal-mode key to add or change a highlight, a highlight across several lines, and showing the emoji in the rendered view; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search; the pairing of `'`, `{`, `<` and `$`, shortcuts for code, strikethrough and highlight, a Ctrl+K that reads the clipboard, and Ctrl+click on a link in the editor (5.22).
