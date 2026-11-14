@@ -25,6 +25,42 @@ describe("collectNodes", () => {
   });
 });
 
+describe("autolinks", () => {
+  test("an allowed autolink is a link node whose markers are the angle brackets", () => {
+    for (const url of ["https://a.b/c", "http://a.b", "mailto:me@a.b", "obsidian://open?vault=v"]) {
+      const s = `see <${url}> ok`;
+      const found = nodes(s);
+      expect(found.map((n) => n.kind)).toEqual(["link"]);
+      expect(s.slice(found[0]!.from, found[0]!.to)).toBe(`<${url}>`);
+      expect(found[0]!.markers.map(([a, b]) => s.slice(a, b))).toEqual(["<", ">"]);
+    }
+  });
+  test("a refused scheme, plain angle brackets and a bare url give no node", () => {
+    expect(nodes("<javascript:alert(1)>").length).toBe(0);
+    expect(nodes("<data:text/html,x>").length).toBe(0);
+    expect(nodes("a < b > c").length).toBe(0);
+    expect(nodes("https://a.b").length).toBe(0);
+  });
+  test("an autolink keeps its neighbours intact", () => {
+    expect(nodes("**b** <https://a.b> `c`").map((n) => n.kind)).toEqual(["strong", "link", "code"]);
+  });
+  test("an autolink inside a link label adds no node", () => {
+    expect(nodes("[x <https://a.b> y](https://c.d)").map((n) => n.kind)).toEqual(["link"]);
+  });
+  test("the angle brackets are hidden away from the cursor and shown next to it", () => {
+    const s = "see <https://a.b> ok";
+    expect(hidden(s, 19)).toEqual(["<", ">"]);
+    expect(hidden(s, 4)).toEqual([]);
+    expect(hidden(s, 10)).toEqual([]);
+    expect(hidden(s, 17)).toEqual([]);
+  });
+  test("the whole range is styled as a link", () => {
+    const s = "see <https://a.b> ok";
+    const styled = previewSpans(nodes(s), [{ from: 19, to: 19 }]).filter((x) => !x.hide);
+    expect(styled.map((x) => [x.cls, s.slice(x.from, x.to)])).toEqual([["cm-md-link", "<https://a.b>"]]);
+  });
+});
+
 describe("previewSpans", () => {
   test("hides markers when the cursor is away", () => {
     expect(hidden("**bold** tail", 12)).toEqual(["**", "**"]);
