@@ -8,6 +8,11 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- `gx` opens a link of the task under the cursor: at once if it has one, from a picker below the row if it has several.
+  The picker narrows the links on their label or URL, shows the URL of each row in a muted style, and works like the picker of `cl`.
+  The links are the ones that render as links in the task text (Markdown links, autolinks and, in Vault mode, wikilinks), with the scheme rules of the rendering, and the key does nothing, with no message, when there is none.
+- `gX` does the same but copies the URL to the clipboard, with no message, and the picker input then reads "Copy link".
+
 - Highlights: `==text==` renders in a gray, and `==🔴text==` picks one of six colors (🔴 🟠 🟡 🟢 🔵 🟣) with a leading circle that the rendered view hides.
   A highlight is a plain inline node, unknown to the server, that can hold or sit inside bold, italic, code, strikethrough and links, and it keeps its colors in a completed task.
   The live preview draws it, hiding the markers and the emoji away from the cursor, and typing `==` opens a popup of the seven choices that inserts both markers with the cursor inside.
