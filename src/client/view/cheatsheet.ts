@@ -98,7 +98,7 @@ const GROUPS: Group[] = [
     rows: [
       ["Escape", "commit and leave Insert mode"],
       ["Enter (Insert)", "commit and add a sibling below"],
-      ["Ctrl+B / Ctrl+I (Insert)", "bold ** / italic _ : wrap the selection, toggle inside a span, or insert an empty pair"],
+      ["Ctrl+B / Ctrl+I (Insert)", "bold ** / italic _ : toggle on the selection or the word under the cursor"],
       ["Ctrl+K (Insert)", "link around the selection, filled with a URL from the clipboard"],
       ["g?", "open / close this cheat sheet"],
     ],

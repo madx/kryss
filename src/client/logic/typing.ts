@@ -74,59 +74,36 @@ const ITALIC: Spec[] = [
   { c: "*", len: 1, ok: odd },
 ];
 
-type Run = { start: number; end: number };
-function runsOf(text: string, c: string): Run[] {
-  return [...text.matchAll(new RegExp(`\\${c}+`, "g"))].map((m) => ({ start: m.index!, end: m.index! + m[0].length }));
-}
 const runLength = (s: string, from: number, step: 1 | -1, c: string): number => {
   let n = 0;
   for (let i = step === 1 ? from : from - 1; s[i] === c; i += step) n++;
   return n;
 };
 
-/** A run that is not a marker: an `_` between two word characters (`snake_case`), or a run with whitespace or an edge on both sides (`2 * 3`). */
-function isLiteralRun(text: string, r: Run, c: string): boolean {
-  const before = text[r.start - 1], after = text[r.end];
-  const word = (ch: string | undefined) => ch !== undefined && /[\p{L}\p{N}]/u.test(ch);
-  const space = (ch: string | undefined) => ch === undefined || /\s/.test(ch);
-  return (c === "_" && word(before) && word(after)) || (space(before) && space(after));
-}
-
-/** With no selection: the edit that removes the markers of the span around the cursor, or of the empty pair it is in, or null. */
-function unwrapAtCursor(text: string, cursor: number, specs: Spec[]): Edit | null {
+/** With no selection: the edit that removes the empty pair the cursor is in (`**|**`, `_|_`, `*|*`), or null. */
+function removeEmptyPair(text: string, cursor: number, specs: Spec[]): Edit | null {
   for (const { c, len } of specs) {
-    const empty = runsOf(text, c).find((r) => {
-      const left = cursor - r.start, right = r.end - cursor;
-      return left > 0 && right > 0 && (len === 2 ? left >= 2 && right >= 2 : left === 1 && right === 1);
-    });
-    if (empty) return { from: cursor - len, to: cursor + len, insert: "", anchor: cursor - len, head: cursor - len };
-  }
-  let best: { a: Run; b: Run; len: number } | null = null;
-  for (const { c, len, ok } of specs) {
-    const tokens = runsOf(text, c).filter((r) => ok(r.end - r.start) && !isLiteralRun(text, r, c));
-    for (let i = 0; i + 1 < tokens.length; i += 2) {
-      const a = tokens[i]!, b = tokens[i + 1]!;
-      if (a.end <= cursor && cursor <= b.start && (!best || a.start > best.a.start)) best = { a, b, len };
+    const left = runLength(text, cursor, -1, c), right = runLength(text, cursor, 1, c);
+    if (left > 0 && right > 0 && (len === 2 ? left >= 2 && right >= 2 : left === 1 && right === 1)) {
+      return { from: cursor - len, to: cursor + len, insert: "", anchor: cursor - len, head: cursor - len };
     }
   }
-  if (!best) return null;
-  const { a, b, len } = best;
-  return { from: a.start, to: b.end, insert: text.slice(a.start + len, b.end - len), anchor: cursor - len, head: cursor - len };
+  return null;
 }
 
 /**
- * Ctrl+B (`**`) and Ctrl+I (`_`): wraps the selection, or removes the markers when they sit just inside or just outside it.
- * Italic is written with `_` and recognized in `_` or `*`.
- * With no selection it removes the markers of the span around the cursor, and otherwise inserts the pair, with no check of the surroundings.
+ * The word under the cursor, as a range, or null when the cursor is not on one.
+ * A word is a run of letters and digits of any alphabet, so spaces, punctuation, brackets, `_` and `*` end it, and the cursor is on it inside it or touching its start or its end.
  */
-export function toggleMarker(text: string, from: number, to: number, marker: "**" | "_"): Edit {
+export function wordAt(text: string, pos: number): { from: number; to: number } | null {
+  const from = pos - (/[\p{L}\p{N}]+$/u.exec(text.slice(0, pos))?.[0].length ?? 0);
+  const to = pos + (/^[\p{L}\p{N}]+/u.exec(text.slice(pos))?.[0].length ?? 0);
+  return from < to ? { from, to } : null;
+}
+
+/** Wraps or unwraps `[from, to)`, the selection edit of `toggleMarker`. */
+function toggleRange(text: string, from: number, to: number, marker: "**" | "_", specs: Spec[]): Edit {
   const m = marker.length;
-  const specs = marker === "**" ? BOLD : ITALIC;
-  if (from === to) {
-    return (
-      unwrapAtCursor(text, from, specs) ?? { from, to, insert: marker + marker, anchor: from + m, head: from + m, track: { at: from + m, closer: marker, open: m } }
-    );
-  }
   const selected = text.slice(from, to);
   for (const { c, len, ok } of specs) {
     if (ok(Math.min(runLength(text, from, -1, c), runLength(text, to, 1, c)))) {
@@ -140,6 +117,27 @@ export function toggleMarker(text: string, from: number, to: number, marker: "**
     }
   }
   return { from, to, insert: marker + selected + marker, anchor: from + m, head: to + m };
+}
+
+/**
+ * Ctrl+B (`**`) and Ctrl+I (`_`): wraps the selection, or removes the markers when they sit just inside or just outside it.
+ * Italic is written with `_` and recognized in `_` or `*`.
+ * With no selection it acts on the word under the cursor the same way, and the cursor keeps its place in the text.
+ * Away from a word it removes the empty pair the cursor is in, and otherwise inserts a pair, with no check of the surroundings.
+ */
+export function toggleMarker(text: string, from: number, to: number, marker: "**" | "_"): Edit {
+  const m = marker.length;
+  const specs = marker === "**" ? BOLD : ITALIC;
+  if (from !== to) return toggleRange(text, from, to, marker, specs);
+  const empty = removeEmptyPair(text, from, specs);
+  if (empty) return empty;
+  const word = wordAt(text, from);
+  if (word) {
+    const e = toggleRange(text, word.from, word.to, marker, specs);
+    const cursor = e.anchor + (from - word.from);
+    return { ...e, anchor: cursor, head: cursor };
+  }
+  return { from, to, insert: marker + marker, anchor: from + m, head: from + m, track: { at: from + m, closer: marker, open: m } };
 }
 
 /**
@@ -167,8 +165,4 @@ export function composedEdit(before: string, after: string, start: number, pairs
   const edit = typedEdit(before, start, start, after[start]!, earlier);
   if (!edit) return null;
   return { ...edit, from: start, to: start + 1, drop: edit.drop === undefined ? undefined : edit.drop >= start ? edit.drop + 1 : edit.drop };
-}
-
-export function wordAt(_text: string, _pos: number): { from: number; to: number } | null {
-  return null;
 }
