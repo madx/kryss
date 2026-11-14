@@ -111,8 +111,8 @@ describe("growth", () => {
   test("no growth when text was typed inside the pair", () => {
     expect(type("*a|*", "*", [{ at: 2, closer: "*", open: 1 }])).toBe("*a*|");
   });
-  test("no growth when the pair is not tracked", () => {
-    expect(type("[|]", "[")).toBeNull();
+  test("no growth when the pair is not tracked: the plain rule applies", () => {
+    expect(type("(|)", "(")).toBe("((|))");
   });
 });
 
