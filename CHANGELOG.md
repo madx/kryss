@@ -8,6 +8,13 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- Typing aids in the task editor: `*`, `_`, backtick, `[`, `(`, `"`, `~~` and `==` close themselves, `*` and `[` grow to `**` and `[[`, a typed closer steps over its pair, and Backspace removes an empty pair.
+  Pairing is decided from the characters around the cursor, so `snake_case`, `2*3` and `f(x)` typed in a word stay literal, and it also works with the dead keys of an AZERTY keyboard.
+  Typing one of these characters over a selection wraps it, and repeating it adds a layer, so `==` over a selection opens the color popup.
+- Ctrl+B and Ctrl+I (Cmd on macOS) toggle bold and italic on the selection or on the word under the cursor, or insert an empty pair away from a word, with italic written as `_` and both `_` and `*` recognized when removing.
+  Ctrl+K makes a link and is the only place that reads the clipboard, using a single `http` or `https` URL there and falling back to an empty URL part.
+  Each aid is one undo step of the editor, and the `==` and `[[` popups fill the pair that already exists.
+
 - `fF` clears the filter and focuses the filter bar in one key: it empties the text and drops the pins like `fa`, then focuses the bar like `ff`.
   It works in the Markdown view like the other `f` keys, and it is listed in the cheat sheet.
 

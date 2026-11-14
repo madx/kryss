@@ -1323,21 +1323,35 @@ They handle a single selection range only, like the paste of 5.18.
 - Backspace with the cursor inside an empty pair that the editor inserted removes the whole pair, so `**│**`, `==│==`, `[[│]]` and `(│)` each disappear in one keystroke.
   Backspace anywhere else is the native one: the markers hidden by the live preview are always revealed next to the cursor (5.8), so it never deletes a character that cannot be seen.
 - A pair, its growth, a step over and the removal of a pair are each one transaction, so Ctrl+Z of the editor (5.6) undoes the pair together with the character that made it, in one step.
+- A dead key, such as `~` or the backtick on an AZERTY keyboard, is composed by the browser: the character reaches the editor when the composition ends, not as a typed character.
+  The editor does nothing while the composition runs, and once it has ended it decides on the character as if it had just been typed, so `~` and the backtick pair and grow like the other characters.
+  That decision is a separate transaction from the composed character, so Ctrl+Z may need two steps, and it is dropped if anything else changed in the meantime.
 
 **Wrapping a selection**
 
 - With some text selected, typing `*`, `_`, a backtick, `~`, `=`, `[`, `(` or `"` wraps the selection with that character on both sides instead of replacing it, with no check of the surrounding characters.
   The wrapped text stays selected, so typing the same character again adds one more layer, and `~` twice gives `~~text~~`, `=` twice gives `==text==`, `*` twice gives `**text**` and `[` twice gives `[[text]]`.
 - The other characters replace the selection as they do natively.
+- When the second `=` has wrapped the selection in `==`, the color popup of 5.19 opens, as it does for a typed `==`.
+  Accepting an entry inserts only the emoji right after the opening `==`, and the cursor ends after the closing `==`, so typing goes on after the highlight.
+  The default entry inserts nothing and puts the cursor after the closing `==`.
+  Escape, or typing anything else, dismisses the popup as usual and leaves the selection.
 
 **Shortcuts**
 
-- Ctrl+B wraps in `**`, Ctrl+I wraps in `*` and Ctrl+K makes a link, with Cmd instead of Ctrl on macOS.
+- Ctrl+B wraps in `**`, Ctrl+I wraps in `_` and Ctrl+K makes a link, with Cmd instead of Ctrl on macOS.
   They work in Insert mode, in the task editor only, and they are not bound anywhere else, so Ctrl+B and Ctrl+I do nothing in Normal mode.
   They are not Obsidian's only shortcuts, but they are the ones Obsidian has by default for inline text, and there is no key for code, strikethrough or highlight: typing the marker over a selection does it.
 - With a selection, Ctrl+B and Ctrl+I wrap it and keep it selected.
   If the selection is already wrapped in that marker, either because the markers are just inside the selection or just outside it, they remove the markers instead and keep the text selected.
-  With no selection, they insert the pair, with no check of the surrounding characters since the key is explicit, and leave the cursor between the markers.
+  Italic is written with `_`, but an italic span written with `*` is recognized as well, and a run of asterisks counts as italic only when its length is odd, so `**x**` is bold and not italic, and `***x***` is both.
+  Typing `*` over a selection still wraps with `*`, since the typed character is what is wrapped.
+  With no selection they act on the word under the cursor, as if it were selected, and the cursor keeps its place in the text.
+  So `bo│ld` becomes `**bo│ld**` with Ctrl+B and `_bo│ld_` with Ctrl+I, and `**bo│ld**` becomes `bo│ld`, with the cursor anywhere on the word.
+  A word is a run of letters, digits and combining marks of any alphabet, so spaces, punctuation, brackets, `_` and `*` end it, with no special case for links or other markup.
+  The cursor is on a word when it is inside it or touches its start or its end.
+  The empty pair, such as `**│**` or `_│_`, is removed by the same key.
+  Away from a word, between spaces, after punctuation or in an empty text, they insert the pair, with no check of the surrounding characters since the key is explicit, and leave the cursor between the markers.
 - Ctrl+K reads the system clipboard with `navigator.clipboard.readText()`, which makes it the only place where Kryss reads it (5.12): `p` and `P` still never do, and the keys of the register never do either.
   It reads it once per keystroke, and the text is used only when, after trimming, it is a single `http` or `https` URL without whitespace, the same test as the paste of 5.18.
 - With a selection and a URL in the clipboard, Ctrl+K gives `[selection](url)` with the cursor after the closing parenthesis.
@@ -1358,6 +1372,7 @@ They handle a single selection range only, like the paste of 5.18.
 - A popup that accepts an entry when the closer is already after the cursor inserts only what goes between the markers and, for a wikilink, moves the cursor past the closer.
   When the closer is not there, because the character did not pair, the popup inserts both markers as before.
 - The `->` popup of 5.13 is not affected, since neither `-` nor `>` pairs.
+- A selection wrapped in `==` also opens the color popup, as described under wrapping a selection.
 
 **Implementation decisions**
 
@@ -1375,7 +1390,7 @@ They handle a single selection range only, like the paste of 5.18.
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - **Highlights**: the inline parser of 5.19 (plain and each of the six colors, an unknown emoji, a circle after a space, an unclosed pair, `====`, `==🔴==`, the trimmed space, an escaped marker, nesting inside and around bold, italic, code, strikethrough and links, a due date inside, a comparison such as `a == b`), the color table and the popup entries, and the decision of whether a typed `==` opens the popup.
-- **Typing aids**: the decision of 5.22 for each pairing character (the guard on the character before and after, the start and the end of the text, a closing character after, a letter or a digit before, `[label](url)` pairing after `]`), the growth of `*` and `[` and the second `~` and `=`, the step over a closer, the removal of an empty pair, the wrap of a selection for each character and its repetition, the toggle of `**` and `*` with the markers inside or outside the selection, and the text and cursor of Ctrl+B, Ctrl+I and Ctrl+K with and without a selection, including the escaping of the label, and the clipboard text of Ctrl+K (a URL, a padded URL, another scheme, text with whitespace, an empty clipboard, and a refused read).
+- **Typing aids**: the decision of 5.22 for each pairing character (the guard on the character before and after, the start and the end of the text, a closing character after, a letter or a digit before, `[label](url)` pairing after `]`), the growth of `*` and `[` and the second `~` and `=`, the step over a closer, the removal of an empty pair, the wrap of a selection for each character and its repetition, the toggle of `**` and `_` with the markers inside or outside the selection, with an italic `*` recognized, with no selection on a word, away from a word and in an empty pair, the definition of a word, the decision after a composed dead key, the test of a wrapped highlight and its popup fill, and the text and cursor of Ctrl+B, Ctrl+I and Ctrl+K with and without a selection, including the escaping of the label, and the clipboard text of Ctrl+K (a URL, a padded URL, another scheme, text with whitespace, an empty clipboard, and a refused read).
 - No e2e in v1: CodeMirror is verified by hand, and so is the visual design of 5.10 in a window from 240 to 720 px wide, in light and dark.
 
 ## 7. Out of scope

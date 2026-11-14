@@ -8,6 +8,7 @@ import { wikilinkPreview } from "./wikilink";
 import { linkPaste } from "./link-paste";
 import { livePreview } from "./live-preview";
 import { singleLine } from "./single-line";
+import { typingAids, typingKeymap } from "./typing";
 import { settleDecision, toSingleLine } from "./text";
 import "./editor.css";
 
@@ -86,9 +87,11 @@ export function createEditor(
         wikilinkPreview,
         dueExtensions,
         linkPaste,
+        typingAids,
         EditorView.lineWrapping,
         EditorView.contentAttributes.of({ "aria-label": "Edit task" }),
         keymap.of([
+          ...typingKeymap,
           {
             key: "Enter",
             run: () => {

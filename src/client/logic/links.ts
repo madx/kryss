@@ -52,10 +52,10 @@ export function singleUrl(text: string): string | null {
   }
 }
 
-const escapeLabel = (label: string) => label.replace(/[\\[\]]/g, "\\$&");
+export const escapeLabel = (label: string) => label.replace(/[\\[\]]/g, "\\$&");
 
 /** Keeps a URL usable as a Markdown target: parentheses are only a problem when they are not balanced. */
-function safeTarget(url: string): string {
+export function safeTarget(url: string): string {
   let depth = 0;
   for (const c of url) {
     if (c === "(") depth++;
