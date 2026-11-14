@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { TodoDocument } from "../../shared/types";
 import { dayPeriod, dueState } from "./due";
-import { applyVisible, filterCompletion, filterPills, isFiltering, followPins, matchesTask, parseFilter, pinTask, visibleRows, visibleStops } from "./filter";
+import { applyVisible, filterCompletion, filterPills, isFiltering, followPins, matchesTask, parseFilter, pinTask, previousVisibleList, visibleRows, visibleStops } from "./filter";
 import { frozen } from "./helpers.test-util";
 
 // Wednesday 2026-11-11, ISO week 2026-W46, quarter 2026-Q4.
@@ -387,6 +387,27 @@ describe("matchesTask: due shortcuts and operators", () => {
     expect(at("due:>today due:<+1w", "2026-11-14")).toBe(true);
     expect(at("due:>today due:<+1w", "2026-11-11")).toBe(false);
     expect(at("due:>today due:<+1w", "2026-11-18")).toBe(false);
+  });
+});
+
+describe("previousVisibleList", () => {
+  const visible = (text: string) => visibleRows(frozen(doc()), text, TODAY);
+
+  test("with no filter, it is the list just above", () => {
+    expect(previousVisibleList(visible(""), 1)).toBe(0);
+    expect(previousVisibleList(visible(""), 2)).toBe(1);
+  });
+  test("it is null for the first visible list", () => {
+    expect(previousVisibleList(visible(""), 0)).toBeNull();
+  });
+  test("it skips the lists hidden by a filter", () => {
+    // Only list 0 holds a match, so list 1 is hidden and the list above list 2 is list 0.
+    expect(previousVisibleList(visible("report"), 2)).toBe(0);
+    // "Fix the bike" is the only match: list 0 is hidden, so list 1 is the first visible one.
+    expect(previousVisibleList(visible("bike"), 1)).toBeNull();
+  });
+  test("it is null when no list is visible", () => {
+    expect(previousVisibleList(visible("zzz-no-match"), 1)).toBeNull();
   });
 });
 
