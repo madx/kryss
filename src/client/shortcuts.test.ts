@@ -559,6 +559,7 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     ["x", set("is:done")],
     ["X", set("is:todo")],
     ["f", { type: "focus-filter" }],
+    ["F", { type: "clear-focus-filter" }],
     ["s", { type: "filter-picker" }],
   ] as const;
   const press = (second: string, o: Partial<KeyInput> = {}) =>
@@ -590,7 +591,11 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
   test("F is not a prefix any more, and the other second keys of f are unassigned", () => {
     expect(resolveKey(k("F", { shiftKey: true }))).toEqual({ action: null, pending: "", preventDefault: false });
     expect(act("z", { pending: "f" })).toBeNull();
-    expect(act("F", { pending: "f", shiftKey: true })).toBeNull();
+  });
+
+  test("fF resolves to one clear-and-focus action, whatever the text, and ff stays a plain focus", () => {
+    expect(press("F")).toEqual({ action: { type: "clear-focus-filter" }, pending: "", preventDefault: true });
+    expect(act("f", { pending: "f" })).toEqual({ type: "focus-filter" }); // ff stays distinct
   });
 
   test("ga, gt, gw, gl, gf and gF do nothing any more", () => {
