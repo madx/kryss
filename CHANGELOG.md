@@ -8,6 +8,9 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- The editor previews an autolink, `<https://example.com>`, like a link: the whole range is styled as a link and its `<` and `>` are hidden away from the cursor.
+  The scheme rules are the ones of a link, so an autolink with a refused scheme, such as `<javascript:alert(1)>`, and a bare URL stay plain text.
+
 - Typing aids in the task editor: `*`, `_`, backtick, `[`, `(`, `"`, `~~` and `==` close themselves, `*` and `[` grow to `**` and `[[`, a typed closer steps over its pair, and Backspace removes an empty pair.
   Pairing is decided from the characters around the cursor, so `snake_case`, `2*3` and `f(x)` typed in a word stay literal, and it also works with the dead keys of an AZERTY keyboard.
   Typing one of these characters over a selection wraps it, and repeating it adds a layer, so `==` over a selection opens the color popup.
