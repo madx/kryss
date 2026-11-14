@@ -8,6 +8,11 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- Edit and add keys: `e` and Enter edit a task or rename a list, and `i`, `I` and F2 are removed.
+  On a task, `o` / `O` add a sibling below / above, `a` adds the last subtask and `A` the first one, of the parent on a subtask.
+  On a list header, `o` and `A` add the first task, `a` adds the last task and `O` adds the last task of the previous visible list, or does nothing on the first one.
+  The cheat sheet lists the new keys.
+
 - Upcoming due dates: the due state "due this week" becomes "upcoming" and its window now ends 7 days after the horizon end, so it covers the rest of the current week and reaches into the next one.
   The `due:` filter gets an `upcoming` value, which matches a task that is due now or upcoming like its pill, ignores the checkbox and is invalid after `<` and `>`.
   `fu` sets the filter to `due:upcoming,overdue`, the `due:` popup offers `upcoming`, and the cheat sheet lists both.

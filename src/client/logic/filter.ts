@@ -183,6 +183,14 @@ export function visibleStops(visible: Visible | VisibleList[]): Stop[] {
   return out;
 }
 
+/** The index of the visible list just above `list`, or null when there is none. `list` itself may be hidden. */
+export function previousVisibleList(visible: Visible | VisibleList[], list: number): number | null {
+  const lists = Array.isArray(visible) ? visible : visible.lists;
+  let found: number | null = null;
+  for (const l of lists) if (l.list < list) found = l.list;
+  return found;
+}
+
 /** A copy of the document that holds only the visible lists, tasks and subtasks (the Markdown view and the clipboard). */
 export function applyVisible(doc: TodoDocument, visible: Visible): TodoDocument {
   return {

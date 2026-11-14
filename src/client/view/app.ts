@@ -46,7 +46,7 @@ import { isAllowedUrl } from "../markdown/inline";
 import type { TaskLink } from "../logic/task-links";
 import { visibleOf } from "./visible";
 import { firstMatch, matchingStops, searchCounter, stepMatch } from "../logic/search";
-import { visibleStops } from "../logic/filter";
+import { previousVisibleList, visibleStops } from "../logic/filter";
 import { createSearchBar } from "./search-bar";
 import { highlight, markCurrent } from "./search-highlight";
 import { localToday } from "../today";
@@ -482,6 +482,13 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
 
   /** A positional add: the empty row exists only in the client, it is committed (or dropped) when its editor ends. */
   const beginAdd = (at: AddAt, anchor: Anchor) => {
+    if (at === "prev-list-end") {
+      // `O` on a header: the end of the previous visible list, or nothing when this is the first one.
+      const visible = visibleOf(store.getState());
+      const previous = anchor.kind === "header" && visible ? previousVisibleList(visible, anchor.list) : null;
+      if (previous === null) return;
+      return beginAdd("list-end", { kind: "header", list: previous });
+    }
     const target = insertTarget(doc(), at, anchor);
     if (!target) return;
     const origin = cursor.current();

@@ -41,18 +41,6 @@ describe("insertTarget above", () => {
   });
 });
 
-describe("insertTarget child-end-or-below", () => {
-  test("top-level task with subtasks: after its last subtask", () => {
-    expect(target("child-end-or-below", task(0, 1))).toEqual({ list: 0, parent: 1, index: 2 });
-  });
-  test("top-level task without subtask: its first subtask", () => {
-    expect(target("child-end-or-below", task(0, 0))).toEqual({ list: 0, parent: 0, index: 0 });
-  });
-  test("subtask: same as below", () => {
-    expect(target("child-end-or-below", task(0, 1, 0))).toEqual(target("below", task(0, 1, 0)));
-  });
-});
-
 describe("insertTarget first-child", () => {
   test("top-level task with subtasks: index 0 under it", () => {
     expect(target("first-child", task(0, 1))).toEqual({ list: 0, parent: 1, index: 0 });
@@ -90,13 +78,19 @@ describe("insertTarget on a header", () => {
   test("list-end on an empty list: index 0", () => {
     expect(target("list-end", header(1))).toEqual({ list: 1, index: 0 });
   });
-  test.each(["below", "above", "child-end-or-below", "first-child", "last-child"] as AddAt[])("%s on a header is refused", (at) => {
+  test.each(["below", "above", "first-child", "last-child"] as AddAt[])("%s on a header is refused", (at) => {
     expect(target(at, header(0))).toBeNull();
   });
 });
 
+describe("insertTarget prev-list-end", () => {
+  test("is refused on a header, since the previous visible list is resolved by the view", () => {
+    expect(target("prev-list-end", header(1))).toBeNull();
+  });
+});
+
 describe("insertTarget refusals", () => {
-  test.each(["list-start", "list-end"] as AddAt[])("%s on a task anchor is refused", (at) => {
+  test.each(["list-start", "list-end", "prev-list-end"] as AddAt[])("%s on a task anchor is refused", (at) => {
     expect(target(at, task(0, 0))).toBeNull();
   });
   test("missing list on a header", () => {

@@ -141,8 +141,13 @@ describe("resolveKey: keys on a task", () => {
   test("Space prevents the default page scroll", () => {
     expect(resolveKey(k(" ")).preventDefault).toBe(true);
   });
-  test("i, Enter and F2 edit the task", () => {
-    for (const key of ["i", "Enter", "F2"]) expect(act(key)).toEqual({ type: "edit" });
+  test("e and Enter edit the task", () => {
+    for (const key of ["e", "Enter"]) expect(act(key)).toEqual({ type: "edit" });
+  });
+  test("i, I and F2 do nothing on a task", () => {
+    expect(act("i")).toBeNull();
+    expect(act("I", { shiftKey: true })).toBeNull();
+    expect(act("F2")).toBeNull();
   });
   test("> indents and < outdents", () => {
     expect(act(">", { shiftKey: true })).toEqual({ type: "indent" });
@@ -169,7 +174,7 @@ describe("resolveKey: keys on a task", () => {
 
 describe("resolveKey: positional add on a task", () => {
   const cases: [string, AddAt][] = [
-    ["o", "below"], ["O", "above"], ["a", "child-end-or-below"], ["I", "first-child"], ["A", "last-child"],
+    ["o", "below"], ["O", "above"], ["a", "last-child"], ["A", "first-child"],
   ];
   for (const [key, at] of cases) {
     test(`${key} adds at ${at}`, () => {
@@ -179,18 +184,23 @@ describe("resolveKey: positional add on a task", () => {
 });
 
 describe("resolveKey: keys on a list header", () => {
-  test("o, a and I add at the start of the list", () => {
-    for (const key of ["o", "a", "I"]) expect(act(key, onHeader)).toEqual({ type: "add", at: "list-start" });
+  test("o and A add at the start of the list", () => {
+    for (const key of ["o", "A"]) expect(act(key, { shiftKey: key === "A", ...onHeader })).toEqual({ type: "add", at: "list-start" });
   });
-  test("A adds at the end of the list", () => {
-    expect(act("A", onHeader)).toEqual({ type: "add", at: "list-end" });
+  test("a adds at the end of the list", () => {
+    expect(act("a", onHeader)).toEqual({ type: "add", at: "list-end" });
   });
-  test("O does nothing on a header", () => {
-    expect(act("O", onHeader)).toBeNull();
+  test("O adds at the end of the previous visible list", () => {
+    expect(act("O", { shiftKey: true, ...onHeader })).toEqual({ type: "add", at: "prev-list-end" });
   });
-  test("i and Enter rename the list", () => {
-    expect(act("i", onHeader)).toEqual({ type: "edit" });
+  test("e and Enter rename the list", () => {
+    expect(act("e", onHeader)).toEqual({ type: "edit" });
     expect(act("Enter", onHeader)).toEqual({ type: "edit" });
+  });
+  test("i, I and F2 do nothing on a header", () => {
+    expect(act("i", onHeader)).toBeNull();
+    expect(act("I", { shiftKey: true, ...onHeader })).toBeNull();
+    expect(act("F2", onHeader)).toBeNull();
   });
   test("x, Space, > and < do nothing", () => {
     for (const key of ["x", " ", ">", "<"]) expect(act(key, onHeader)).toBeNull();
@@ -317,7 +327,7 @@ describe("resolveKey: keys ignored in Normal mode", () => {
 
 describe("resolveKey: modifiers", () => {
   test("Ctrl, Meta and Alt combos on plain keys resolve to nothing", () => {
-    for (const key of ["j", "x", "o", "i", "d", "g", "u", "h"]) {
+    for (const key of ["j", "x", "o", "e", "d", "g", "u", "h"]) {
       expect(act(key, { ctrlKey: true })).toBeNull();
       expect(act(key, { metaKey: true })).toBeNull();
       expect(act(key, { altKey: true })).toBeNull();
@@ -409,7 +419,7 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(r.pending).toBe("");
   });
   test("task keys are ignored while the view is open", () => {
-    for (const key of ["j", "k", "x", " ", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "+", "n", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
+    for (const key of ["j", "k", "x", " ", "e", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "+", "n", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
       expect(act(key, open)).toBeNull();
     }
   });
@@ -652,7 +662,8 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
   test("the other task keys work as usual under a filter", () => {
     const f = {};
     expect(act("x", f)).toEqual({ type: "toggle" });
-    expect(act("i", f)).toEqual({ type: "edit" });
+    expect(act("e", f)).toEqual({ type: "edit" });
+    expect(act("i", f)).toBeNull();
     expect(act("p", f)).toEqual({ type: "paste", at: "after" });
     expect(act("P", { shiftKey: true, ...f })).toEqual({ type: "paste", at: "before" });
     expect(act("o", f)).toEqual({ type: "add", at: "below" });
@@ -818,7 +829,7 @@ describe("resolveKey: the S prefix sorts by due date (PRD 5.21)", () => {
   test("l, L and A alone keep their meaning", () => {
     expect(act("l")).toEqual({ type: "cursor", to: "next-header" });
     expect(act("L")).toEqual({ type: "move-list", dir: "down" });
-    expect(act("A")).toEqual({ type: "add", at: "last-child" });
+    expect(act("A", { shiftKey: true })).toEqual({ type: "add", at: "first-child" });
   });
 });
 
