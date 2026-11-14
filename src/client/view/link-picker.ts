@@ -83,9 +83,12 @@ export function createLinkPicker(env: LinkPickerEnv) {
   return {
     el: root,
     isOpen: () => !root.hidden,
-    /** Opens the picker below `row`, on the first of `taskLinks`. */
-    open(row: Element, taskLinks: TaskLink[]) {
+    /** Opens the picker below `row`, on the first of `taskLinks`. The input says what Enter does: "Open link" or "Copy link". */
+    open(row: Element, taskLinks: TaskLink[], mode: "open" | "copy") {
       links = taskLinks;
+      const label = mode === "copy" ? "Copy link" : "Open link";
+      input.placeholder = label;
+      input.setAttribute("aria-label", label);
       input.value = "";
       rows = linkRows(links, "");
       active = 0;

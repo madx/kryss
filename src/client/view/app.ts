@@ -157,7 +157,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
     if (!row) return;
     linking = path;
     linkMode = mode;
-    linkPicker.open(row, links);
+    linkPicker.open(row, links, mode);
   }
   /** Opens a link of a task in a new tab (PRD 5.20), under the scheme rules of 5.5. The cursor stays on the row. */
   function openLink(link: TaskLink) {
