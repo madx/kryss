@@ -327,6 +327,8 @@ A whole document is its lists joined by a blank line, followed by that final new
 - Tab, Shift+Tab and Alt+arrows are not bound by the editor, so it never swallows them.
 - The live preview uses the Lezer Markdown parser restricted to inline syntax (no block syntax, HTML, images or entities, plus strikethrough and the highlight of 5.19).
   Markers of a node are hidden unless a selection range is in or touching that node, and a link is only previewed when its URL is allowed.
+  An autolink, `<https://example.com>`, is previewed like a link whose label is the URL: its whole range is styled as a link and its `<` and `>` are hidden away from the cursor.
+  An autolink with a refused scheme stays plain text, like a refused link, and a bare URL with no angle brackets is not previewed.
 - The cursor starts at the end of the text when editing begins.
 
 ### 5.9 Modal keyboard editing
