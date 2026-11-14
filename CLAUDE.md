@@ -94,7 +94,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
 - **Highlights** (PRD 5.19): `==text==` renders in a gray, and `==🔴text==` picks a color with a leading circle (🔴 🟠 🟡 🟢 🔵 🟣), hidden in the rendered view.
   It is a plain inline node like `~~strike~~`, unknown to the server, the live preview draws it, and typing `==` opens a popup of the colors that inserts both markers.
 - **Links**: allowed schemes are `http`, `https`, `mailto` and `obsidian`, opened in a new tab with `rel="noopener noreferrer"`.
-  `gx` opens a link of the task under the cursor from the keyboard, at once if it has one and from the `cl`-style picker if it has several, with no message when there is none (PRD 5.20).
+  `gx` opens a link of the task under the cursor from the keyboard, at once if it has one and from the `cl`-style picker if it has several, with no message when there is none, and `gX` does the same but copies the URL, with no message either (PRD 5.20).
 - **Vault features** (PRD 5.16 to 5.18): `go` opens the file picker, whose first entry creates a file.
   Wikilinks `[[Note|alias]]` render as `obsidian://open` links, and typing `[[` opens a popup of the note index (names and aliases) from `GET /api/notes`, inserting the path format of `newLinkFormat` read from `.obsidian/app.json`.
   `.kryss.json` at the Vault root holds the link rules (`match` regex, `label` template, `icon` as a Lucide name or an SVG data URL), applied when a URL is pasted in the editor, with no network call.
