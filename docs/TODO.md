@@ -11,7 +11,3 @@
 - [ ] Build the text and cursor of Ctrl+B, Ctrl+I and Ctrl+K with and without a selection and a clipboard URL, with tests
 - [ ] Wire the pairs, the Backspace removal and the three shortcuts into the editor as single undo steps
 - [ ] Let the `==` and `[[` popups fill the pair that already exists, and update the cheat sheet
-
-## Clear and focus the filter
-- [ ] Resolve `fF` in the pure key function as `fa` then `ff`, with tests
-- [ ] Wire `fF` into the filter bar, and update the cheat sheet

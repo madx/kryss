@@ -63,7 +63,7 @@ export function targetKind(target: EventTarget | null): TargetKind {
 }
 
 /** Actions that make sense when the page holds no document. */
-const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "set-filter", "filter-list", "filter-picker", "file-picker"]);
+const NO_DOCUMENT_ACTIONS = new Set<Action["type"]>(["toggle-help", "toggle-markdown", "copy-markdown", "focus-filter", "clear-focus-filter", "set-filter", "filter-list", "filter-picker", "file-picker"]);
 
 export function installKeyboard(env: KeyboardEnv): void {
   const { store, cursor } = env;
@@ -127,6 +127,10 @@ export function installKeyboard(env: KeyboardEnv): void {
         cursor.focusIndex(cursor.last());
         return;
       case "focus-filter":
+        env.filters.focus();
+        return;
+      case "clear-focus-filter":
+        env.filters.set(""); // like fa, then like ff: the bar keeps the focus
         env.filters.focus();
         return;
       case "set-filter":
