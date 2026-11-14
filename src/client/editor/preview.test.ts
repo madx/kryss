@@ -40,6 +40,10 @@ describe("autolinks", () => {
     expect(nodes("<data:text/html,x>").length).toBe(0);
     expect(nodes("a < b > c").length).toBe(0);
     expect(nodes("https://a.b").length).toBe(0);
+    expect(nodes("<me@example.com>").length).toBe(0);
+  });
+  test("a plain html tag is still not a node and does not break emphasis around it", () => {
+    expect(nodes("*a <b> c*").map((n) => n.kind)).toEqual(["em"]);
   });
   test("an autolink keeps its neighbours intact", () => {
     expect(nodes("**b** <https://a.b> `c`").map((n) => n.kind)).toEqual(["strong", "link", "code"]);
