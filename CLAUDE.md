@@ -88,7 +88,7 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
   `sh` toggles the display of the siblings of a match.
 - **Incremental search** (PRD 5.15): `/` opens a plain input above the footer, highlights every occurrence (a literal substring, ignoring case) in the visible rows and moves the cursor, `n` / `N` jump to the next / previous match with wrap, and Escape in Normal mode ends it.
   It is client-only and in memory, it never reveals a row hidden by the filter, and the Markdown view ends it.
-- **Key groups** (PRD 5.9): `g` goes (cursor, file, help, link), `f` sets the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `d` deletes, `y` yanks, `+` creates a list.
+- **Key groups** (PRD 5.9): `g` goes (cursor, file, help, link), `f` sets the filter, `s` shows or switches a display (`sm`, `sh`), `c` changes a value (`cc`, `cd`, `cl`, `cL`), `S` sorts (`Sl`, `SL`, `SA`), `d` deletes, `y` yanks, `+` creates a list.
 - **Completing a task** (PRD 5.13): checking a task, its children by cascade or an auto-checked parent sets its due date to today unless it is today or a later day, and keeps the old date as plain text, `-> 2026-11-11 (was 2026-10-30)`.
   It is done by the client only, and undo restores it.
 - **Highlights** (PRD 5.19): `==text==` renders in a gray, and `==🔴text==` picks a color with a leading circle (🔴 🟠 🟡 🟢 🔵 🟣), hidden in the rendered view.
@@ -100,9 +100,14 @@ History: `CHANGELOG.md`, where a finished section of the work plan is moved.
   `.kryss.json` at the Vault root holds the link rules (`match` regex, `label` template, `icon` as a Lucide name or an SVG data URL), applied when a URL is pasted in the editor, with no network call.
   Both files are read only.
 
+- **Sort by due date** (PRD 5.21): `Sl` sorts the tasks of the list that holds the cursor, `SL` sorts the lists and `SA` sorts the tasks of every list on its own, as one undoable change each, and they do nothing in the Markdown view.
+  Unchecked tasks come first and checked tasks last, each group by the earliest due date of its subtree (unchecked tasks only, for the unchecked group), compared by the last day of the period, with the finer period first on a tie and a stable order otherwise, and tasks with no date last.
+  A list is ranked by the earliest due date of its unchecked tasks.
+  The sort is recursive, it ignores the filter, it is done by the client only, and the statusline shows a message, `Already sorted` included.
+
 ## Out of scope
 
-Authentication, multi-user, a desktop shell, custom checkbox states (deferred), due dates on lists, Yjs / CRDT, offline mode, editing the frontmatter other than the `kryss-filters` and `kryss-enabled` keys, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view, HTML highlights, more than six highlight colors.
+Authentication, multi-user, a desktop shell, custom checkbox states (deferred), due dates stored on lists, alphabetical sorting or any sort other than by due date, a persistent sorted view, Yjs / CRDT, offline mode, editing the frontmatter other than the `kryss-filters` and `kryss-enabled` keys, the `xit` format, automatic merging, drag and drop, add lines and buttons, hover action buttons, a date picker, sorting by due date, tags, priorities, negation or regex in filters, a toggle that hides completed tasks, non-inline Markdown, multi-line tasks, e2e tests, editing in the Markdown view, HTML highlights, more than six highlight colors.
 
 ## Testing
 

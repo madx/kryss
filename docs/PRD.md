@@ -366,8 +366,8 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   The conflict banner is the first Tab stop and has no dedicated key.
 - `sm` toggles the Markdown view of 5.11.
   `yy`, `dd`, `cc`, `p` and `P` work on the register of 5.12, and `yy` copies the content of the Markdown view while it is open.
-- A pending first key (`g`, `f`, `d`, `y`, `c` or `s`) is cancelled by any other key or by a blur, with no timeout.
-- Each prefix has one meaning: `g` goes (cursor, file, help and link), `f` sets the filter, `s` shows or switches a display, `c` changes a value, `d` deletes and `y` yanks.
+- A pending first key (`g`, `f`, `d`, `y`, `c`, `s` or `S`) is cancelled by any other key or by a blur, with no timeout.
+- Each prefix has one meaning: `g` goes (cursor, file, help and link), `f` sets the filter, `s` shows or switches a display, `c` changes a value, `S` sorts, `d` deletes and `y` yanks.
 - Escape in Normal mode ends the active search (5.15), and does nothing otherwise.
 
 **Keys on a task**
@@ -386,6 +386,9 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `>` / `<` | indent / outdent, over the visible rows under a filter (5.14) |
 | `J` / `K`, Alt+↓ / Alt+↑ | move down / up (5.2), over the visible rows under a filter (5.14) |
 | `H` / `L` | move the whole list of the task up / down (5.2) |
+| `Sl` | sort the tasks of the list of the task by due date (5.21) |
+| `SL` | sort the lists by due date (5.21) |
+| `SA` | sort the tasks of every list by due date, each list on its own (5.21) |
 | `u` / `U`, Ctrl+Z / Ctrl+Shift+Z | undo / redo |
 | `o` / `O` | add a sibling below / above, always at the same level |
 | `a` | on a top-level task, add its last subtask. On a subtask, same as `o`. |
@@ -411,6 +414,9 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 | `A` | add a task as the last task of the list |
 | `J` / `K`, Alt+↓ / Alt+↑ | move the list down / up, over the visible lists under a filter (5.14) |
 | `H` / `L` | move the list up / down, like `K` / `J` |
+| `Sl` | sort the tasks of the list by due date (5.21) |
+| `SL` | sort the lists by due date (5.21) |
+| `SA` | sort the tasks of every list by due date, each list on its own (5.21) |
 | `+` | create a list at the end and open its name input, from anywhere in Normal mode |
 | `/`, `n` / `N` | search, as on a task (5.15) |
 
@@ -447,7 +453,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   The mode badge is a corner block of the footer, fully rounded in a wide window, and with only its top-right corner rounded in a narrow one, where it touches the left and bottom edges of the window.
 - The counts are those of the visible tasks of the current filter (5.14), and each visible list also shows its own done / total counts of visible tasks at the top right of its header.
   Subtasks count as tasks.
-- The statusline also shows a short transient text after a copy, as described in 5.12.
+- The statusline also shows a short transient text after a copy, as described in 5.12, and after a sort, as described in 5.21.
 - `g?` opens a static cheat sheet overlay that lists every key, closed with Escape or `g?`.
   A bare `?` does nothing, since the keys that start with `g` all mean "go".
   The keys are drawn as accent-colored chips, one per key, the group titles are in the accent color, the filter grammar is in the filter orange, and the groups flow in as many columns as fit.
@@ -1225,12 +1231,68 @@ It is a key with no mouse equivalent, since a click on a rendered link already o
 - The `gx` and `gX` resolution belongs to the pure key function of 5.9, as second keys of the `g` prefix, and gives two actions that differ by what the last step does.
 - The picker is the one of `cl`, with its rows built from the links, and it is verified by hand, like CodeMirror.
 
+### 5.21 Sort by due date
+
+`Sl`, `SL` and `SA` reorder the tasks and the lists by due date, in Normal mode.
+A sort is a one-shot action: it rewrites the order in the document once, as one undoable change, and it is not a view that stays applied.
+The Markdown file stays the source of truth, so the order on screen is always the order in the file, and the manual moves of 5.2 and 5.14 keep working afterwards.
+
+**Keys**
+
+- `Sl` sorts the tasks of the list that holds the cursor, whether the cursor is on one of its tasks or on its header.
+- `SL` sorts the lists themselves, wherever the cursor is.
+- `SA` sorts the tasks of every list, each list on its own, and does not reorder the lists.
+- `S` is a prefix like `g`, `f`, `c`, `d`, `y` and `s`, and it is a separate one from `s` because a sort rewrites the document, where the `s` keys only toggle a display.
+- The three keys do nothing while the Markdown view is open, with no message, and with no cursor `Sl` does nothing too.
+- A sort ignores the filter: it acts on the whole document, hidden lists and tasks included, so that no hidden row is left at an arbitrary place.
+  The filter text and the pins are left alone, and the cursor stays on the same task or list, which follows it to its new position.
+
+**Sort date**
+
+- The sort date of a task is computed from the due dates of 5.13, with the rule of the last valid `-> DATE` of each text, and a task with no valid date has no sort date.
+- The sort date of an unchecked task is the earliest due date in its subtree among the unchecked tasks, itself included.
+  A subtask due tomorrow under a parent with no date, or with a later one, therefore ranks the parent as due tomorrow.
+- The sort date of a checked task is the earliest due date in its subtree, whatever the state of those tasks.
+  A checked task has usually been completed today or on the day it was done, since 5.13 rewrites its date to that day, so this group reads from the oldest completion to the latest.
+- The sort date of a list is the earliest due date among the unchecked tasks of the list, subtasks included, and a list with no such date has no sort date.
+- Dates are compared by the **last day of their period**: a day is itself, `2026-W47` is its Sunday, `2026-11-22`, and `2026-Q4` is 31 December.
+  This is because a task only becomes overdue once its period has ended (5.13).
+- When two dates have the same last day, the finer period comes first: a day, then a week, then a quarter.
+  Two dates with the same period kind and the same last day, or two entries with no date, keep their current relative order, so that every sort is stable.
+
+**Order**
+
+- The tasks of a list are in two groups, the unchecked tasks first and the checked tasks last, using the check state of the task itself.
+  The server never normalizes states (5.3), so a checked parent can hold an unchecked subtask, and each task goes in the group of its own state.
+- In each group, the tasks with a sort date come first in ascending order, then the tasks with none in their current order.
+- The sort is recursive: a task always moves with its subtree, and the subtasks under each parent are sorted by the same rule, with the same two groups.
+  It never changes the nesting, the text, or any check state.
+- The lists are in ascending order of their sort date, the lists with none last in their current order.
+  A list is not split by its check states, and the tasks inside a list are untouched by `SL`.
+- `Sl` and `SA` leave the lists where they are, and `SL` leaves the order of the tasks inside every list alone.
+
+**Feedback and undo**
+
+- A sort that changes the order is one undoable change: it adds one snapshot to the stack of 5.6 with the filter text that was active, and it triggers one normal `PUT` through the autosave.
+  The sort is computed by the client, since the server and the JSON model do not know about due dates.
+- A sort that changes nothing creates no undo entry and no `PUT`, and the cursor does not move.
+- The statusline shows a short transient text after every sort, in the same place and style as the copy message of 5.12, for 2 seconds, with a new sort restarting the timer:
+  `Sorted tasks of "NAME"` after `Sl`, `Sorted lists` after `SL`, `Sorted tasks of all lists` after `SA`, and `Already sorted` when the order does not change.
+  In the first text, NAME is the title of the list as it is.
+
+**Implementation decisions**
+
+- The sort date, the comparison of two dates and the three sorts are pure functions in `src/client/logic/`, built on the due date parser of 5.13, with the immutable and `null` conventions of 5.7: a sort that would not change the order returns `null`.
+- The `S` resolution belongs to the pure key function of 5.9, as second keys of the `S` prefix, and gives three actions that carry no target but the cursor list.
+- The statusline text is chosen by the view layer, from what the action returned, and is verified by hand like the copy message.
+- `S` and its three keys are in the cheat sheet.
+
 ## 6. Tests
 
 - **Parser / serializer** (`bun test`): empty file, empty list, 2 levels, each `422` case, syntax tolerance, normalization, stable round-trip, and the serialization of a whole document, one list and one task.
 - **API**: server started on a temporary file; `GET` with ETag, `PUT` with `If-Match`, `409`, `422` and SSE after external modification.
 - **Frontmatter filters**: the `kryss-filters` block (each `422` case, byte for byte when unchanged, add, replace and remove, creating and removing the frontmatter, the rest of the frontmatter untouched) and the `PUT` round-trip with filters.
-- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the links of a task (each syntax, the order, a refused scheme, a literal wikilink in single-file mode, an autolink, a task with none, the narrowing of the picker rows, and the keys `gx` and `gX` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search).
+- **Pure client logic**: checking rules, move and depth validation, list move (before, after, edges, no-op), undo stack, the key resolution of 5.9 (modes, prefixes, target kinds, and the keys of the Markdown view and of the register), positional add, cursor clamping, the filter keys (`fa`, `ft`, `fw`, `fl`, `fx`, `fX`, `ff` and `fs`, and the pins dropped) and statusline counts, the Markdown view export (whole document, one list, empty document, empty list), and the register (content, paste placement below and above, depth rule, check states, list paste below and above, clipboard text), and the due dates (validation of each form, week 53 and leap years, periods, the state against a horizon, every shortcut with month clamping and year boundaries, the popup entries, the last-date rule, and the `cd` keys), the filter parser and matching (each term, commas, quotes, bad values, unknown keys, the `due:` shortcuts, the operators `<` and `>` on days, weeks and quarters with overlap, `today`, `week`, completed tasks, a task with no date, the invalid values, a range of two terms and an operator in each comma value, the unit and weekday completion of a sign and number and the popup entries after an operator, the tree visibility rule, empty lists, pinned rows), the moves under a filter (hidden siblings jumped over, edges of the visible range, indent on the previous visible task, crossing to the previous or next visible list, list move over hidden lists, pins kept on the right tasks after a move, an outdented subtask pinned), and the due date rewrite on completion (overdue day, week, quarter, today, future day, existing `(was …)`, cascade and auto-checked parent), and the move of a task to another list (top-level task and subtask, end of the destination, parent recomputed, destination equal to the source, empty destination list, the picker rows and their narrowing, and the key `cl` on a task, on a header and with the Markdown view open), and the links of a task (each syntax, the order, a refused scheme, a literal wikilink in single-file mode, an autolink, a task with none, the narrowing of the picker rows, and the keys `gx` and `gX` on a task, on a header and with the Markdown view open), and the search (matching ignoring case, titles, rendered text, hidden rows, next and previous with wrap, the counter, no match, and the keys `/`, `n`, `N` and Escape with and without an active search), and the sorts (the sort date of an unchecked task, of a checked task and of a list, the tie of a day, a week and a quarter on the same last day, stable ties, the two groups, tasks with no date, recursion, a checked parent with an unchecked subtask, a parent ranked by a subtask, the no-op returning `null`, the filter ignored, the cursor kept, and the keys `Sl`, `SL` and `SA` on a task, on a header and with the Markdown view open).
 - **Vault**: the scan (opt-in, dot folders, unclosed frontmatter, depth, order), a `file` outside the Vault or through a symbolic link, the `404`, the creation of a file (each refused name, an existing file, the content written, `NEW_FILE_DIR` outside the Vault), per-file ETag, `409` and SSE, and single-file mode ignoring `file`.
 - **Wikilinks and rules**: the note index (aliases in each YAML style, ignored folders, same names), `app.json` (each `newLinkFormat`, absent and malformed), `.kryss.json` (missing, malformed, invalid rule), `GET /api/icons/<name>` (valid, unknown, refused name), and the pure logic of 5.17 and 5.18.
 - **Highlights**: the inline parser of 5.19 (plain and each of the six colors, an unknown emoji, a circle after a space, an unclosed pair, `====`, `==🔴==`, the trimmed space, an escaped marker, nesting inside and around bold, italic, code, strikethrough and links, a due date inside, a comparison such as `a == b`), the color table and the popup entries, and the decision of whether a typed `==` opens the popup.
@@ -1238,4 +1300,4 @@ It is a key with no mouse equivalent, since a click on a rendered link already o
 
 ## 7. Out of scope
 
-Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); due dates on lists; `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; sorting by due date, "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; HTML `<mark>` and `style="background"` highlights, colors beyond the six of 5.19, a light theme palette for highlights, a Normal-mode key to add or change a highlight, a highlight across several lines, and showing the emoji in the rendered view; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
+Authentication and network access; multi-user; Yjs / CRDT; offline mode; editing the frontmatter other than the `kryss-filters` key, writing `kryss-enabled` other than in a new file, and file-based settings other than the saved filters, `.obsidian/app.json` and `.kryss.json`, which are read only; a desktop shell (Tauri, Electron); a watcher on the Vault, and renaming, moving or deleting a file from Kryss; a subfolder chosen at creation; completion after `#` or `^` in a wikilink, a check that a wikilink target exists, and following `useMarkdownLinks`; fetching page titles for a pasted URL, and bundled brand icons; custom checkbox states (`[>]` and the like, still rejected by 3.3, to be decided later); a due date stored on a list, since the sort date of a list is derived (5.21); `xit` format; automatic conflict merging; wrapping of the cursor at the edges (the search wraps, 5.15); tags, priorities; alphabetical or any other sort criterion, a sort direction, a persistent sorted view and a sort limited to the visible rows (5.21); "this month" and "this quarter" views, a date picker, relative labels such as "tomorrow" on the pill, a warning for an invalid date, a midnight timer, a `yesterday` shortcut, month and year precision; a toggle that hides completed tasks; HTML `<mark>` and `style="background"` highlights, colors beyond the six of 5.19, a light theme palette for highlights, a Normal-mode key to add or change a highlight, a highlight across several lines, and showing the emoji in the rendered view; non-inline Markdown; multi-line tasks; e2e tests; drag and drop, with or without a handle; add lines and add buttons; hover buttons on rows and list headers; a button to create a list; Visual and Command modes; counts, operator and motion grammar, named registers, a persistent register, reading the system clipboard, pasting Markdown outside Insert mode; custom keymaps; jumping to the first or last item of another list; editing in the Markdown view, a rendered or split Markdown view, persisting the view across reloads, per-list copy buttons; row and list actions for the keyboard cursor; a theme setting or a new color palette; negation, regex and a general OR in filters, renaming saved filters, undo of saved filter changes, a separate filters file, a persistent undo history, restoring a due date when a task is unchecked; cycling by occurrence, a remembered last query, regex, filter terms, search in the Markdown view and highlights inside the editor for the search.
