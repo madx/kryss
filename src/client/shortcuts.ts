@@ -18,7 +18,7 @@ export type Action =
   | { type: "toggle-markdown" } | { type: "copy-markdown" }
   | { type: "change" } | { type: "yank" } | { type: "paste"; at: PastePlace } | { type: "set-due" } | { type: "change-list" } | { type: "move-to-list" } | { type: "open-link" } | { type: "link-picker" } | { type: "copy-link" } | { type: "copy-link-picker" }
   | { type: "search-start" } | { type: "search-next" } | { type: "search-prev" } | { type: "search-end" }
-  | { type: "focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
+  | { type: "focus-filter" } | { type: "clear-focus-filter" } | { type: "set-filter"; text: string } | { type: "filter-list" } | { type: "filter-picker" } | { type: "toggle-siblings" } | { type: "file-picker" };
 export type KeyInput = {
   key: string; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean; altKey: boolean;
   target: TargetKind; pending: Pending; overlay: Overlay; markdownView: boolean; search: boolean;
@@ -82,6 +82,7 @@ function filterKey(key: string): Action | null {
     case "x": return set("is:done");
     case "X": return set("is:todo");
     case "f": return { type: "focus-filter" };
+    case "F": return { type: "clear-focus-filter" };
     case "s": return { type: "filter-picker" };
     default: return null;
   }

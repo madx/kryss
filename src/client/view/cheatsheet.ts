@@ -62,6 +62,7 @@ const GROUPS: Group[] = [
     rows: [
       ["ff", "focus the filter bar (Enter or Escape applies)"],
       ["fa", "clear the filter and show everything"],
+      ["fF", "clear the filter and focus the filter bar"],
       ["ft / fw", "replace the filter with due today or overdue / due this week or overdue"],
       ["fx / fX", "replace the filter with is:done / is:todo"],
       ["fl", "replace the filter with list:, with a popup of the lists"],
