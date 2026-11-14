@@ -1348,7 +1348,7 @@ They handle a single selection range only, like the paste of 5.18.
   Typing `*` over a selection still wraps with `*`, since the typed character is what is wrapped.
   With no selection they act on the word under the cursor, as if it were selected, and the cursor keeps its place in the text.
   So `bo│ld` becomes `**bo│ld**` with Ctrl+B and `_bo│ld_` with Ctrl+I, and `**bo│ld**` becomes `bo│ld`, with the cursor anywhere on the word.
-  A word is a run of letters and digits of any alphabet, so spaces, punctuation, brackets, `_` and `*` end it, with no special case for links or other markup.
+  A word is a run of letters, digits and combining marks of any alphabet, so spaces, punctuation, brackets, `_` and `*` end it, with no special case for links or other markup.
   The cursor is on a word when it is inside it or touches its start or its end.
   The empty pair, such as `**│**` or `_│_`, is removed by the same key.
   Away from a word, between spaces, after punctuation or in an empty text, they insert the pair, with no check of the surrounding characters since the key is explicit, and leave the cursor between the markers.

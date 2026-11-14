@@ -93,11 +93,11 @@ function removeEmptyPair(text: string, cursor: number, specs: Spec[]): Edit | nu
 
 /**
  * The word under the cursor, as a range, or null when the cursor is not on one.
- * A word is a run of letters and digits of any alphabet, so spaces, punctuation, brackets, `_` and `*` end it, and the cursor is on it inside it or touching its start or its end.
+ * A word is a run of letters, digits and combining marks of any alphabet, so spaces, punctuation, brackets, `_` and `*` end it, and the cursor is on it inside it or touching its start or its end.
  */
 export function wordAt(text: string, pos: number): { from: number; to: number } | null {
-  const from = pos - (/[\p{L}\p{N}]+$/u.exec(text.slice(0, pos))?.[0].length ?? 0);
-  const to = pos + (/^[\p{L}\p{N}]+/u.exec(text.slice(pos))?.[0].length ?? 0);
+  const from = pos - (/[\p{L}\p{N}\p{M}]+$/u.exec(text.slice(0, pos))?.[0].length ?? 0);
+  const to = pos + (/^[\p{L}\p{N}\p{M}]+/u.exec(text.slice(pos))?.[0].length ?? 0);
   return from < to ? { from, to } : null;
 }
 

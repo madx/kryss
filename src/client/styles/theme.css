@@ -45,7 +45,6 @@
 
   /* Spacing steps, in px. */
   --space-2: 2px;
-  --chip-padding: 0 var(--space-2); /* the horizontal padding of a highlight and of a search match */
   --space-4: 4px;
   --space-6: 6px;
   --space-8: 8px;
@@ -63,6 +62,7 @@
   --radius-panel: 8px;
   --radius-control: 6px;
   --radius-chip: 4px;
+  --chip-padding: 0 var(--space-2); /* the horizontal padding of a highlight and of a search match */
   --radius-pill: 999px;
 
   /* Sizes. */

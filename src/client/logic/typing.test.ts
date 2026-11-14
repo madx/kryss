@@ -264,6 +264,11 @@ describe("Ctrl+B and Ctrl+I", () => {
     expect(toggle("***bo|ld***", "_")).toBe("**bo|ld**");
     expect(toggle("***bo|ld***", "**")).toBe("*bo|ld*");
   });
+  test("a marker next to the cursor and a word: only a pair with the cursor between its characters is empty", () => {
+    expect(toggle("**a|**", "**")).toBe("a|");
+    expect(toggle("**|a**", "**")).toBe("|a");
+    expect(toggle("_|_", "**")).toBe("_**|**_");
+  });
   test("an empty pair is removed by the same key", () => {
     expect(toggle("a **|** b", "**")).toBe("a | b");
     expect(toggle("a _|_ b", "_")).toBe("a | b");
@@ -289,6 +294,8 @@ describe("wordAt", () => {
     expect(word("un caf|é")).toBe("café");
     expect(word("v2|x")).toBe("v2x");
     expect(word("日本|語")).toBe("日本語");
+    expect(word("𝒜b|c")).toBe("𝒜bc");
+    expect(word("cafe\u0301|")).toBe("cafe\u0301");
   });
   test("underscores, asterisks, punctuation, brackets and spaces end a word", () => {
     expect(word("snake|_case")).toBe("snake");
