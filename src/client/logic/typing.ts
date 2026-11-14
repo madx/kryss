@@ -168,3 +168,7 @@ export function composedEdit(before: string, after: string, start: number, pairs
   if (!edit) return null;
   return { ...edit, from: start, to: start + 1, drop: edit.drop === undefined ? undefined : edit.drop >= start ? edit.drop + 1 : edit.drop };
 }
+
+export function wordAt(_text: string, _pos: number): { from: number; to: number } | null {
+  return null;
+}

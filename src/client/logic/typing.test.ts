@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { composedEdit, emptyPairRemoval, linkEdit, toggleMarker, typedEdit, type Edit, type Pair } from "./typing";
+import { composedEdit, emptyPairRemoval, linkEdit, toggleMarker, typedEdit, wordAt, type Edit, type Pair } from "./typing";
 
 // Test notation: `|` is the cursor, `‹` and `›` delimit a selection.
 function parse(s: string): { text: string; from: number; to: number } {
@@ -230,49 +230,79 @@ describe("Ctrl+B and Ctrl+I", () => {
     expect(toggle("***‹word›***", "_")).toBe("**‹word›**");
     expect(toggle("***‹word›***", "**")).toBe("*‹word›*");
   });
-  test("with no selection and no span the pair is inserted with the cursor between, whatever surrounds it", () => {
-    expect(toggle("a|b", "**")).toBe("a**|**b");
-    expect(toggle("a|b", "_")).toBe("a_|_b");
+  test("with no selection and the cursor not on a word, the pair is inserted with the cursor between, whatever surrounds it", () => {
+    expect(toggle("a | b", "**")).toBe("a **|** b");
+    expect(toggle("a | b", "_")).toBe("a _|_ b");
+    expect(toggle("|", "**")).toBe("**|**");
+    expect(toggle("hello,| world", "_")).toBe("hello,_|_ world");
   });
   test("the inserted pair is tracked", () => {
-    expect(toggleMarker("ab", 1, 1, "**").track).toEqual({ at: 3, closer: "**", open: 2 });
-    expect(toggleMarker("ab", 1, 1, "_").track).toEqual({ at: 2, closer: "_", open: 1 });
+    expect(toggleMarker("a ", 2, 2, "**").track).toEqual({ at: 4, closer: "**", open: 2 });
+    expect(toggleMarker("a ", 2, 2, "_").track).toEqual({ at: 3, closer: "_", open: 1 });
   });
-  test("with no selection and the cursor inside a span, the markers are removed and the cursor stays on its text", () => {
+  test("with no selection and the cursor on a word, the whole word is wrapped and the cursor keeps its place in the text", () => {
+    expect(toggle("a bo|ld b", "**")).toBe("a **bo|ld** b");
+    expect(toggle("a bo|ld b", "_")).toBe("a _bo|ld_ b");
+    expect(toggle("a |bold b", "**")).toBe("a **|bold** b");
+    expect(toggle("a bold| b", "**")).toBe("a **bold|** b");
+    expect(toggle("caf|é", "_")).toBe("_caf|é_");
+    expect(toggle("v2|x", "**")).toBe("**v2|x**");
+    expect(toggle("[bo|ld](url)", "**")).toBe("[**bo|ld**](url)");
+  });
+  test("with no selection and the cursor on a wrapped word, the markers are removed, whatever the italic marker", () => {
     expect(toggle("**bo|ld**", "**")).toBe("bo|ld");
-    expect(toggle("a **bo|ld** b", "**")).toBe("a bo|ld b");
-    expect(toggle("**bold|**", "**")).toBe("bold|");
+    expect(toggle("a **bold|** b", "**")).toBe("a bold| b");
     expect(toggle("**|bold**", "**")).toBe("|bold");
-    expect(toggle("_it|alic_", "_")).toBe("it|alic");
-    expect(toggle("*it|alic*", "_")).toBe("it|alic");
+    expect(toggle("_bo|ld_", "_")).toBe("bo|ld");
+    expect(toggle("*bo|ld*", "_")).toBe("bo|ld");
   });
-  test("the span that holds the cursor is chosen among several", () => {
-    expect(toggle("**a** **b|c**", "**")).toBe("**a** b|c");
-    expect(toggle("**a|** **bc**", "**")).toBe("a| **bc**");
+  test("a word wrapped in the other marker gets the new one around it", () => {
+    expect(toggle("**bo|ld**", "_")).toBe("**_bo|ld_**");
+    expect(toggle("_bo|ld_", "**")).toBe("_**bo|ld**_");
   });
-  test("the cursor between two spans is not in a span", () => {
-    expect(toggle("**a** b| **c**", "**")).toBe("**a** b**|** **c**");
-  });
-  test("an italic span in a bold one, and a bold one in an italic one, are different spans", () => {
-    expect(toggle("**bo|ld**", "_")).toBe("**bo_|_ld**");
-    expect(toggle("_it|alic_", "**")).toBe("_it**|**alic_");
-  });
-  test("a lone underscore of a word is not a span", () => {
-    expect(toggle("snake_ca|se", "_")).toBe("snake_ca_|_se");
-  });
-  test("a lone underscore or a spaced asterisk earlier in the line does not shift the pairing", () => {
-    expect(toggle("snake_case and _it|alic_", "_")).toBe("snake_case and it|alic");
-    expect(toggle("2 * 3 and *it|ali*", "_")).toBe("2 * 3 and it|ali");
-  });
-  test("three asterisks around the cursor hold bold and italic", () => {
-    expect(toggle("***ab|c***", "_")).toBe("**ab|c**");
-    expect(toggle("***ab|c***", "**")).toBe("*ab|c*");
+  test("three asterisks around the word hold bold and italic", () => {
+    expect(toggle("***bo|ld***", "_")).toBe("**bo|ld**");
+    expect(toggle("***bo|ld***", "**")).toBe("*bo|ld*");
   });
   test("an empty pair is removed by the same key", () => {
     expect(toggle("a **|** b", "**")).toBe("a | b");
     expect(toggle("a _|_ b", "_")).toBe("a | b");
     expect(toggle("a *|* b", "_")).toBe("a | b");
     expect(toggle("**|**", "_")).toBe("**_|_**");
+  });
+});
+
+describe("wordAt", () => {
+  const word = (s: string) => {
+    const { text, from } = parse(s);
+    const w = wordAt(text, from);
+    return w === null ? null : text.slice(w.from, w.to);
+  };
+  test("the cursor inside a word, or touching its start or its end, is on that word", () => {
+    expect(word("a bo|ld b")).toBe("bold");
+    expect(word("a |bold b")).toBe("bold");
+    expect(word("a bold| b")).toBe("bold");
+    expect(word("|bold")).toBe("bold");
+    expect(word("bold|")).toBe("bold");
+  });
+  test("letters of any alphabet and digits make a word", () => {
+    expect(word("un caf|é")).toBe("café");
+    expect(word("v2|x")).toBe("v2x");
+    expect(word("日本|語")).toBe("日本語");
+  });
+  test("underscores, asterisks, punctuation, brackets and spaces end a word", () => {
+    expect(word("snake|_case")).toBe("snake");
+    expect(word("a_bo|ld_")).toBe("bold");
+    expect(word("**bo|ld**")).toBe("bold");
+    expect(word("[bo|ld](url)")).toBe("bold");
+    expect(word("it's|")).toBe("s");
+  });
+  test("between spaces, after punctuation, in an empty text or inside a marker run there is no word", () => {
+    expect(word("a | b")).toBeNull();
+    expect(word("|")).toBeNull();
+    expect(word("hello,| world")).toBeNull();
+    expect(word("**|**")).toBeNull();
+    expect(word("a |")).toBeNull();
   });
 });
 
