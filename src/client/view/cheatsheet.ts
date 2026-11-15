@@ -19,6 +19,7 @@ const GROUPS: Group[] = [
     rows: [
       ["x, Space", "toggle done"],
       ["e, Enter", "edit the task"],
+      ["E", "edit the task with the caret at the start"],
       ["dd, Delete", "delete with its subtasks (fills the register)"],
       ["yy", "copy into the register, without deleting"],
       ["cc", "clear the text to retype it (Escape restores it)"],
@@ -37,6 +38,7 @@ const GROUPS: Group[] = [
     title: "List header keys",
     rows: [
       ["e, Enter", "rename the list"],
+      ["E", "rename the list with the caret at the start"],
       ["dd", "delete the list at once (fills the register)"],
       ["yy", "copy the list into the register"],
       ["cc, cL", "clear the name to retype it (cL also works from a task)"],

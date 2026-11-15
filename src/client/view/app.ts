@@ -281,8 +281,8 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
   const lists = {
     naming,
     /** Opens the name input. `empty` (`cc`) starts it with no text: Escape or an empty commit keeps the old name. */
-    rename(index: number, empty = false) {
-        ctx.renaming = { list: index, draft: empty ? "" : doc().lists[index]?.title ?? "" };
+    rename(index: number, empty = false, caretAtStart = false) {
+        ctx.renaming = { list: index, draft: empty ? "" : doc().lists[index]?.title ?? "", caretAtStart };
       pendingFocus = "[data-name-input]";
       renderAll(store.getState());
     },
@@ -597,7 +597,7 @@ export function mountApp(roots: { header: HTMLElement; banners: HTMLElement; mai
       openPicker: () => picker.open(),
     },
     files: { openPicker: () => void filePicker?.open() },
-    renameList: lists.rename,
+    renameList: (list, caretAtStart) => lists.rename(list, false, caretAtStart),
     registerKeys,
     changeList: (list) => lists.rename(list, true),
     moveToList(path) {

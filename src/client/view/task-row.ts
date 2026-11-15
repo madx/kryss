@@ -11,6 +11,8 @@ import { startEdit, type EditEnd } from "./edit-text";
 
 /** Dispatched on a row (by the keyboard layer) to open its editor. */
 export const BEGIN_EDIT = "begin-edit";
+/** Dispatched on a row to open its editor with the caret at the start (`E`). */
+export const BEGIN_EDIT_START = "begin-edit-start";
 /** Dispatched on a row to open its editor with an empty text (`cc`). Escape or an empty commit restores the previous text. */
 export const CHANGE_EDIT = "change-edit";
 /** Dispatched on a row to open its editor on the due date and its popup (`cd`). */
@@ -46,7 +48,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions, 
 
   const text = el("span", { class: "task-text" });
   text.append(renderInline(task.text, renderDuePill));
-  const beginEdit = (at?: { x: number; y: number }, empty = false, due = false) => {
+  const beginEdit = (at?: { x: number; y: number }, empty = false, due = false, start = false) => {
     const match = due ? findDueRange(task.text) : null;
     startEdit(
       text,
@@ -65,7 +67,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions, 
             select: match ? { from: match.from + 2, to: match.to } : undefined,
             openPopup: true,
           }
-        : { at },
+        : { at, caretAtStart: start },
     );
   };
   text.addEventListener("click", (e) => {
@@ -74,6 +76,7 @@ export function renderTaskRow(task: Task, path: TaskPath, actions: TaskActions, 
   });
 
   row.addEventListener(BEGIN_EDIT, () => beginEdit());
+  row.addEventListener(BEGIN_EDIT_START, () => beginEdit(undefined, false, false, true));
   row.addEventListener(CHANGE_EDIT, () => beginEdit(undefined, true));
   row.addEventListener(DUE_EDIT, () => beginEdit(undefined, false, true));
 

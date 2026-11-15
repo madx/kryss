@@ -11,7 +11,7 @@ export type { CursorMove } from "./logic/cursor";
 export type { AddAt } from "./logic/insert";
 export type Action =
   | { type: "cursor"; to: CursorMove }
-  | { type: "toggle" } | { type: "edit" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
+  | { type: "toggle" } | { type: "edit" } | { type: "edit-start" } | { type: "delete" } | { type: "indent" } | { type: "outdent" }
   | { type: "move"; dir: "up" | "down" } | { type: "move-list"; dir: "up" | "down" } | { type: "undo" } | { type: "redo" }
   | { type: "add"; at: AddAt } | { type: "new-list" } | { type: "toggle-help" }
   | { type: "focus-cursor" }
@@ -45,6 +45,7 @@ function commonKey(key: string, onHeader: boolean): Action | null {
     case "L": return { type: "move-list", dir: "down" };
     case "Delete": return { type: "delete" };
     case "e": case "Enter": return { type: "edit" };
+    case "E": return { type: "edit-start" };
     case "u": return { type: "undo" };
     case "U": return { type: "redo" };
     case "+": return { type: "new-list" };
