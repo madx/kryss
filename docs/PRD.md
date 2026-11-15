@@ -378,6 +378,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 |---|---|
 | `x`, Space | toggle the check state (rules of 5.3) |
 | `e`, Enter | edit the task, caret at the end |
+| `E` | edit the task, caret at the start |
 | `dd`, Delete | delete the task with its subtree, into the register (5.12) |
 | `yy` | copy the task with its subtree into the register (5.12) |
 | `cc` | change the task: open the editor with an empty text (5.12) |
@@ -406,7 +407,8 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 | Key | Action |
 |---|---|
-| `e`, Enter | rename the list in its inline name input (a click on the title does the same) |
+| `e`, Enter | rename the list in its inline name input, caret at the end (a click on the title does the same) |
+| `E` | rename the list, caret at the start |
 | `dd`, Delete | delete the list at once, into the register (5.12), with no prompt since the register and undo recover it |
 | `yy` | copy the list into the register (5.12) |
 | `cc`, `cL` | change the list: open the name input with an empty name (5.12) |
@@ -433,7 +435,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
 
 - `o`, `O`, `a` and `A` create an empty task at the target position, focus it and open the task editor on it.
   The empty task exists only in the client until it is committed, because an empty text is invalid in the file, and autosave never sends it.
-- There is no `i`, `I` or F2: `e` and Enter are the only keys that edit, and the add keys are named by position (`o` / `O` below / above, `a` / `A` last / first of the children group) rather than by Vim's insert verbs.
+- There is no `i`, `I` or F2: `e`, `E` and Enter are the only keys that edit (`e` and Enter put the caret at the end, `E` at the start), and the add keys are named by position (`o` / `O` below / above, `a` / `A` last / first of the children group) rather than by Vim's insert verbs.
 - Enter commits a non-empty text and opens a new empty sibling right below it, at the same level, to chain several tasks.
   Enter on an empty text does nothing.
 - Escape always commits and returns to Normal mode.
@@ -462,7 +464,7 @@ The mouse only keeps what 5.9 and 5.10 list: a click on a task's text or on a ro
   A bare `?` does nothing, since the keys that start with `g` all mean "go".
   The keys are drawn as accent-colored chips, one per key, the group titles are in the accent color, the filter grammar is in the filter orange, and the groups flow in as many columns as fit.
   It is not configurable.
-- The cheat sheet words the edit and add keys as `e`, Enter "edit", `o` / `O` "add below / above", `a` "add last subtask, or last task of a list" and `A` "add first subtask, or first task of a list".
+- The cheat sheet words the edit and add keys as `e`, Enter "edit", `E` "edit with the caret at the start", `o` / `O` "add below / above", `a` "add last subtask, or last task of a list" and `A` "add first subtask, or first task of a list".
 
 **Implementation decisions**
 
