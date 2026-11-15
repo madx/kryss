@@ -8,6 +8,9 @@ Features that were added and later removed are listed in both places, so that th
 
 ### Added
 
+- The `E` key edits a task with the caret at the start of its text, and renames a list with the caret at the start of its name, while `e` and Enter keep the caret at the end.
+  The cheat sheet lists it on tasks and on list headers.
+
 - Edit and add keys: `e` and Enter edit a task or rename a list, and `i`, `I` and F2 are removed.
   On a task, `o` / `O` add a sibling below / above, `a` adds the last subtask and `A` the first one, of the parent on a subtask.
   On a list header, `o` and `A` add the first task, `a` adds the last task and `O` adds the last task of the previous visible list, or does nothing on the first one.
