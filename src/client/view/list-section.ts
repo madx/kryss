@@ -16,7 +16,7 @@ export type ListActions = {
 
 export type ListContext = {
   /** List being renamed, with the text typed so far. */
-  renaming: { list: number; draft: string } | null;
+  renaming: { list: number; draft: string; caretAtStart?: boolean } | null;
   /** Client-only empty task being typed by a positional add (PRD 5.9). */
   placeholder: { target: InsertTarget; done: (text: string | null, how: EditEnd) => void } | null;
 };
@@ -57,7 +57,7 @@ export function renderListSection(
 
   const renaming = ctx.renaming?.list === index ? ctx.renaming : null;
   const title = renaming
-    ? renderNameInput(renaming.draft, "List name", actions.naming)
+    ? renderNameInput(renaming.draft, "List name", actions.naming, renaming.caretAtStart)
     : el("h2", { class: "list-title" }, list.title);
   // Like the text of a task, the title starts the edit on a click.
   if (!renaming) title.addEventListener("click", () => actions.rename(index));

@@ -13,7 +13,7 @@ import type { Store } from "../store";
 import type { Cursor } from "./cursor";
 import { stopOf } from "./cursor";
 import { isEditing } from "./edit-text";
-import { BEGIN_EDIT, CHANGE_EDIT, DUE_EDIT } from "./task-row";
+import { BEGIN_EDIT, BEGIN_EDIT_START, CHANGE_EDIT, DUE_EDIT } from "./task-row";
 
 /** What the keyboard layer needs from the app: operations that touch its render state. */
 export type KeyboardEnv = {
@@ -28,7 +28,7 @@ export type KeyboardEnv = {
   filters: { focus(): void; set(text: string): void; startList(): void; openPicker(): void };
   /** The file picker of a Vault (PRD 5.16): it does nothing in single-file mode. */
   files: { openPicker(): void };
-  renameList(list: number): void;
+  renameList(list: number, caretAtStart?: boolean): void;
   /** The register keys (PRD 5.12): they fill the register and the clipboard, or paste. `cut` deletes at once, a list included. */
   registerKeys: { yank(stop: Stop): void; cut(stop: Stop): void; paste(stop: Stop, at: PastePlace): void };
   /** `cl` on a task: opens the list picker below its row. */
@@ -199,6 +199,7 @@ export function installKeyboard(env: KeyboardEnv): void {
     }
     if (current.kind === "header") {
       if (action.type === "edit") env.renameList(current.list);
+      else if (action.type === "edit-start") env.renameList(current.list, true);
       else if (action.type === "change") env.changeList(current.list);
       else if (action.type === "delete") {
         env.registerKeys.cut(current);
@@ -214,6 +215,9 @@ export function installKeyboard(env: KeyboardEnv): void {
         return;
       case "edit":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(BEGIN_EDIT));
+        return;
+      case "edit-start":
+        document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(BEGIN_EDIT_START));
         return;
       case "change":
         document.activeElement?.closest(".task-row")?.dispatchEvent(new Event(CHANGE_EDIT));

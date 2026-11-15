@@ -48,6 +48,8 @@ export type EditorOptions = {
   initial?: string;
   /** Selection range at the start, instead of the caret at the end (`cd` selects the date). */
   select?: { from: number; to: number };
+  /** Caret before the first character, instead of after the last (`E`). */
+  caretAtStart?: boolean;
   /** Opens the due date popup right away (`cd`). */
   openPopup?: boolean;
 };
@@ -58,7 +60,7 @@ export function createEditor(
   done: (result: string | null, how: EditEnd) => void,
   options: EditorOptions = {},
 ): void {
-  const { at, keepOnEmptyEnter, initial, select, openPopup } = options;
+  const { at, keepOnEmptyEnter, initial, select, openPopup, caretAtStart } = options;
   const shown = initial ?? text;
   if (host.querySelector(".cm-editor")) return;
   let view: EditorView | null = null;
@@ -79,7 +81,7 @@ export function createEditor(
     parent: host,
     state: EditorState.create({
       doc: toSingleLine(shown),
-      selection: select ? EditorSelection.range(select.from, select.to) : EditorSelection.cursor(shown.length),
+      selection: select ? EditorSelection.range(select.from, select.to) : EditorSelection.cursor(caretAtStart ? 0 : shown.length),
       extensions: [
         singleLine,
         history(),

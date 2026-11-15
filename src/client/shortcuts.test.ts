@@ -144,6 +144,9 @@ describe("resolveKey: keys on a task", () => {
   test("e and Enter edit the task", () => {
     for (const key of ["e", "Enter"]) expect(act(key)).toEqual({ type: "edit" });
   });
+  test("E edits the task with the caret at the start", () => {
+    expect(act("E", { shiftKey: true })).toEqual({ type: "edit-start" });
+  });
   test("i, I and F2 do nothing on a task", () => {
     expect(act("i")).toBeNull();
     expect(act("I", { shiftKey: true })).toBeNull();
@@ -196,6 +199,9 @@ describe("resolveKey: keys on a list header", () => {
   test("e and Enter rename the list", () => {
     expect(act("e", onHeader)).toEqual({ type: "edit" });
     expect(act("Enter", onHeader)).toEqual({ type: "edit" });
+  });
+  test("E renames the list with the caret at the start", () => {
+    expect(act("E", { shiftKey: true, ...onHeader })).toEqual({ type: "edit-start" });
   });
   test("i, I and F2 do nothing on a header", () => {
     expect(act("i", onHeader)).toBeNull();
@@ -419,7 +425,7 @@ describe("resolveKey: Markdown view (PRD 5.11)", () => {
     expect(r.pending).toBe("");
   });
   test("task keys are ignored while the view is open", () => {
-    for (const key of ["j", "k", "x", " ", "e", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "+", "n", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
+    for (const key of ["j", "k", "x", " ", "e", "E", "i", "Enter", "F2", "Delete", ">", "<", "J", "K", "o", "O", "a", "I", "A", "u", "U", "N", "+", "n", "h", "l", "H", "L", "G", "ArrowDown", "p"]) {
       expect(act(key, open)).toBeNull();
     }
   });
@@ -663,6 +669,7 @@ describe("resolveKey: filters and views (PRD 5.14)", () => {
     const f = {};
     expect(act("x", f)).toEqual({ type: "toggle" });
     expect(act("e", f)).toEqual({ type: "edit" });
+    expect(act("E", { shiftKey: true, ...f })).toEqual({ type: "edit-start" });
     expect(act("i", f)).toBeNull();
     expect(act("p", f)).toEqual({ type: "paste", at: "after" });
     expect(act("P", { shiftKey: true, ...f })).toEqual({ type: "paste", at: "before" });

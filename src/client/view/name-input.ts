@@ -3,9 +3,10 @@ import { el } from "./dom";
 
 export type NameInputActions = { submit(name: string): void; cancel(): void; input(draft: string): void };
 
-export function renderNameInput(initial: string, label: string, actions: NameInputActions): HTMLInputElement {
+export function renderNameInput(initial: string, label: string, actions: NameInputActions, caretAtStart = false): HTMLInputElement {
   const input = el("input", { type: "text", class: "name-input", "data-name-input": "", placeholder: label, "aria-label": label });
   input.value = initial;
+  if (caretAtStart) queueMicrotask(() => input.setSelectionRange(0, 0)); // after the focus, which would otherwise move the caret
   let finished = false; // removing the focused input fires a blur, which must not finish twice
   const finish = (run: () => void) => {
     if (finished) return;
